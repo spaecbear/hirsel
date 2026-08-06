@@ -19,9 +19,12 @@ import type { Settings } from "../sim/settings";
 import type { BreedId, CroftId, ToolId } from "../sim/types";
 
 export type TabId = "day" | "land" | "shop" | "glen";
+/** the day panel is split so the whole day fits without scrolling */
+export type WorkTabId = "work" | "cozy" | "watch";
 
 export class View {
   tab: TabId = "day";
+  workTab: WorkTabId = "work";
 
   constructor(
     private game: Game,
@@ -94,7 +97,44 @@ export class View {
     const a = $("actions");
     a.innerHTML = "";
 
-    if (owns(g, "watch")) {
+    const hasWatch = owns(g, "watch");
+    if (this.workTab === "watch" && !hasWatch) this.workTab = "work";
+
+    // Sleep is pinned above the list, so it never scrolls out of reach
+    a.appendChild(
+      button(
+        "act sleep pin",
+        `<span class="n">Sleep</span><span class="d">${
+          g.taps > 0 ? `You still have ${g.taps} tap${g.taps > 1 ? "s" : ""} in you.` : "The day is spent."
+        }</span>`,
+        () => this.game.sleep(),
+        this.busy,
+      ),
+    );
+
+    // sub-tabs: the day's ten actions split into short lists
+    const groups: [WorkTabId, string][] = [
+      ["work", "Work"],
+      ["cozy", "Comforts"],
+    ];
+    if (hasWatch) groups.push(["watch", "Watch"]);
+    const bar = el("div", { class: "subtabs" });
+    for (const [id, label] of groups) {
+      const doable = this.groupActions(id).some((act) => act.can(g) && g.taps >= this.game.costOf(act));
+      const b = el(
+        "button",
+        { type: "button", class: `${this.workTab === id ? "on" : ""}${doable ? " live" : ""}` },
+        label,
+      ) as HTMLButtonElement;
+      b.addEventListener("click", () => {
+        this.workTab = id;
+        this.render();
+      });
+      bar.appendChild(b);
+    }
+    a.appendChild(bar);
+
+    if (this.workTab === "watch") {
       if (g.recording) {
         a.appendChild(
           button(
@@ -129,10 +169,11 @@ export class View {
           ),
         );
       }
+      return;
     }
 
     const lex = lexicon(this.settings.inverse);
-    for (const act of ACTIONS) {
+    for (const act of this.groupActions(this.workTab)) {
       const cost = this.game.costOf(act);
       const name = act.id === "gather" ? lex.gather : act.id === "shear" ? lex.shear : act.name;
       a.appendChild(
@@ -144,17 +185,12 @@ export class View {
         ),
       );
     }
+  }
 
-    a.appendChild(
-      button(
-        "act sleep",
-        `<span class="n">Sleep</span><span class="d">${
-          g.taps > 0 ? `You still have ${g.taps} tap${g.taps > 1 ? "s" : ""} in you.` : "The day is spent."
-        }</span>`,
-        () => this.game.sleep(),
-        this.busy,
-      ),
-    );
+  /** work is the hill; comforts are the things that compete with it */
+  private groupActions(tab: WorkTabId) {
+    if (tab === "watch") return [];
+    return ACTIONS.filter((a) => (tab === "cozy" ? !!a.cozy : !a.cozy));
   }
 
   private renderPastures() {

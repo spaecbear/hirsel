@@ -241,6 +241,12 @@ canvas {
   border-color: var(--gorse);
   color: var(--gorse);
 }
+/* pinned above the lists so the day can always be ended without scrolling,
+   with enough air that it is not mistaken for the first action */
+.act.sleep.pin {
+  margin-bottom: 13px;
+  padding-bottom: 9px;
+}
 .act.buy {
   border-color: var(--stone);
 }
@@ -283,6 +289,39 @@ canvas {
 }
 .act.centre {
   text-align: center;
+}
+
+/* sub-tabs inside the day panel — the day's actions in short lists */
+.subtabs {
+  display: flex;
+  margin: 2px 0 9px;
+}
+.subtabs button {
+  flex: 1;
+  background: var(--peat);
+  border: 1px solid var(--moss);
+  border-right-width: 0;
+  color: var(--stone);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 10px 4px;
+  cursor: pointer;
+  min-height: 38px;
+}
+.subtabs button:last-child {
+  border-right-width: 1px;
+}
+.subtabs button.on {
+  background: var(--moss);
+  color: var(--gorse);
+  border-color: var(--gorse);
+}
+/* a quiet mark that there is still something worth doing in that list */
+.subtabs button.live:not(.on)::after {
+  content: " ·";
+  color: var(--grass);
 }
 
 .shead {

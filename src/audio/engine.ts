@@ -184,6 +184,75 @@ export class AudioEngine {
     return o;
   }
 
+  /**
+   * A whistle: the melody voice. Breath at the onset, a slow vibrato that only
+   * arrives once the note has settled — a whistle played by a person, not a
+   * sine wave. Two oscillators a hair apart so it isn't glassy.
+   */
+  whistle(freq: number, t: number, dur: number, gain = 0.2) {
+    const ac = this.ac;
+    if (!ac) return;
+    const out = ac.createGain();
+    const attack = Math.min(0.09, dur * 0.25);
+    out.gain.setValueAtTime(0, t);
+    out.gain.linearRampToValueAtTime(gain, t + attack);
+    out.gain.setValueAtTime(gain, t + Math.max(attack, dur - 0.14));
+    out.gain.linearRampToValueAtTime(0, t + dur);
+
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = Math.min(5200, freq * 5);
+
+    const vib = ac.createOscillator();
+    vib.frequency.value = 4.8;
+    const vibAmt = ac.createGain();
+    // vibrato fades in, the way a player leans on a held note
+    vibAmt.gain.setValueAtTime(0, t);
+    vibAmt.gain.linearRampToValueAtTime(6, t + Math.min(dur * 0.6, 0.5));
+    vib.connect(vibAmt);
+    vib.start(t);
+    vib.stop(t + dur + 0.05);
+
+    ([["sine", 1, 0], ["triangle", 0.22, 6]] as [OscillatorType, number, number][]).forEach(([type, lvl, det]) => {
+      const o = ac.createOscillator();
+      o.type = type;
+      o.frequency.value = freq;
+      o.detune.value = det;
+      vibAmt.connect(o.detune);
+      const g = ac.createGain();
+      g.gain.value = lvl;
+      o.connect(g);
+      g.connect(lp);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    });
+
+    // the breath, only at the onset
+    this.noise(t, Math.min(0.12, dur), "bandpass", freq * 2.2, 0.9, gain * 0.35, out);
+
+    lp.connect(out);
+    out.connect(this.musicBus);
+  }
+
+  /** bodhrán: a low skin thud, pitch dropping away. No high tick anywhere near it. */
+  thump(t: number, gain = 0.1, low = false) {
+    const ac = this.ac;
+    if (!ac) return;
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(low ? 92 : 116, t);
+    o.frequency.exponentialRampToValueAtTime(low ? 44 : 56, t + 0.14);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g);
+    g.connect(this.musicBus);
+    o.start(t);
+    o.stop(t + 0.3);
+    // the skin of the drum, well below anything that could read as a ping
+    this.noise(t, 0.07, "lowpass", 260, 0.8, gain * 0.5, this.musicBus);
+  }
+
   /** drop a recorded theme in alongside the synth score */
   setRecordedBed(buffer: AudioBuffer | null, gain = 0.5) {
     if (!this.ac) return;

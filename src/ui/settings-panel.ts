@@ -36,11 +36,14 @@ export function buildSettings(api: SettingsApi) {
 
     /* ---- look ---- */
     const look = group("Look");
-    look.appendChild(
-      seg("Art", [["Hirsel", s.art === "hirsel"], ["Retro (OG)", s.art === "og"]], (i) =>
-        api.apply({ art: i === 0 ? "hirsel" : "og" }),
-      ),
-    );
+    // the art toggle stays hidden until RETRO has been found
+    if (s.cheatsFound.includes("RETRO")) {
+      look.appendChild(
+        seg("Art", [["Hirsel", s.art === "hirsel"], ["Retro (OG)", s.art === "og"]], (i) =>
+          api.apply({ art: i === 0 ? "hirsel" : "og" }),
+        ),
+      );
+    }
     look.appendChild(
       seg(
         "Motion",
@@ -56,7 +59,9 @@ export function buildSettings(api: SettingsApi) {
       el(
         "div",
         { class: "note" },
-        "Retro is the original prototype scene, kept exactly as it was. Reduced motion collapses every animation to instant.",
+        s.cheatsFound.includes("RETRO")
+          ? "Retro is the original prototype scene, kept exactly as it was. Reduced motion collapses every animation to instant."
+          : "Reduced motion collapses every animation to instant.",
       ),
     );
     box.appendChild(look);

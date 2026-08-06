@@ -212,6 +212,11 @@ if (existing && settings.autosave) {
 screen.fit();
 requestAnimationFrame(frame);
 
+/* ---------- dev handles, for poking at the running game in the console ---------- */
+if (import.meta.env.DEV) {
+  (window as unknown as Record<string, unknown>).hirsel = { get game() { return game; }, audio, score, animator, settings };
+}
+
 /* ---------- PWA ---------- */
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   addEventListener("load", () => {

@@ -59,10 +59,13 @@ Things that are easy to break by accident:
   with one tap still in hand.
 - **The three-day forecast is public.** It is what makes the game plannable.
 - **Autosave writes at the end of a night only** — never mid-day, never mid-animation.
+- **Sleep is pinned above the action lists**, so the day can always be ended without
+  scrolling. The ten actions are split into Work / Comforts sub-tabs to keep each list short.
 
 ### Art packs
 
-Two looks, switchable in Settings → Look, or with the `RETRO` cheat.
+Two looks. The switch in Settings → Look is hidden until the `RETRO` code has been entered;
+before that, the retro scene isn't mentioned in the UI at all.
 
 - **Hirsel** (default): the croft is in the scene and gets built as you buy it — roof, smoke
   from the hearth, the byre, a lit window at night. Each pasture is its own place. Sheep graze,
@@ -73,10 +76,30 @@ Adding a third is one file implementing `ArtPack` in `src/render/art/`.
 
 ### Audio
 
-Everything is synthesized at runtime — no audio files. The generative score is D Dorian at
-68bpm, and it reacts to state (night thins the melody, rain thins it further). The engine
-exposes `setRecordedBed(buffer)`, which plays a recorded loop on the same music bus, with the
-same reverb and tape roll-off, alongside the synth layer rather than replacing it.
+Everything is synthesized at runtime — there are no audio files anywhere in the project.
+
+The soundtrack is a written tune, not a random walk: **The Hirsel**, a slow air in D Dorian at
+68bpm, in `src/audio/tunes.ts` as note data. It moves between D and C rather than D and A —
+the double tonic, which is the most Scottish thing you can do to a tune. `tunes.test.ts`
+checks every bar fills exactly and every pitch is in the mode, so a mistyped duration fails
+the suite instead of quietly knocking the tune out of time.
+
+`score.ts` sequences it a bar at a time and picks the arrangement from the game state:
+
+| | melody | accompaniment |
+| --- | --- | --- |
+| day | whistle, with cuts | harp arpeggios, drone, low bodhrán pulse |
+| night | harp, an octave down | drone an octave down, no pulse, no ornaments |
+| rain | whistle, softer | drone and pulse only |
+
+**Note for future edits:** do not add a quiet, short, high-frequency layer on a fixed
+subdivision. An earlier version pinged a 1.9kHz bandpassed noise burst on beat three of every
+bar, and a faint periodic high ping is indistinguishable from an audio watermark. The pulse is
+a low bodhrán thud for that reason.
+
+The engine exposes `setRecordedBed(buffer)`, which plays a recorded loop on the same music bus
+with the same reverb and tape roll-off — a real recorded theme drops in *alongside* the synth
+layer rather than replacing the system.
 
 ### Cheat codes
 
