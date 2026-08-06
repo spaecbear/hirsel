@@ -279,6 +279,65 @@ body.mode-retro .glen-chrome {
   border-color: #8a6a4a;
 }
 
+/* the first day's walkthrough. Sits at the top, clear of the sheet at the
+   bottom, so a prompt and the thing it is telling you to tap are never
+   fighting for the same corner of the screen. */
+.tutorial {
+  position: absolute;
+  top: calc(20px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(430px, calc(100vw - 20px));
+  background: rgba(11, 13, 8, 0.9);
+  border: 2px solid var(--gorse);
+  padding: 11px 12px;
+  display: none;
+  z-index: 9;
+}
+.tutorial.on {
+  display: block;
+}
+.tut-text {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--wool);
+}
+.tut-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+.tut-go {
+  background: var(--peat);
+  border: 1px solid var(--gorse);
+  color: var(--gorse);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  padding: 8px 14px;
+  cursor: pointer;
+  min-height: 36px;
+}
+.tut-go:hover {
+  background: var(--moss);
+}
+.tut-skip {
+  background: none;
+  border: 0;
+  color: var(--stone);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 8px 4px;
+  margin-left: auto;
+}
+.tut-skip:hover {
+  color: var(--fox);
+}
+
 /* what a finished run hands you: a code for the next one */
 .reward {
   border: 1px solid var(--gorse);

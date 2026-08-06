@@ -73,6 +73,32 @@ door, and the hill you are climbing. It is the only time the game shows you anyw
 glen, which is the point. It plays on a new run only, is skipped under reduced motion, and
 never plays when continuing a save.
 
+## The first day
+
+A brand new player gets a walkthrough: the day's taps are switched off, the flock starts one
+short with the price of a ewe in the purse (so buying the sixth costs nothing net and leaves
+them at exactly the normal £40), and each step points at a thing to tap and waits until they
+have done it.
+
+It teaches the loop, the fleece value curve, matting, the weather that blocks shearing, tools,
+the house, the night, and **both ways a run ends badly**. It teaches nothing about how one ends
+*well* — no croft goal, no ring, no her, and nothing whatsoever about the sword or the high
+ground on a full moon. `tutorial.test.ts` asserts that, with a word-boundary check over every
+line of the script, so a future edit cannot quietly leak a secret into the opening.
+
+Two things it must keep doing, both learned the hard way:
+
+- **Steps latch.** Conditions describe a moment of *becoming* done, and live state comes
+  undone: moving the flock clears `gatheredToday`, which sent the walkthrough back to "gather
+  them in" and looped it there.
+- **A skipped step is retired, not deferred.** Shearing skips itself when nothing is ready, but
+  fleece grows overnight — so it un-skipped and reappeared on day two telling the player to
+  shear. Passing a step retires it for good.
+
+The first day's weather is forced fair. Shearing and selling are the whole economy, and with
+rain rolled for day one the walkthrough skipped both — a new player could finish it never
+having been shown where money comes from. Everything after day one is as random as ever.
+
 ## Two interfaces
 
 **Glen** (default) is the full-screen scene. The canvas is the whole game: you work the hill
@@ -87,6 +113,10 @@ by touching the things in it, and the narration surfaces in the sky rather than 
 | the cart | sell wool, sell a beast, buy stock, buy tools |
 | the hills | which pasture to graze |
 | the sky | the three-day forecast, the moon, what's running in you, recent word |
+
+The door out of the house carries a standing **OUT** label. Hover labels only exist on a
+mouse, so on a phone the way back to the hill was invisible — you had to guess the door was
+tappable.
 
 Tapping the croft **goes inside it**. Everything bought is on the wall or by the fire — the
 broadsword above the hearth exactly as its description says, the dog stretched out in front of

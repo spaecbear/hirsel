@@ -134,6 +134,12 @@ export class Game {
    * the night, the wolf's five-action count or any buff changes shape.
    */
   zen = false;
+  /**
+   * The tutorial day. Same as zen, but scoped to the first day and cleared
+   * the moment it ends — a new player should be able to try everything the
+   * hill offers without spending a day they do not yet understand.
+   */
+  freeTaps = false;
 
   constructor(state?: GameState, opts: GameOptions = {}) {
     this.state = state ?? newGame(opts);
@@ -171,7 +177,7 @@ export class Game {
 
   private spend(n: number) {
     const g = this.state;
-    if (!this.zen) g.taps -= n;
+    if (!this.zen && !this.freeTaps) g.taps -= n;
     g.actsToday++;
     if (wolfWarningDue(g)) {
       this.say("The flock will not settle. Something is watching from above the corrie.", "bad");
@@ -439,6 +445,7 @@ export class Game {
     }
 
     g.day++;
+    this.freeTaps = false; // the free day is over the moment it ends
     g.gatheredToday = false;
     g.actsToday = 0;
     g.taps = tapsPerDay(g);

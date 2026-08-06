@@ -6,6 +6,7 @@ import { loadSettings, prefersReducedMotion, saveSettings, type Settings } from 
 import { clearSave, exportFile, hasSave, importFile, readSave, saveGame } from "./sim/save";
 import { lexicon } from "./sim/lexicon";
 import { revealNextCheat } from "./sim/cheats";
+import { tutorialSetup } from "./sim/tutorial";
 import type { GameState } from "./sim/types";
 
 import { Animator } from "./render/animator";
@@ -23,6 +24,7 @@ import { Sfx } from "./audio/sfx";
 import { View } from "./ui/view";
 import { WorldUi } from "./ui/world-ui";
 import { SkyFeed } from "./ui/sky-feed";
+import { TutorialUi } from "./ui/tutorial-ui";
 import { buildSettings } from "./ui/settings-panel";
 import { $, toast } from "./ui/dom";
 
@@ -41,6 +43,12 @@ const sfx = new Sfx(audio);
 const sky = new SkyFeed();
 const view = new View(game, animator, settings);
 const world = new WorldUi(game, screen, animator, settings);
+const tutorial = new TutorialUi(game);
+tutorial.onFinish = () => {
+  if (!settings.tutorialSeen) applySettings({ tutorialSeen: true });
+  game.freeTaps = false;
+};
+world.onNote = (what) => tutorial.note(what);
 
 /* ---------- opening ---------- */
 function openingLines(g: Game) {
@@ -78,17 +86,28 @@ function render() {
    * mauling that is still playing out.
    */
   if (game.state.over && !animator.busy) showEnd();
+  tutorial.refresh();
 }
 
 function startGame(state?: GameState, opts: { intro?: boolean } = {}) {
   endShown = false;
   animator.clear();
   sky.clear();
+  tutorial.stop();
   game = new Game(state);
   view.setGame(game);
   world.setGame(game);
+  tutorial.setGame(game);
   wire(game);
+
+  // a brand new run, by a player who has never had one: walk them through it
+  const teaching = !state && !settings.tutorialSeen && settings.ui === "glen";
+  if (teaching) {
+    tutorialSetup(game.state);
+    game.freeTaps = true;
+  }
   if (!state) openingLines(game);
+  if (teaching) tutorial.start();
   view.goTab("day");
   lastDay = game.state.day;
   // the day you walked out, before the first day on the hill
@@ -326,6 +345,8 @@ function frame(now: number) {
     walking: settings.ui === "glen" && world.walk.walking,
     zen: settings.zen,
     interior: settings.ui === "glen" && world.interior,
+    spotlight: settings.ui === "glen" && !world.interior ? tutorial.spotlight : null,
+    spotlightBed: settings.ui === "glen" && world.interior && tutorial.pointingAtBed,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);
@@ -368,6 +389,7 @@ if (import.meta.env.DEV) {
     screen,
     world,
     sky,
+    tutorial,
   };
 }
 

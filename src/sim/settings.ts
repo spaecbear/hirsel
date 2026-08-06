@@ -31,6 +31,8 @@ export interface Settings {
   cheatsFound: string[];
   /** the title screen is skipped once a run is under way */
   seenTitle: boolean;
+  /** the first day's walkthrough has been done, and won't run again */
+  tutorialSeen: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   zen: false,
   cheatsFound: [],
   seenTitle: false,
+  tutorialSeen: false,
 };
 
 const KEY = "hirsel.settings.v1";

@@ -39,6 +39,8 @@ export class WorldUi {
   active: HotspotId | null = null;
   private sheet: HTMLElement;
   private onChange: () => void = () => {};
+  /** the tutorial watches for things the game state doesn't record */
+  onNote: (what: string) => void = () => {};
   /** true once the player has stepped inside the croft */
   interior = false;
   /** hold a finger on the pasture and he walks over */
@@ -158,6 +160,7 @@ export class WorldUi {
     // stepping in and out of the house
     if (!this.interior && spot.id === "croft") {
       this.interior = true;
+      this.onNote("went-inside");
       this.close();
       return;
     }
@@ -332,7 +335,11 @@ export class WorldUi {
         detail: a.desc(g),
         disabled: g.taps < cost || !a.can(g),
         tone: a.cozy ? ("cozy" as const) : undefined,
-        onPick: () => this.game.doAction(a.id),
+        onPick: () => {
+          this.game.doAction(a.id);
+          if (a.id === "muck") this.onNote("did-muck");
+          if (a.cozy) this.onNote("did-comfort");
+        },
       };
     });
   }

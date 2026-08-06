@@ -206,13 +206,19 @@ export function drawTussocks(g: Painter, W: number, groundY: number, H: number, 
 /** peat pools lying in the hollows, dark and rimmed */
 export function drawPools(g: Painter, W: number, groundY: number, H: number) {
   const span = H - groundY;
-  for (let i = 0; i < 8; i++) {
+  /*
+   * Fewer, darker and narrower than they were. As bright slabs sitting on
+   * flat grass they read as floating rectangles rather than water lying in
+   * a hollow — the ground has to close over the ends of them.
+   */
+  for (let i = 0; i < 5; i++) {
     const x = Math.round(hash(i * 17) * (W - 26));
-    const y = groundY + 8 + Math.round(hash(i * 23) * (span - 16));
-    const w = 9 + Math.round(hash(i * 5) * 13);
-    g.px(x - 1, y - 1, w + 2, 5, "#3a3a2a"); // the peaty rim it sits in
-    g.px(x, y, w, 3, "#3f5560"); // dark standing water
-    g.px(x + 1, y, w - 3, 1, "#5a7784"); // sky in the surface
+    const y = groundY + 10 + Math.round(hash(i * 23) * (span - 20));
+    const w = 7 + Math.round(hash(i * 5) * 9);
+    g.px(x - 2, y - 1, w + 4, 4, "#41432f"); // the wet ground round it
+    g.px(x, y, w, 2, "#33454e"); // peat-dark standing water
+    g.px(x + 2, y, w - 5, 1, "#4a6470"); // just a little sky in it
+    g.px(x - 2, y + 3, w + 4, 1, "#4a5238"); // grass closing over the near edge
   }
 }
 

@@ -36,6 +36,10 @@ export interface Scene {
   zen?: boolean;
   /** true when the player has gone inside the croft */
   interior?: boolean;
+  /** the tutorial is pointing at this */
+  spotlight?: HotspotId | null;
+  /** the tutorial is pointing at the bed, which is only inside */
+  spotlightBed?: boolean;
 }
 
 export interface ArtPack {

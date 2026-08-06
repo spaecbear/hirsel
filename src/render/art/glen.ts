@@ -798,7 +798,7 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
  * the croft you are paying for is somewhere you actually stand rather than a
  * row of ticks in a shop. The bed is how the day ends.
  */
-function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number, hover: string | null, isNight: boolean) {
+function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number, hover: string | null, isNight: boolean, spotlightBed: boolean) {
   const hearthBuilt = owns(st, "hearth");
 
   // walls: rough stone, and floorboards below
@@ -877,6 +877,13 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   for (let i = 0; i < d.w; i += 5) g.px(d.x + i, d.y, 4, d.h, i % 10 ? "#54452c" : "#5b4a30");
   g.px(d.x + d.w - 6, d.y + d.h / 2, 3, 3, "#c9a83c"); // the latch
   g.a(d.x - 3, d.y - 3, d.w + 6, d.h + 4, 200, 214, 190, 0.1);
+  /*
+   * A standing label under the door. Hover only exists on a mouse, so on a
+   * phone the way out of the house was invisible — you had to guess that the
+   * door was tappable.
+   */
+  const outLabel = "OUT";
+  drawTextCentred(g, outLabel, d.x + d.w / 2, d.y + d.h + 4, "#c9c3ae", 0.75);
 
   // the shelf of everything bought
   const sh = I.shelf;
@@ -900,6 +907,19 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
     g.px(hx + I.hearth.w / 2 - 2, hy - 7, 4, 4, "#c9c3ae");
     g.px(hx + I.hearth.w / 2 - 1, hy - 6, 2, 2, "#2b2419");
     g.a(hx + I.hearth.w / 2 - 4, hy - 9, 8, 8, 232, 236, 214, 0.2);
+  }
+
+  if (spotlightBed) {
+    const b2 = I.bed;
+    const a = 0.3 + Math.sin(time / 160) * 0.16;
+    for (let i = 0; i < b2.w + 12; i += 4) {
+      g.a(b2.x - 6 + i, b2.y - 8, 2, 1, 224, 163, 60, a);
+      g.a(b2.x - 6 + i, b2.y + b2.h + 6, 2, 1, 224, 163, 60, a);
+    }
+    for (let i = 0; i < b2.h + 14; i += 4) {
+      g.a(b2.x - 6, b2.y - 8 + i, 1, 2, 224, 163, 60, a);
+      g.a(b2.x + b2.w + 6, b2.y - 8 + i, 1, 2, 224, 163, 60, a);
+    }
   }
 
   // labels for whatever is under the finger
@@ -955,7 +975,7 @@ export const GLEN_ART: ArtPack = {
     // inside the house: a different room, not a different hill
     if (s.interior) {
       const I = layoutInterior(g.W, g.H);
-      drawInterior(g, I, st, s.time, s.hover ?? null, k === "sleep");
+      drawInterior(g, I, st, s.time, s.hover ?? null, k === "sleep", !!s.spotlightBed);
       drawHud(g, L, st, !!s.zen);
       return;
     }
@@ -990,6 +1010,7 @@ export const GLEN_ART: ArtPack = {
     if (night > 0) drawNight(g, L, st, night, s.time);
 
     if (s.active) drawHighlight(g, L, s.active, s.time);
+    if (s.spotlight) drawHighlight(g, L, s.spotlight, s.time * 2.2);
     drawMessages(g, L, s.messages ?? []);
     drawHud(g, L, st, !!s.zen);
     if (s.hover) {
