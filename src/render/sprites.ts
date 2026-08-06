@@ -198,6 +198,8 @@ export interface ShepherdOpts {
   arm?: number;
   walk?: number;
   sit?: boolean;
+  /** seen from behind — for walking away from the camera */
+  back?: boolean;
 }
 
 /** 12 wide, 26 tall from `y` (the top of his head) to the soles */
@@ -239,11 +241,20 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
     g.px(x + 2, y + 11, 5, 1, "#c9a83c"); // watch chain
     g.px(x + 7, y + 10, 1, 2, "#e0c34c");
   }
-  g.px(x + 2, y, 8, 6, "#c9a583"); // head
-  g.px(x + 3, y + 2, 1, 1, "#26201a");
-  g.px(x + 7, y + 2, 1, 1, "#26201a");
-  g.px(x + 2, y - 3, 9, 4, "#2f3327"); // bunnet
-  g.px(x + 9, y - 2, 3, 2, "#2f3327");
+  if (o.back) {
+    // the back of his head: no face, and the bunnet's peak points away from
+    // us rather than off to one side
+    g.px(x + 2, y, 8, 6, "#8a6b4c"); // hair
+    g.px(x + 3, y + 4, 6, 2, "#c9a583"); // his neck below it
+    g.px(x + 2, y - 3, 9, 4, "#2f3327");
+    g.px(x + 3, y - 4, 7, 1, "#3a3f31");
+  } else {
+    g.px(x + 2, y, 8, 6, "#c9a583"); // head
+    g.px(x + 3, y + 2, 1, 1, "#26201a");
+    g.px(x + 7, y + 2, 1, 1, "#26201a");
+    g.px(x + 2, y - 3, 9, 4, "#2f3327"); // bunnet
+    g.px(x + 9, y - 2, 3, 2, "#2f3327");
+  }
   if (KIT.pelt) drawPelt(g, x, y);
   if (o.arm !== undefined) g.px(x + 10, y + 8 + o.arm, 4, 3, "#c9a583");
   if (KIT.lamp) {

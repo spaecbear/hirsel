@@ -54,6 +54,28 @@ const wxOf = (st: GameState) => st.forecast[0];
  * sky
  * ================================================================== */
 
+/**
+ * Flat bands with a dithered seam at each join. Shared by the glen and the
+ * intro — the intro had its own copy of the old row-by-row dither, so the
+ * sky the game opens on did not match the sky it then plays in.
+ */
+function paintSkyBands(g: Painter, W: number, height: number, top: string, low: string, bands = 6) {
+  const bandH = height / bands;
+  const tone = (i: number) => mix(top, low, i / (bands - 1));
+  for (let i = 0; i < bands; i++) {
+    const y0 = Math.round(i * bandH);
+    const y1 = Math.round((i + 1) * bandH);
+    g.px(0, y0, W, y1 - y0, tone(i));
+  }
+  for (let i = 1; i < bands; i++) {
+    const y = Math.round(i * bandH);
+    for (let x = 0; x < W; x++) {
+      if ((x & 1) === 0) g.px(x, y - 1, 1, 1, tone(i));
+      else g.px(x, y, 1, 1, tone(i - 1));
+    }
+  }
+}
+
 function drawSky(g: Painter, L: WorldLayout, st: GameState, night: number, time: number) {
   const [top, low] = SKY[wxOf(st)];
   const h = L.horizonY + 8;
@@ -67,22 +89,7 @@ function drawSky(g: Painter, L: WorldLayout, st: GameState, night: number, time:
    * dither belongs at the joins, where it blends two flat colours; everywhere
    * else the colour should just be flat.
    */
-  const bands = 6;
-  const bandH = h / bands;
-  const tone = (i: number) => mix(top, low, i / (bands - 1));
-
-  for (let i = 0; i < bands; i++) {
-    const y0 = Math.round(i * bandH);
-    const y1 = Math.round((i + 1) * bandH);
-    g.px(0, y0, L.W, y1 - y0, tone(i));
-  }
-  for (let i = 1; i < bands; i++) {
-    const y = Math.round(i * bandH);
-    for (let x = 0; x < L.W; x++) {
-      if ((x & 1) === 0) g.px(x, y - 1, 1, 1, tone(i));
-      else g.px(x, y, 1, 1, tone(i - 1));
-    }
-  }
+  paintSkyBands(g, L.W, h, top, low);
 
   // cloud as shapes, not as texture laid over everything
   if (wx === "overcast" || wx === "rain") {
@@ -787,6 +794,23 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
 }
 
 /**
+ * A line of the intro, on a plate so it can actually be read.
+ *
+ * Bare text sat over a dark room or a bright sky at 7px was faint either way,
+ * and these two lines are the only words in the opening — they carry the
+ * whole reason the run is happening.
+ */
+function drawCard(g: Painter, text: string, cx: number, y: number, alpha: number) {
+  if (alpha <= 0.02) return;
+  const w = textWidth(text);
+  const x = Math.round(cx - w / 2);
+  g.a(x - 8, y - 5, w + 16, 17, 8, 10, 6, 0.72 * alpha);
+  g.a(x - 8, y - 5, w + 16, 1, 224, 163, 60, 0.5 * alpha);
+  g.a(x - 8, y + 11, w + 16, 1, 224, 163, 60, 0.5 * alpha);
+  drawTextCentred(g, text, cx, y, "#f0ecd8", alpha);
+}
+
+/**
  * The day you walked out. Runs once, at the start of a run.
  *
  * Three beats: the desk you are leaving, the door, and the hill you are
@@ -814,8 +838,9 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
     drawShepherd(g, Math.round(L.W * 0.34), deskY - 26 - rise * 4, {});
     // the lamp overhead, and the window that is not his yet
     g.a(Math.round(L.W * 0.34) - 10, deskY - 46, 32, 26, 240, 214, 150, 0.08);
-    const t = clamp01((p - 0.05) / 0.2);
-    drawTextCentred(g, "You handed in your notice.", L.W / 2, Math.round(L.H * 0.2), "#ddd9c8", t * (p > 0.34 ? clamp01((0.42 - p) / 0.08) : 1));
+    // up quickly, held for most of the beat, gone just before the door
+    const t = clamp01((p - 0.03) / 0.08) * clamp01((0.42 - p) / 0.05);
+    drawCard(g, "You handed in your notice.", L.W / 2, Math.round(L.H * 0.18), t);
     return;
   }
 
@@ -836,13 +861,7 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
   // the hill, from below, walking up
   const t = ease(clamp01((p - 0.62) / 0.38));
   const [top, low] = SKY.sun;
-  for (let y = 0; y < L.H; y++) {
-    const mix = Math.pow(y / L.H, 1.4);
-    for (let x = 0; x < L.W; x += 2) {
-      const d = ((x >> 1) & 1) + ((y & 1) << 1);
-      g.px(x, y, 2, 1, d / 4 < mix ? low : top);
-    }
-  }
+  paintSkyBands(g, L.W, L.H, top, low, 7);
   // the hill rising to the right, him climbing it
   const baseY = Math.round(L.H * 0.94);
   for (let x = 0; x < L.W; x += 2) {
@@ -852,9 +871,11 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
   }
   const wx = L.W * 0.1 + t * L.W * 0.6;
   const wy = baseY - (wx / L.W) * L.H * 0.55 - 26;
-  drawShepherd(g, Math.round(wx), Math.round(wy), { crook: true, walk: time / 90 });
-  const fade = clamp01((p - 0.68) / 0.12) * clamp01((1 - p) / 0.08);
-  drawTextCentred(g, "A hill, and whatever you can make of it.", L.W / 2, Math.round(L.H * 0.18), "#ddd9c8", fade);
+  // seen from behind: he is walking away up it. Front-facing, he looked like
+  // he was shuffling sideways up the slope with his face to the camera.
+  drawShepherd(g, Math.round(wx), Math.round(wy), { crook: true, walk: time / 90, back: true });
+  const fade = clamp01((p - 0.66) / 0.06) * clamp01((1 - p) / 0.06);
+  drawCard(g, "A hill, and whatever you can make of it.", L.W / 2, Math.round(L.H * 0.16), fade);
 }
 
 

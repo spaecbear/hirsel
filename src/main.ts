@@ -185,6 +185,14 @@ const settingsUi = buildSettings({
     settingsUi.draw();
   },
   hasSave,
+  replayTutorial: () => {
+    // clearing the flag is what makes startGame teach it again
+    applySettings({ tutorialSeen: false });
+    startGame(undefined, { intro: true });
+    closeSettings();
+    hideTitle();
+    toast("Back to the first day.");
+  },
   cheatContext: () => ({
     game,
     settings,

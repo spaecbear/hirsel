@@ -14,6 +14,7 @@ export interface SettingsApi {
   importSave: (f: File) => void;
   deleteSave: () => void;
   hasSave: () => boolean;
+  replayTutorial: () => void;
   cheatContext: () => CheatContext;
 }
 
@@ -75,9 +76,17 @@ export function buildSettings(api: SettingsApi) {
     btns.appendChild(mkBtn("Import file", () => pickFile((f) => api.importSave(f))));
     btns.appendChild(mkBtn("Delete save", () => api.deleteSave(), !api.hasSave(), true));
     btns.appendChild(mkBtn("New run", () => api.newGame(), false, true));
+    btns.appendChild(mkBtn("Replay the first day", () => api.replayTutorial(), false, true));
     game.appendChild(btns);
     game.appendChild(
       el("div", { class: "note" }, "Autosave writes one slot at the end of every night — never mid-day, so a reload can't land inside a half-resolved night."),
+    );
+    game.appendChild(
+      el(
+        "div",
+        { class: "note" },
+        "Replaying the first day starts a fresh run with the walkthrough — the taps are free that day and the flock starts one short.",
+      ),
     );
     box.appendChild(game);
 

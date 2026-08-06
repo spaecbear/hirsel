@@ -101,6 +101,9 @@ Two things it must keep doing, both learned the hard way:
   fleece grows overnight — so it un-skipped and reappeared on day two telling the player to
   shear. Passing a step retires it for good.
 
+Settings → The game → **Replay the first day** starts a fresh run with the walkthrough on, for
+anyone who skipped it or wants to see it again.
+
 Every step still keeps its skip guard even though day one is rigged: nothing should be able to
 park a new player on a step the weather or an empty hill has made impossible.
 
@@ -158,14 +161,21 @@ colour, which is what makes distance read rather than just stacking silhouettes.
 
 ### The sky
 
-Flat bands with a dithered seam at each join, rather than dithering every row. Mixing the
+Flat bands with a dithered seam at each join, rather than dithering every row. `paintSkyBands`
+is shared by the glen and the opening — the intro kept its own copy of the old row dither, so
+the sky the game opened on did not match the sky it then played in. Mixing the
 whole sky produced a field of horizontal dashes that read as scan lines over the top half of
 the screen — the noise was louder than the picture, and it made the narration unreadable.
 Ordered dither belongs at the joins, where it blends two flat colours. Cloud is drawn as
 shapes with a lit top edge and a ragged dithered underside; haar is deliberately flat and
 featureless, because that is the character of it.
 
-Sky messages carry a dark backing plate. Over open sky bare text was fine, but over cloud, a
+Heather is stippled, never blocked out. Drawn as rectangles with a lit top edge and a dark
+bottom it was built exactly like the scree in the same file, and read as purple rocks lying on
+the grass — a player said so. It is a soft mat now: a dark woody base with bloom speckled over
+it in banks, so there is no silhouette to mistake for a stone.
+
+Both lines of the opening, and every sky message, carry a dark backing plate. Over open sky bare text was fine, but over cloud, a
 hillside or the moon it disappeared — and it is the game's whole voice.
 
 The HUD offsets itself by the top safe-area inset, measured from a zero-size probe element,

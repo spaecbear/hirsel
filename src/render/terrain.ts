@@ -222,18 +222,48 @@ export function drawPools(g: Painter, W: number, groundY: number, H: number) {
   }
 }
 
-/** heather banks — the purple that makes the slope the slope */
+/**
+ * Heather.
+ *
+ * It used to be flat rectangles with a lit top edge and a dark bottom, which
+ * is exactly how the scree in the same file is drawn — so it read as purple
+ * rocks lying on the grass. Real heather is a low mat of tiny flowers: no
+ * hard edge anywhere, a spread of speckle over a darker base, in banks rather
+ * than scattered evenly. This draws the bank first and stipples the bloom
+ * over it, so there is no silhouette to mistake for a stone.
+ */
+const BLOOM = ["#9a6fa8", "#8a6a9c", "#a87fb4", "#7d5e91"];
+
 export function drawHeather(g: Painter, W: number, groundY: number, H: number, density = 1) {
   const span = H - groundY;
-  const n = Math.round(70 * density);
-  for (let i = 0; i < n; i++) {
-    const x = Math.round(hash(i * 3.7) * W);
-    const y = groundY + 2 + Math.round(hash(i * 6.3) * (span - 4));
-    const w = 4 + Math.round(hash(i * 9.1) * 7);
-    const tone = hash(i * 13) > 0.5 ? C.heather : C.heatherDim;
-    g.px(x, y, w, 2, tone);
-    g.px(x + 1, y - 1, w - 2, 1, shade(tone, 18));
-    g.px(x, y + 2, w, 1, shade(tone, -26));
+  const banks = Math.max(4, Math.round(10 * density));
+
+  for (let b = 0; b < banks; b++) {
+    // where this bank of it lies, and how far it spreads
+    const cx = hash(b * 4.1) * W;
+    const cy = groundY + 4 + hash(b * 7.3) * (span - 8);
+    const rx = 18 + hash(b * 9.7) * 34;
+    const ry = 4 + hash(b * 11.3) * 7;
+
+    // the woody base it grows out of, dark and soft-edged
+    for (let i = 0; i < 40; i++) {
+      const a = hash(b * 100 + i) * Math.PI * 2;
+      const r = Math.sqrt(hash(b * 200 + i));
+      const x = Math.round(cx + Math.cos(a) * rx * r);
+      const y = Math.round(cy + Math.sin(a) * ry * r);
+      g.px(x, y, 2, 1, "#4a4436");
+    }
+    // the bloom: single pixels, thickest in the middle of the bank
+    for (let i = 0; i < 130; i++) {
+      const a = hash(b * 300 + i) * Math.PI * 2;
+      const r = Math.pow(hash(b * 400 + i), 0.7);
+      const x = Math.round(cx + Math.cos(a) * rx * r);
+      const y = Math.round(cy + Math.sin(a) * ry * r);
+      const tone = BLOOM[Math.floor(hash(b * 500 + i) * BLOOM.length)];
+      g.px(x, y, 1, 1, tone);
+      // the odd taller sprig standing proud of the mat
+      if (hash(b * 600 + i) > 0.93) g.px(x, y - 1, 1, 1, "#b98fc4");
+    }
   }
 }
 
