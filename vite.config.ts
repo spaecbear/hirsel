@@ -32,5 +32,6 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
+    setupFiles: ["./test/setup.ts"],
   },
 } as Parameters<typeof defineConfig>[0] & { test: unknown });

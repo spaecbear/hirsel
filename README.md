@@ -49,6 +49,8 @@ src/
     game.ts     state machine: actions, the night, the watch, the wolf
     save.ts     versioned save slot + export/import
     cheats.ts   the codes in the settings menu
+    glossary.ts what each buff/status does, in Settings — built from BALANCE,
+                not a second hand-written copy of the numbers
   render/     canvas: integer scaling, animation queue, two art packs
     art/hirsel.ts  the default scene
     art/og.ts      the original prototype scene, ported faithfully
@@ -76,6 +78,13 @@ Things that are easy to break by accident:
   is the exception the player earns: once taken, the shepherd wears it in every scene.
 - **Both wolf warnings stay.** Dawn of the full moon, and the fourth action on the corrie
   with one tap still in hand.
+- **`test/setup.ts` installs a real in-memory `localStorage` for every test run, unconditionally.**
+  This machine's Node has a global `localStorage` that exists but is broken — a bare `{}`
+  with no methods, downstream of the experimental `--localstorage-file` flag pointing nowhere
+  valid. `saveEarned`/`saveSettings`/`saveGame` all swallow storage errors on purpose (a failed
+  save shouldn't crash the game), so a broken global fails silently: a test can call
+  `saveEarned(["pelt"])`, get no error, and read an empty array back. Found via the glossary
+  appendix's own test for the pelt reveal — trust the polyfill, not the host's Node build.
 - **The three-day forecast is public.** It is what makes the game plannable.
 - **Autosave writes at the end of a night only** — never mid-day, never mid-animation.
 - **Sleep is pinned above the action lists**, so the day can always be ended without
@@ -158,6 +167,34 @@ from a randomised interval (`DRIP_MIN_GAP + random × DRIP_JITTER`), never a fix
 `AudioEngine.noiseBed()` is the reusable piece — a persistent looping filtered-noise source
 whose gain the caller fades — so a future ambience layer (wind for the haar, the burn in
 spate) can reuse it rather than growing its own noise-loop plumbing.
+
+### Buffs & status appendix
+
+Settings → Buffs & status. The HUD only ever shows a buff as `tended (3d)` — this is where
+"tended" gets explained. `src/sim/glossary.ts` builds the four buff entries and two status
+entries (Gathered, and the pelt) from the live `BALANCE` constants rather than a hand-written
+second copy of the numbers, so a future tuning pass can't leave it describing a game that no
+longer exists — the same discipline as the market-price fix.
+
+The pelt entry stays masked as `?????` until the `pelt` achievement has ever been earned
+(checked via the same `loadEarned()` the Achievements section already reads), matching the
+design invariant above: nothing about the wolf is explained before it's earned. Once revealed
+it names the ground and the moon, matching the existing owned-pelt shop tile — a place and a
+time, not the summon recipe. `glossary.test.ts` pins that distinction directly: it asserts the
+revealed text never contains `crook`, `boots`, `sword`, `five action`, or `summon`, while a
+separate test confirms mentioning the crook's ordinary, already-public effect elsewhere (the
+Gathered entry) is fine — the rule is "never state the trigger," not "never say the word."
+
+Buffs refresh rather than stack — see `Game.buff()` below.
+
+### Buffs don't stack
+
+`Game.buff(id, days)` is `Math.max(existing, days)`, always. Playing the bagpipes twice in one
+day does not double the fox-risk reduction or extend past `cozyBuffDays` — the second pipe
+just re-confirms the same 2 days already running. This is spec behaviour (§3: "Buff durations
+are set with `max(existing, n)` — they refresh, they don't stack"), and every temporary buff
+(`tended`, `steady hands`, `settled flock`, `hale`) goes through the same one method, so there's
+no per-buff special case to accidentally get wrong.
 
 ### Cheat codes
 

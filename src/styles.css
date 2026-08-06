@@ -743,6 +743,50 @@ body.modal {
   line-height: 1.5;
 }
 
+/* buffs & status reference — plain information, not something to unlock, so
+   it reads at full brightness rather than the dimmed "not earned yet" look */
+.gloss {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.gloss div {
+  border: 1px solid var(--moss);
+  padding: 7px 8px;
+  font-size: 10px;
+  flex: 1 1 190px;
+}
+.gloss div b {
+  display: block;
+  color: var(--gorse);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+.gloss div i {
+  display: block;
+  font-style: normal;
+  color: var(--stone);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+.gloss div span {
+  display: block;
+  color: var(--wool);
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 5px;
+}
+/* the one entry the wolf gates stays dim and wordless until it's earned */
+.gloss div.locked {
+  color: #4a5240;
+}
+.gloss div.locked b,
+.gloss div.locked i,
+.gloss div.locked span {
+  color: #4a5240;
+}
+
 /* a found cheat is a button: tap it again in a later run rather than retyping */
 .cheat-list button {
   /* Buttons centre their content vertically whatever `display` and

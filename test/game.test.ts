@@ -56,6 +56,23 @@ describe("the day", () => {
     expect(state.gatheredToday).toBe(false);
     expect(state.at).toBe(1);
   });
+
+  it("buffs refresh rather than stack — playing twice doesn't extend or double them", () => {
+    // player question: does the bagpipes' fox-risk cut get better if you
+    // play twice in a day? No — every buff goes through Game.buff(), which
+    // is Math.max(existing, days), always. The second use just re-confirms
+    // the same clock, it never adds to it.
+    const { game, state } = harness({ taps: 6 });
+    game.doAction("music");
+    expect(state.buffs["settled flock"]).toBe(BALANCE.cozyBuffDays);
+    game.doAction("music"); // played again, same day
+    expect(state.buffs["settled flock"]).toBe(BALANCE.cozyBuffDays); // not doubled, not stacked
+
+    // and a night doesn't compound it either: one tick down, from the cap,
+    // not from some higher stacked value
+    game.sleep();
+    expect(state.buffs["settled flock"]).toBe(BALANCE.cozyBuffDays - 1);
+  });
 });
 
 describe("shearing", () => {

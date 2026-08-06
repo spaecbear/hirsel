@@ -1,6 +1,7 @@
 import { $, el, toast } from "./dom";
 import { ACHIEVEMENTS, clearEarned, loadEarned } from "../sim/achievements";
 import { CHEATS, findCheat, type CheatContext } from "../sim/cheats";
+import { buffGlossary, statusGlossary, type GlossaryEntry } from "../sim/glossary";
 import type { Settings } from "../sim/settings";
 
 export interface SettingsApi {
@@ -81,6 +82,16 @@ export function buildSettings(api: SettingsApi) {
       el("div", { class: "note" }, "Autosave writes one slot at the end of every night — never mid-day, so a reload can't land inside a half-resolved night."),
     );
     box.appendChild(game);
+
+    /* ---- buffs & status: what the HUD's terse "tended (3d)" actually means ---- */
+    const gloss = group("Buffs & status");
+    const glossGrid = el("div", { class: "gloss" });
+    const glossEntry = (e: GlossaryEntry) =>
+      el("div", { class: e.secret && e.name === "?????" ? "locked" : "" }, `<b>${e.name}</b><i>${e.meta}</i><span>${e.effect}</span>`);
+    for (const e of buffGlossary()) glossGrid.appendChild(glossEntry(e));
+    for (const e of statusGlossary()) glossGrid.appendChild(glossEntry(e));
+    gloss.appendChild(glossGrid);
+    box.appendChild(gloss);
 
     /* ---- cheats ---- */
     const cheats = group("Cheat codes");
