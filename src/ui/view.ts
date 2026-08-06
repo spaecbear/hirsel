@@ -55,7 +55,6 @@ export class View {
     const g = this.game.state;
     const lex = lexicon(this.settings.inverse);
     this.renderHud(lex.flockCap, lex.woolCap);
-    this.renderRecent();
     this.renderActions();
     this.renderPastures();
     this.renderFlock();
@@ -79,23 +78,6 @@ export class View {
     stat("Weather", WEATHER[g.forecast[0]].name);
     // the full name would wrap the HUD onto a second line; the forecast has it in full
     stat("Moon", moonName(g.day).replace("Waxing", "Wax.").replace("Waning", "Wan.").replace("crescent", "cres."), isFullMoon(g.day) ? "good" : "");
-  }
-
-  /**
-   * The last lines of narration, banded under the art so they are on screen
-   * whatever tab you are on. Only rewritten when the log actually changes —
-   * otherwise every state change would replay the flash and re-announce it.
-   */
-  private lastLogKey = "";
-  private renderRecent() {
-    const g = this.game.state;
-    const latest = g.log.slice(0, 3);
-    const key = latest.map((l) => `${l.day}:${l.t}`).join("|");
-    if (key === this.lastLogKey) return;
-    this.lastLogKey = key;
-    $("recent").innerHTML = latest
-      .map((l, i) => `<div class="${l.cls}${i === 0 ? " new" : ""}">${l.t}</div>`)
-      .join("");
   }
 
   private renderActions() {

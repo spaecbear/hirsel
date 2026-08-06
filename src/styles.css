@@ -129,7 +129,6 @@ canvas {
   display: block;
   border: 2px solid var(--moss);
   border-top: 0;
-  border-bottom: 0;
   background: var(--ink);
 }
 
@@ -435,54 +434,6 @@ canvas {
   color: var(--fox);
 }
 
-/* the word of the glen, banded across the foot of the art window.
-   Fixed height: a band that changes size would shove the whole scene about. */
-.recent {
-  padding: 9px 11px;
-  border: 2px solid var(--moss);
-  border-top: 0;
-  background: #191e13;
-  font-size: 11px;
-  line-height: 1.5;
-  height: 74px;
-  overflow: hidden;
-}
-.recent div {
-  color: var(--stone);
-  padding: 1px 0;
-  opacity: 0.55;
-}
-.recent div.new {
-  opacity: 1;
-  color: var(--wool);
-  animation: flash 0.5s ease-out;
-}
-.recent div.bad {
-  color: #8a4536;
-}
-.recent div.bad.new {
-  color: var(--fox);
-}
-.recent div.gold {
-  color: #8a6c2c;
-}
-.recent div.gold.new {
-  color: var(--gorse);
-}
-.recent div.cozy {
-  color: #5f4a6b;
-}
-.recent div.cozy.new {
-  color: var(--heather);
-}
-@keyframes flash {
-  from {
-    background: #2e3b2f;
-  }
-  to {
-    background: transparent;
-  }
-}
 
 .log {
   height: 180px;
