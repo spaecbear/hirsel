@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#14170f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Hirsel — a Scottish sheep farming prototype</title>
+<style>
+  :root{
+    --peat:#14170f;
+    --peat-2:#1e2317;
+    --moss:#3c4a2e;
+    --grass:#7d9a55;
+    --heather:#8a6a9c;
+    --gorse:#e0a33c;
+    --wool:#ddd9c8;
+    --fox:#b4472c;
+    --stone:#6d7263;
+    --ink:#0b0d08;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--peat);color:var(--wool);font-family:"DejaVu Sans Mono",ui-monospace,Menlo,Consolas,monospace;}
+  body{padding:18px;display:flex;justify-content:center;overscroll-behavior:none;
+       -webkit-text-size-adjust:100%}
+  button,.past{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  .frame{width:100%;max-width:940px;}
+
+  h1{font-size:15px;letter-spacing:.42em;text-transform:uppercase;color:var(--gorse);font-weight:700}
+  .sub{font-size:11px;color:var(--stone);letter-spacing:.14em;margin-top:5px}
+  #snd{background:none;border:1px solid var(--moss);color:var(--stone);font:inherit;font-size:9px;
+       letter-spacing:.14em;padding:3px 8px;margin-left:10px;cursor:pointer;text-transform:uppercase}
+  #snd:hover{border-color:var(--gorse);color:var(--gorse)}
+
+  .hud{display:flex;gap:0;flex-wrap:wrap;border:2px solid var(--moss);margin:16px 0 0;background:var(--peat-2)}
+  .stat{flex:1 1 110px;padding:9px 11px;border-right:2px solid var(--moss)}
+  .stat:last-child{border-right:0}
+  .stat .k{font-size:9px;letter-spacing:.2em;color:var(--stone);text-transform:uppercase}
+  .stat .v{font-size:17px;margin-top:3px;color:var(--wool)}
+  .stat .v.warn{color:var(--fox)}
+  .stat .v.good{color:var(--gorse)}
+
+  canvas{width:100%;image-rendering:pixelated;display:block;border:2px solid var(--moss);border-top:0;background:var(--ink)}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;align-items:start}
+
+  /* tab bar — mobile only */
+  .tabs{display:none;margin-top:14px;border:2px solid var(--moss);background:var(--peat-2)}
+  .tabs button{flex:1;background:none;border:0;border-right:2px solid var(--moss);color:var(--stone);
+    font:inherit;font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:13px 4px;cursor:pointer}
+  .tabs button:last-child{border-right:0}
+  .tabs button.on{color:var(--gorse);background:var(--moss)}
+  .tabs button:focus-visible{outline:2px solid var(--heather);outline-offset:-2px}
+
+  @media(max-width:760px){
+    body{padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+    .cols{grid-template-columns:1fr;gap:0;margin-top:0}
+    .tabs{display:flex;margin-top:0;border-top:0}
+    .panel{display:none;border-top:0}
+    .panel.show{display:block}
+    /* hud + art + tabs lock together; panels scroll behind */
+    .scene{position:sticky;top:0;z-index:5;background:var(--peat);
+           padding-top:10px;margin-top:-10px}
+    .stat{flex:1 1 33%;padding:7px 8px}
+    .stat .v{font-size:15px}
+    .act,.past{padding:12px 11px;min-height:46px}
+    .act .d{font-size:11px}
+    .log{height:190px}
+    h1{font-size:13px;letter-spacing:.3em}
+  }
+
+  .panel{border:2px solid var(--moss);background:var(--peat-2)}
+  .panel h2{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gorse);padding:8px 11px;border-bottom:2px solid var(--moss)}
+  .panel .body{padding:11px}
+
+  .act{display:block;width:100%;text-align:left;background:var(--peat);color:var(--wool);border:2px solid var(--moss);
+       font:inherit;font-size:12px;padding:8px 10px;margin-bottom:7px;cursor:pointer;line-height:1.45}
+  .act:hover:not(:disabled){border-color:var(--gorse);color:var(--gorse)}
+  .act:focus-visible{outline:2px solid var(--heather);outline-offset:2px}
+  .act:disabled{opacity:.35;cursor:not-allowed}
+  .act .n{letter-spacing:.1em}
+  .act .d{display:block;font-size:10px;color:var(--stone);margin-top:3px}
+  .act.cozy{border-color:var(--heather)}
+  .act.cozy:hover:not(:disabled){border-color:var(--heather);color:var(--heather)}
+  .act.sleep{border-color:var(--gorse);color:var(--gorse)}
+  .act .n em{font-style:normal;color:var(--grass);font-size:9px;letter-spacing:.14em}
+  .act.buy{border-color:var(--stone)}
+  .act.buy:hover:not(:disabled){border-color:var(--gorse);color:var(--gorse)}
+  .act.buy.owned{opacity:1;border-color:var(--grass);color:var(--grass)}
+  .act.buy.owned:disabled{opacity:.75;cursor:default}
+  .act.buy.stock{border-color:#5a6b4a}
+  .act.buy.stock:hover:not(:disabled){border-color:var(--wool);color:var(--wool)}
+  .shead{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone);
+         margin:2px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--moss)}
+  .shead:not(:first-child){margin-top:14px}
+
+  .past{border:2px solid var(--moss);padding:8px 10px;margin-bottom:7px;font-size:11px;cursor:pointer;background:var(--peat)}
+  .past:hover{border-color:var(--gorse)}
+  .past.here{border-color:var(--gorse);background:var(--moss)}
+  .past .nm{letter-spacing:.1em}
+  .past .meta{font-size:10px;color:var(--stone);margin-top:3px}
+  .bar{height:5px;background:var(--ink);margin-top:5px}
+  .bar i{display:block;height:100%;background:var(--grass)}
+
+  .recent{padding:10px 11px;border-bottom:2px solid var(--moss);background:#191e13;font-size:11px;line-height:1.55}
+  .recent div{color:var(--stone);padding:2px 0;opacity:.55}
+  .recent div.new{opacity:1;color:var(--wool)}
+  .recent div.bad{color:#8a4536} .recent div.bad.new{color:var(--fox)}
+  .recent div.gold{color:#8a6c2c} .recent div.gold.new{color:var(--gorse)}
+  .recent div.cozy{color:#5f4a6b} .recent div.cozy.new{color:var(--heather)}
+  .recent div.hi.new{color:var(--wool)}
+  @keyframes flash{from{background:#2e3b2f}to{background:transparent}}
+  .recent div.new{animation:flash .5s ease-out}
+  @media(prefers-reduced-motion:reduce){.recent div.new{animation:none}}
+  .log{height:150px;overflow-y:auto;font-size:11px;line-height:1.6}
+  .log div{padding:2px 0;border-bottom:1px solid #23281b;color:var(--stone)}
+  .log div.hi{color:var(--wool)}
+  .log div.bad{color:var(--fox)}
+  .log div.gold{color:var(--gorse)}
+  .log div.cozy{color:var(--heather)}
+
+  .fc{display:flex;gap:6px;font-size:10px;margin-top:9px}
+  .fc div{flex:1;border:1px solid var(--moss);padding:5px;text-align:center;color:var(--stone)}
+  .fc div b{display:block;color:var(--wool);font-size:11px;margin-top:2px;font-weight:400}
+  .fc div i{display:block;font-style:normal;font-size:9px;margin-top:3px;color:#7d8496;letter-spacing:.04em}
+  .fc div i.full{color:#e8ecd6}
+  .act.buy.owned.pelt{border-color:var(--heather);color:var(--heather)}
+  .act.buy.life{border-color:#8a6a4a}
+  .act.buy.life:hover:not(:disabled){border-color:var(--gorse);color:var(--gorse)}
+  .act.buy.life.owned{border-color:var(--gorse);color:var(--gorse)}
+  .act.watch{border-color:var(--gorse);color:var(--gorse);margin-bottom:12px}
+  .act.watch.small{margin-top:-6px;opacity:.7;font-size:11px}
+
+  .buffs{font-size:10px;color:var(--heather);margin-top:9px;min-height:14px;letter-spacing:.06em}
+
+  .over{position:fixed;inset:0;background:rgba(10,12,8,.94);display:none;align-items:center;justify-content:center;padding:20px}
+  .over.on{display:flex}
+  .over .box{border:2px solid var(--gorse);background:var(--peat-2);padding:26px;max-width:420px;text-align:center}
+  .over h3{color:var(--gorse);font-size:13px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:12px}
+  .over p{font-size:12px;line-height:1.7;color:var(--stone);margin-bottom:16px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="frame">
+  <h1>Hirsel</h1>
+  <div class="sub">core loop prototype <button id="snd" onclick="soundToggle()">Sound on</button></div>
+
+  <div class="scene">
+  <div class="hud">
+    <div class="stat"><div class="k">Day</div><div class="v" id="s-day">1</div></div>
+    <div class="stat"><div class="k">Taps left</div><div class="v good" id="s-taps">5</div></div>
+    <div class="stat"><div class="k">Flock</div><div class="v" id="s-flock">6</div></div>
+    <div class="stat"><div class="k">Purse</div><div class="v" id="s-money">£1000</div></div>
+    <div class="stat"><div class="k">Wool</div><div class="v" id="s-wool">0</div></div>
+    <div class="stat"><div class="k">Weather</div><div class="v" id="s-wx">Sun</div></div>
+    <div class="stat"><div class="k">Moon</div><div class="v" id="s-moon">New</div></div>
+  </div>
+
+  <canvas id="cv" width="468" height="150"></canvas>
+
+  <nav class="tabs" id="tabs">
+    <button data-go="day"  class="on">Day</button>
+    <button data-go="land">Land</button>
+    <button data-go="shop">Steading</button>
+    <button data-go="glen">Glen</button>
+  </nav>
+  </div>
+
+  <div class="cols">
+    <section class="panel" data-tab="day">
+      <h2>The day</h2>
+      <div class="recent" id="recent"></div>
+      <div class="body" id="actions"></div>
+    </section>
+
+    <section class="panel" data-tab="land">
+      <h2>Pastures &mdash; tap to move the flock</h2>
+      <div class="body" id="pastures"></div>
+    </section>
+
+    <section class="panel" data-tab="shop">
+      <h2>The steading &mdash; buy any time, costs no tap</h2>
+      <div class="body" id="shop"></div>
+    </section>
+
+    <section class="panel" data-tab="glen">
+      <h2>Word of the glen</h2>
+      <div class="body">
+        <div class="fc" id="fc"></div>
+        <div class="buffs" id="buffs"></div>
+        <div class="log" id="log"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="over" id="over"><div class="box">
+  <h3 id="ov-t"></h3><p id="ov-p"></p>
+  <button class="act sleep" style="text-align:center" onclick="location.reload()">Start again</button>
+</div></div>
+
+<script>
+const MOON = ["New","Waxing crescent","First quarter","Waxing gibbous",
+              "Full","Waning gibbous","Last quarter","Waning crescent"];
+const moonIdx = d => (d-1) % 8;
+const moonName = d => MOON[moonIdx(d)];
+const isFull = d => moonIdx(d) === 4;
+
+const WX = {
+  sun:      {name:"Sun",      graze:1.4, shear:true,  foxBias:0.9,  sky:"#4b6b7a", light:"#c9b98a"},
+  overcast: {name:"Overcast", graze:1.0, shear:true,  foxBias:1.45, sky:"#3a4046", light:"#8f9088"},
+  rain:     {name:"Rain",     graze:0.7, shear:false, foxBias:1.0,  sky:"#2b3239", light:"#6f7a80"},
+  mist:     {name:"Haar",     graze:0.9, shear:false, foxBias:1.7,  sky:"#454b4a", light:"#8a8f88"}
+};
+const WKEYS = ["sun","sun","overcast","overcast","rain","rain","mist"];
+
+const G = {
+  day:1, taps:3, money:1000, wool:0, over:false,
+  upg:{},
+  flock:[], at:0,
+  pastures:[
+    {n:"Low Field",  grass:100, cap:100, quality:0.8, risk:0.10, regen:5},
+    {n:"Hill Slope", grass:100, cap:100, quality:1.0, risk:0.20, regen:4},
+    {n:"High Corrie",grass:100, cap:100, quality:1.35,risk:0.34, regen:3}
+  ],
+  gatheredToday:false, actsToday:0, pubs:0, routine:null, draft:[], step:0, recording:false, running:false, asked:false,
+  buffs:{}, // name -> days remaining
+  forecast:[], log:[]
+};
+
+const BREEDS = {
+  blackface:{name:"Scottish Blackface", cost:24, g:1.00, v:1.00, wool:"#ddd9c8", face:"#2b2b26",
+             note:"Hardy hill sheep. Coarse fleece, but she'll thrive on ground that beats the others."},
+  cheviot:  {name:"Cheviot",            cost:38, g:1.20, v:1.05, wool:"#e7e3d2", face:"#cfc7ae",
+             note:"Grows fleece fast. Wants decent grazing to do it."},
+  hebridean:{name:"Hebridean",          cost:34, g:0.85, v:1.40, wool:"#4a4640", face:"#26241f",
+             note:"Small and black. Little wool, but it fetches a price."},
+  shetland: {name:"Shetland",           cost:54, g:1.05, v:1.60, wool:"#cdbfa4", face:"#5b4c3a",
+             note:"The finest fleece in Scotland. Worth more than she looks."}
+};
+const br = s => BREEDS[s.b] || BREEDS.blackface;
+
+for(let i=0;i<6;i++) G.flock.push({fleece: 2 + Math.floor(Math.random()*4), b:"blackface"});
+for(let i=0;i<3;i++) G.forecast.push(WKEYS[Math.floor(Math.random()*WKEYS.length)]);
+
+const wx = () => WX[G.forecast[0]];
+const $ = id => document.getElementById(id);
+
+function say(t, cls=""){ G.log.unshift({t,cls}); if(G.log.length>60) G.log.pop(); }
+
+// fleece value curve: climbs to a peak around day 9, then mats and rots
+function grade(f){
+  if(f<=0) return {v:0, label:"bare"};
+  if(f<4)  return {v:f*0.5, label:"short"};
+  if(f<9)  return {v:f*1.0, label:"prime"};
+  if(f<12) return {v:9 - (f-9)*1.2, label:"heavy"};
+  return {v:Math.max(1, 5.4 - (f-12)*1.1), label:"matted"};
+}
+const flockValue = () => G.flock.reduce((a,s)=>a+grade(s.fleece).v*br(s).v,0);
+const ready = () => G.flock.filter(s=>s.fleece>=4).length;
+
+function buff(n,d){ G.buffs[n]=Math.max(G.buffs[n]||0,d); }
+const has = n => (G.buffs[n]||0) > 0;
+const own = n => !!G.upg[n];
+
+const UPGRADES = [
+  { id:"crook", name:"Shepherd's crook", cost:18,
+    what:"Gathering costs no tap." },
+  { id:"shears", name:"Blade shears", cost:32,
+    what:"Every fleece comes off a fifth heavier." },
+  { id:"boots", name:"Stout boots", cost:26,
+    what:"One more tap every day." },
+  { id:"dog", name:"Shetland sheepdog", cost:58,
+    what:"Works the flock in on her own each night. Foxes think twice." },
+  { id:"cart", name:"Pony and cart", cost:74,
+    what:"Market costs no tap." },
+  { id:"lamp", name:"Storm lantern", cost:44,
+    what:"One more tap every day. The evening stretches." },
+  { id:"sword", name:"Highland broadsword", cost:185,
+    what:"Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind." },
+  { id:"watch", name:"Brass pocket watch", cost:165,
+    what:"Set a day's work to it once and it will keep that day for you after." }
+];
+
+// the long road: a croft worth coming home to, and someone to come home to it
+const LIFE = [
+  { id:"roof",   name:"Slate the cottage roof", cost:240, need:null,
+    what:"The thatch has been letting water since before you came." },
+  { id:"hearth", name:"Build up the hearth",    cost:330, need:"roof",
+    what:"A proper fire, a settle, a place that is not just shelter." },
+  { id:"byre",   name:"Raise a stone byre",     cost:420, need:"hearth",
+    what:"Somewhere to bring them in out of the worst of it." },
+  { id:"ring",   name:"A silver ring, Inverness", cost:520, need:"byre",
+    what:"You have known for a while now. You just had nothing to offer." }
+];
+
+function baseTaps(){
+  return 3 + (own("boots")?1:0) + (own("lamp")?1:0) + (has("hale")?1:0);
+}
+function costOf(act){
+  if(act.id==="gather" && own("crook")) return 0;
+  if(act.id==="market" && own("cart"))  return 0;
+  return 1;
+}
+function buy(u){
+  if(G.money<u.cost || own(u.id)) return;
+  G.money-=u.cost; G.upg[u.id]=true;
+  say("Bought the "+u.name.toLowerCase()+" for £"+u.cost+".","gold"); sfx("buy");
+  if(u.id==="boots"||u.id==="lamp") G.taps++;
+  goTab("day"); render();
+}
+
+function buyLife(m){
+  if(G.money<m.cost || own(m.id)) return;
+  if(m.need && !own(m.need)) return;
+  G.money-=m.cost; G.upg[m.id]=true;
+  say("Paid £"+m.cost+". "+m.name+".","gold"); sfx("buy");
+  if(m.id==="ring") say("It is in your coat pocket now. You keep checking it is still there.","cozy");
+  goTab("day"); render();
+}
+
+function win(){
+  G.over=true;
+  $("ov-t").textContent="She said aye";
+  $("ov-p").textContent=
+    "Slated roof, a hearth, a byre of your own, and "+G.flock.length+
+    " sheep on the hill. You lasted "+G.day+" days, and you are not doing the rest of it alone.";
+  $("over").classList.add("on");
+}
+
+function buyEwe(key){
+  const b=BREEDS[key];
+  if(G.money<b.cost) return;
+  G.money-=b.cost;
+  G.flock.push({fleece:1, b:key});
+  say("Bought a "+b.name+" ewe for £"+b.cost+".","gold");
+  play("buysheep"); render();
+}
+
+function spend(n=1){
+  G.taps-=n; G.actsToday++;
+  // last chance to notice, one action before the wolf can be called
+  if(!own("pelt") && isFull(G.day) && G.at===2 && G.actsToday===4 && own("boots") && own("crook"))
+    say("The flock will not settle. Something is watching from above the corrie.","bad");
+  checkWolf(); render();
+}
+
+// the last wolf: crook, boots, the high ground, a full moon,
+// and a day worked from dark to dark. The sword is not what calls him.
+function checkWolf(){
+  if(own("pelt")) return;
+  if(!(own("boots") && own("crook"))) return;
+  if(G.at !== 2) return;
+  if(!isFull(G.day)) return;
+  if(G.actsToday < 5) return;
+  if(G.flock.length === 0) return;
+
+  if(own("sword")){
+    G.upg.pelt = true;
+    say("Something is standing on the skyline that is not a fox.","bad");
+    say("The last wolf in Scotland. You draw the broadsword.","gold");
+    say("You take the pelt. No fox will come near this ground again.","gold");
+    play("wolf");
+  } else {
+    const lost = G.flock.length - 1;
+    G.flock = [G.flock[0]];
+    say("Something is standing on the skyline that is not a fox.","bad");
+    say("The last wolf in Scotland, and nothing in your hands but a crook.","bad");
+    say("He went through them. "+lost+" gone. One ewe left standing.","bad");
+    play("wolflost");
+  }
+}
+
+const ACTIONS = [
+  { id:"gather", name:"Gather the flock", anim:"gather",
+    desc:()=> G.gatheredToday ? "Already gathered today." : "Bring them in close. Cuts tonight's fox risk hard.",
+    can:()=>!G.gatheredToday,
+    run(){ G.gatheredToday=true; say("You walk the ground and bring the flock in tight.","hi"); }
+  },
+  { id:"shear", name:"Shear", anim:"shear",
+    desc:()=>{ if(!wx().shear) return "Wet wool cannot be shorn. It would rot in the sack.";
+               const n=ready(); return n===0 ? "No fleece worth taking yet."
+               : n+" sheep ready &middot; about "+Math.round(flockValue())+" stone of wool"; },
+    can:()=> wx().shear && ready()>0,
+    run(){
+      let got=0, mat=0;
+      G.flock.forEach(s=>{ if(s.fleece>=4){ const g=grade(s.fleece); got+=g.v*br(s).v; if(g.label==="matted")mat++; s.fleece=0; } });
+      got = Math.round(got * (has("steady hands")?1.15:1) * (own("shears")?1.2:1));
+      G.wool += got;
+      say("Sheared. "+got+" stone into the sack."+(mat?" "+mat+" fleece came off matted.":""),"gold");
+      if(mat) say("Left too long. That wool will fetch little.","bad");
+    }
+  },
+  { id:"market", name:"Go to market", anim:"market",
+    desc:()=> G.wool===0 ? "Nothing in the sack to sell."
+             : G.wool+" stone &middot; "+priceToday()+"p a stone &middot; about £"+Math.round(G.wool*priceToday()/100),
+    can:()=> G.wool>0,
+    run(){
+      const p=priceToday(), take=Math.round(G.wool*p/100);
+      G.money+=take; say("Sold "+G.wool+" stone at "+p+"p. £"+take+" in the purse.","gold"); G.wool=0;
+      setTimeout(()=>sfx("coins"), 900);
+    }
+  },
+  { id:"tend", name:"Tend the flock", anim:"tend",
+    desc:()=>{ const at=G.flock.filter(s=>s.fleece>=11).length;
+      return at ? at+" carrying heavy fleece. Strike will take one if you leave it."
+                : "Check feet and fleece. Three days safe from strike, and they thrive on the attention."; },
+    can:()=>G.flock.length>0,
+    run(){ buff("tended",3); say("You go through them one by one. Feet, fleece, eyes.","hi"); }
+  },
+  { id:"muck", name:"Muck the pasture", anim:"muck",
+    desc:()=>{ const p=G.pastures[G.at];
+      return p.grass>85 ? "The "+p.n+" is in good heart already."
+                        : "Spread muck and lime on the "+p.n+". Brings the grass back fast."; },
+    can:()=>G.pastures[G.at].grass<=85,
+    run(){ const p=G.pastures[G.at];
+      p.grass=Math.min(p.cap,p.grass+38);
+      say("Muck and lime across the "+p.n+". It will come back green.","hi"); }
+  },
+  { id:"ask", name:"Walk down and ask her", anim:"pub", cozy:true,
+    desc:()=>{
+      const missing = LIFE.filter(m=>!own(m.id));
+      if(missing.length) return "Not yet. "+missing[0].name.toLowerCase()+" first.";
+      if(G.pubs<6) return "You hardly know her. "+G.pubs+" evening"+(G.pubs===1?"":"s")+" at the inn so far.";
+      return "The croft is finished and the ring is in your pocket. Go on.";
+    },
+    can:()=> LIFE.every(m=>own(m.id)) && G.pubs>=6,
+    run(){ G.asked=true; }
+  },
+  { id:"pipe", name:"Smoke a pipe", cozy:true, anim:"pipe",
+    desc:()=>"Free. Sit a while. Steadies your hands for tomorrow's shearing.",
+    can:()=>true,
+    run(){ buff("steady hands",2); say("You sit on the dyke and let the day go quiet.","cozy"); }
+  },
+  { id:"music", name:"Strike up the bagpipes", cozy:true, anim:"music",
+    desc:()=>"Free. The flock settles. Foxes are a shade warier for a night or two.",
+    can:()=>true,
+    run(){ buff("settled flock",2); say("The drone carries down the glen. The sheep stop fidgeting.","cozy"); }
+  },
+  { id:"pub", name:"A pint at the inn", cozy:true, anim:"pub",
+    desc:()=> G.money<8 ? "£8. You cannot spare it." : "£8. Two days hale and hearty: one more tap a day.",
+    can:()=> G.money>=8,
+    run(){ G.money-=8; buff("hale",3); G.pubs++;
+      say("£8 gone on beer and talk. Worth it, probably.","cozy");
+      if(G.pubs===2) say("The lass behind the bar knows your order now.","cozy");
+      if(G.pubs===4) say("She kept you talking well past when she should have been closing.","cozy");
+      // she wants to know there is something to come home to
+      if(G.pubs>=2){
+        if(!own("roof"))        say("She asked whether the roof still lets the rain in. You said it did.","cozy");
+        else if(!own("hearth")) say("She said a house with no proper fire is just four walls and a draught.","cozy");
+        else if(!own("byre"))   say("She asked where you'd put the flock come the bad weather. You had no answer.","cozy");
+        else if(!own("ring"))   say("She has stopped asking about the croft. She just looks at you now.","cozy");
+        else if(G.pubs<6)       say("The ring is burning a hole in your coat pocket.","cozy");
+      }
+    }
+  }
+];
+
+function priceToday(){
+  // wanders between 30p and 95p, seeded off the day so it is stable within a day
+  const x=Math.sin(G.day*1.7)*Math.cos(G.day*0.6);
+  return Math.round(62 + x*32);
+}
+
+function moveTo(i){
+  if(i===G.at){ say("They are already on the "+G.pastures[i].n+".","hi"); render(); return; }
+  if(G.taps<=0) return;
+  G.at=i; G.gatheredToday=false;
+  say("You drive the flock up to the "+G.pastures[i].n+".","hi");
+  noteRoutine({move:i}); play("move"); goTab("day"); spend();
+}
+
+function sleep(){
+  stopRecording(); G.running=false;
+  play("sleep", ()=>{ if(innerWidth<=760 && !G.over) goTab("glen"); });
+  const w=wx(), p=G.pastures[G.at];
+
+  // grazing
+  const eat=Math.min(p.grass, G.flock.length*4);
+  p.grass-=eat;
+  const fed = eat/(G.flock.length*4 || 1);
+  const growth = fed * p.quality * w.graze * (has("settled flock")?1.15:1) * (has("tended")?1.1:1);
+  G.flock.forEach(s=> s.fleece += growth * br(s).g);
+  if(fed<0.6) say("Grass is thin on the "+p.n+". The flock went hungry.","bad");
+
+  // flystrike takes the ones left too long in warm, still weather
+  const heavy = G.flock.filter(s=>s.fleece>=11);
+  if(heavy.length && !has("tended") && G.forecast[0]!=="rain" && Math.random()<0.3){
+    const worst = heavy.sort((a,b)=>b.fleece-a.fleece)[0];
+    G.flock.splice(G.flock.indexOf(worst),1);
+    say("Strike in a matted fleece. You found her too late.","bad");
+  }
+
+  if(own("dog") && !G.gatheredToday){
+    G.gatheredToday=true;
+    say("She brought them in herself while you were seeing to other things.","cozy");
+  }
+
+  // foxes
+  let risk;
+  if(own("pelt")) risk = 0.01;
+  else {
+    risk = p.risk * w.foxBias;
+    if(G.gatheredToday) risk *= 0.35;
+    if(own("dog")) risk *= 0.6;
+    if(has("settled flock")) risk *= 0.85;
+  }
+  if(Math.random()<risk && G.flock.length>0){
+    // the sheep is not gone until you have watched it go
+    QUEUE.push({type:"fox", onEnd:()=>{
+      G.flock.pop();
+      say(own("dog")
+        ? "A fox came off the hill. She drove it off, but not before it took one."
+        : "A fox came off the hill in the night. One sheep lost.","bad");
+      if(G.flock.length===0) return end("The last of them gone","You are a shepherd with no sheep. The croft goes quiet.");
+      render();
+    }});
+  }
+
+  // upkeep
+  const feed = Math.ceil(G.flock.length/2);
+  G.money -= feed;
+  if(feed) say("Winter feed and odds and ends: £"+feed+".");
+
+  // regrow, weather, buffs
+  G.pastures.forEach(x=>{
+    let r=x.regen; if(G.forecast[0]==="rain") r*=2.2; if(G.forecast[0]==="sun") r*=1.2;
+    x.grass=Math.min(x.cap, x.grass+r);
+  });
+  G.forecast.shift(); G.forecast.push(WKEYS[Math.floor(Math.random()*WKEYS.length)]);
+  Object.keys(G.buffs).forEach(k=>{ G.buffs[k]--; if(G.buffs[k]<=0) delete G.buffs[k]; });
+
+  G.day++; G.gatheredToday=false; G.actsToday=0;
+  G.taps = baseTaps();
+  say("— Day "+G.day+". "+wx().name+" over the glen. —","gold");
+  if(isFull(G.day) && !own("pelt"))
+    say("Full moon tonight. The high ground is no place to be caught out late.","bad");
+
+  if(G.flock.length===0) return end("The last of them gone","You are a shepherd with no sheep. The croft goes quiet.");
+  if(G.money<0)          return end("The purse is empty","You cannot feed them and you cannot feed yourself. You go back to the job you left.");
+  render();
+}
+
+function end(t,p){
+  G.over=true; $("ov-t").textContent=t;
+  $("ov-p").textContent=p+" You lasted "+G.day+" days.";
+  $("over").classList.add("on");
+}
+
+/* ---------- drawing ---------- */
+const cv=$("cv"), cx=cv.getContext("2d");
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const SHEP={x:214,y:96};
+
+// keep the pixel grid honest: pick an integer scale that fits the element
+function fitCanvas(){
+  const wCSS = cv.clientWidth || 468;
+  const scale = Math.max(1, Math.round(wCSS/468 * (window.devicePixelRatio||1)));
+  const W = 468, H = 150;
+  if(cv.width !== W*scale){
+    cv.width = W*scale; cv.height = H*scale;
+  }
+  cx.setTransform(scale,0,0,scale,0,0);
+  cx.imageSmoothingEnabled=false;
+  return {W,H};
+}
+let VIEW={W:468,H:150};
+addEventListener("resize", ()=>{ VIEW=fitCanvas(); });
+
+// animation state. p runs 0 -> 1 over dur ms.
+const A={type:null, start:0, dur:0, p:0, onEnd:null};
+const QUEUE=[];
+function play(type, onEnd){
+  const D={gather:1400, shear:1600, market:1900, pipe:2200, music:2000, pub:2600,
+           move:1200, sleep:2400, tend:1700, muck:1600, buysheep:1200, fox:2200, wolf:6000, wolflost:5000};
+  A.type=type; A.dur=REDUCED?1:(D[type]||1200); A.start=performance.now(); A.p=0;
+  A.onEnd=onEnd||null;
+  if(typeof SFX_FOR!=="undefined" && SFX_FOR[type]) sfx(SFX_FOR[type]);
+  if(type==="wolf") setTimeout(()=>sfx("wolf"), 400);
+  if(type==="wolflost") setTimeout(()=>sfx("bark"), 1500);
+  if(type==="fox" && own("dog")) setTimeout(()=>sfx("bark"), 900);
+}
+const busy = () => A.type!==null || QUEUE.length>0;
+const px=(x,y,w,h,c)=>{cx.fillStyle=c;cx.fillRect(x|0,y|0,w,h);};
+const ease = t => t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+
+function sheepHome(i){ return {x:16+(i%7)*62+(i>6?24:0), y:110+(i>6?20:0)}; }
+
+function drawSheep(x,y,s,shorn){
+  const g=grade(shorn?0:s.fleece), size=Math.min(9,4+g.v*0.5), b=br(s);
+  px(x,y,size+4,size, g.label==="matted" ? "#a49b80" : b.wool);
+  px(x+size+2,y-2,4,4,b.face);
+  px(x+1,y+size,2,3,b.face); px(x+size,y+size,2,3,b.face);
+}
+
+function drawShepherd(o={}){
+  const x=SHEP.x, y=SHEP.y+(o.dy||0);
+  px(x+2,y+20,3,6,"#3a3129"); px(x+7,y+20,3,6,"#3a3129");   // boots
+  px(x,y+8,12,13,"#4a4f3c");                                 // coat
+  px(x+3,y+2,7,7,"#c9a583");                                 // face
+  px(x+2,y,9,3,"#2f3327");                                   // bunnet
+  if(o.crook) for(let i=0;i<9;i++) px(x+14,y+2+i*2,2,2,"#6b5433");
+  if(o.arm)   px(x+11,y+9,4,3,"#c9a583");
+}
+
+function drawBase(){
+  const w=wx(), W=VIEW.W, H=VIEW.H;
+  px(0,0,W,H,w.sky);
+
+  const hills=[{c:"#2c3630",y:62,a:16},{c:"#333f33",y:76,a:11}];
+  hills.forEach((h,hi)=>{ for(let x=0;x<W;x+=4){
+    const y=h.y+Math.round(Math.sin((x/W)*4+hi*2)*h.a);
+    px(x,y,4,H-y,h.c);
+  }});
+
+  const p=G.pastures[G.at], lush=p.grass/p.cap;
+  px(0,96,W,H-96, lush>0.6?"#6d8a4b":lush>0.3?"#5c6f42":"#5a5638");
+  for(let x=0;x<W;x+=8) px(x,96+((x/8)%2?2:0),4,2,"#4e6339");
+
+  for(let x=0;x<W;x+=6){ px(x,88,5,7,"#6d7263"); px(x+3,83,5,5,"#6d7263"); }
+}
+
+function drawWeather(){
+  const W=VIEW.W,H=VIEW.H, t=performance.now();
+  if(G.forecast[0]==="rain"){ cx.fillStyle="rgba(150,180,200,.30)";
+    for(let i=0;i<130;i++){ const x=(i*37+t*0.25)%W, y=(i*53+t*0.6)%H; cx.fillRect(x|0,y|0,1,5); } }
+  if(G.forecast[0]==="mist"){ cx.fillStyle="rgba(200,205,200,.22)";
+    cx.fillRect(0,40+Math.sin(t/900)*3,W,H-40); }
+}
+
+function drawScene(){
+  drawBase();
+  const p=A.p, k=A.type;
+
+  // --- pub and the fox raid take over the whole frame ---
+  if(k==="pub"){ drawPub(p); return; }
+  if(k==="fox"){ drawFoxRaid(p); return; }
+  if(k==="wolf"){ drawWolf(p, true); return; }
+  if(k==="wolflost"){ drawWolf(p, false); return; }
+
+  // sheep, with per-animation displacement
+  G.flock.slice(0,14).forEach((s,i)=>{
+    const h=sheepHome(i); let x=h.x, y=h.y, shorn=false;
+    if(k==="gather"){ const e=ease(Math.min(1,p*1.3));
+      x=h.x+(SHEP.x-24+(i%5)*14-h.x)*e; y=h.y+(118-h.y)*e; }
+    if(k==="move"){ x=h.x-(1-ease(p))*140; }
+    if(k==="shear"){ const turn=i/Math.max(1,G.flock.length);
+      shorn = s.fleece===0 && p>turn*0.7;
+      if(Math.abs(p-turn*0.7)<0.08) y=h.y-2; }
+    if(k==="music"){ y=h.y-Math.abs(Math.sin(p*Math.PI*3+i))*2; }
+    drawSheep(x,y,s,shorn);
+  });
+
+  if(k==="shear")  drawShear(p);
+  if(k==="market") drawMarket(p);
+  if(k==="pipe")   drawPipe(p);
+  if(k==="music")  drawMusic(p);
+  if(k==="tend")   drawTend(p);
+  if(k==="muck")   drawMuck(p);
+  if(k==="buysheep") drawBuySheep(p);
+  if(k==="gather") drawShepherd({crook:true, dy:Math.sin(p*Math.PI*4)});
+  if(k==="move")   drawShepherd({crook:true, dy:Math.sin(p*Math.PI*8)});
+  if(k==="sleep")  { drawShepherd({}); if(own("dog")) drawDog(SHEP.x-28,116,0); drawNight(p); }
+  if(!k) drawShepherd({crook:true});
+
+  // the sheltie, once she's bought
+  if(own("dog") && k!=="sleep"){
+    if(k==="gather")      drawDog(SHEP.x-60+ease(p)*70, 118, p);
+    else if(k==="move")   drawDog(SHEP.x-34+Math.sin(p*Math.PI*4)*6, 118, p);
+    else if(k==="muck")   drawDog(SHEP.x-30, 118, 0);
+    else                  drawDog(SHEP.x-28, 116+ (Math.sin(performance.now()/700)>0?0:1), 0);
+  }
+
+  drawWeather();
+}
+
+/* --- per action set pieces --- */
+
+function drawShear(p){
+  drawShepherd({arm:true, dy:Math.sin(p*Math.PI*10)*0.6});
+  // shears snipping at the shepherd's hands
+  const open=Math.sin(p*Math.PI*12)>0?2:0;
+  px(SHEP.x+15,SHEP.y+9-open,6,2,"#b9bcae");
+  px(SHEP.x+15,SHEP.y+12+open,6,2,"#b9bcae");
+  // wool tufts drifting off
+  for(let i=0;i<14;i++){
+    const t=(p*1.5+i/14)%1;
+    px(SHEP.x+18+i*9-t*10, 108-t*34, 3,3, t>0.8?"rgba(221,217,200,.35)":"#ddd9c8");
+  }
+}
+
+function drawMarket(p){
+  const x=-70+p*(VIEW.W+140);
+  drawShepherd({crook:true, dy:Math.sin(p*Math.PI*10)});
+  // handcart of wool sacks rolling to town
+  px(x,104,34,12,"#6b5433");
+  px(x+4,96,10,9,"#ddd9c8"); px(x+17,94,11,11,"#ddd9c8");
+  const spin=Math.sin(p*22)>0;
+  px(x+4,116,7,7,"#3f3527"); px(x+24,116,7,7,"#3f3527");
+  px(x+6,118+(spin?0:3),3,1,"#7a6a4a"); px(x+26,118+(spin?0:3),3,1,"#7a6a4a");
+  // coins on the way back
+  if(p>0.55) for(let i=0;i<7;i++){
+    const t=(p-0.55)/0.45, yy=120-Math.sin(t*Math.PI)*(26+i*3);
+    px(SHEP.x-30+i*11, yy, 4,4, "#e0a33c");
+  }
+}
+
+function drawPipe(p){
+  drawShepherd({dy: p>0.15?1:0});
+  // sat on the dyke, pipe in hand
+  px(SHEP.x+11,SHEP.y+6,4,2,"#6b5433"); px(SHEP.x+15,SHEP.y+4,3,4,"#4a3a24");
+  // smoke curling and thinning
+  for(let i=0;i<9;i++){
+    const t=(p*1.1+i/9)%1;
+    const rise=t*46, sway=Math.sin(t*7+i)*7, sz=2+t*4;
+    cx.fillStyle="rgba(214,214,204,"+(0.55*(1-t)).toFixed(2)+")";
+    cx.fillRect((SHEP.x+16+sway)|0,(SHEP.y+2-rise)|0,sz,sz);
+  }
+}
+
+function drawMusic(p){
+  drawShepherd({arm:true});
+  // the bag under the arm, drones over the shoulder
+  px(SHEP.x+11,SHEP.y+9,9,8,"#7d4a4a");
+  px(SHEP.x+13,SHEP.y-2,2,11,"#6b5433"); px(SHEP.x+17,SHEP.y-5,2,14,"#6b5433");
+  px(SHEP.x+13,SHEP.y-4,2,2,"#c9c3ae");  px(SHEP.x+17,SHEP.y-7,2,2,"#c9c3ae");
+  // the drone, as rings rolling out across the glen
+  for(let i=0;i<5;i++){
+    const t=(p*1.4+i/5)%1;
+    cx.fillStyle="rgba(138,106,156,"+(0.5*(1-t)).toFixed(2)+")";
+    const r=t*130;
+    cx.fillRect((SHEP.x+8-r)|0,(SHEP.y+4)|0,3,3);
+    cx.fillRect((SHEP.x+22+r)|0,(SHEP.y+4)|0,3,3);
+    cx.fillRect((SHEP.x+14)|0,(SHEP.y+4-r*0.45)|0,3,3);
+  }
+}
+
+function drawTend(p){
+  // crouched over one after another, checking feet and fleece
+  const idx=Math.floor(p*3)%3, bob=Math.sin(p*Math.PI*12)*0.8;
+  drawShepherd({arm:true, dy:6+bob});
+  px(SHEP.x+12,SHEP.y+13,5,3,"#c9a583");
+  for(let i=0;i<5;i++){
+    const t=(p*1.6+i/5)%1;
+    cx.fillStyle="rgba(125,154,85,"+(0.7*(1-t)).toFixed(2)+")";
+    cx.fillRect((SHEP.x+6+i*7)|0,(SHEP.y+10-t*22)|0,2,2);
+  }
+  if(idx>0) px(SHEP.x-14-idx*4,SHEP.y+16,3,3,"#e0a33c");
+}
+
+function drawMuck(p){
+  const x=20+ease(p)*(VIEW.W-90);
+  drawShepherd({dy:Math.sin(p*Math.PI*14)*0.7});
+  // barrow being pushed, muck flung out behind
+  px(x,110,22,9,"#5b4a30"); px(x+3,104,15,7,"#3f3324");
+  px(x+2,119,6,6,"#3f3527");
+  for(let i=0;i<16;i++){
+    const t=(p*2+i/16)%1, sx=x-t*40+i*3, sy=112-Math.sin(t*Math.PI)*13;
+    px(sx,sy,3,3, t<0.5 ? "#4a3a24" : "#6d8a4b");
+  }
+  // fresh growth left in the wake
+  for(let i=0;i<Math.floor(p*14);i++) px(24+i*30,124,3,5,"#8fae5f");
+}
+
+function drawBuySheep(p){
+  // a new ewe walks in from the road and joins the flock
+  const x=-20+ease(Math.min(1,p*1.2))*(SHEP.x-40);
+  drawShepherd({crook:true});
+  const s={fleece:1, b:G.flock.length?G.flock[G.flock.length-1].b:"blackface"};
+  drawSheep(x,116-Math.abs(Math.sin(p*Math.PI*7))*2,s,false);
+  if(p>0.7) for(let i=0;i<4;i++){
+    const t=(p-0.7)/0.3;
+    cx.fillStyle="rgba(224,163,60,"+(0.6*(1-t)).toFixed(2)+")";
+    cx.fillRect((x+4+i*6)|0,(110-t*18)|0,2,2);
+  }
+}
+
+// tricolour sheltie: black saddle, tan points, white blaze, collar and socks
+function drawDog(x,y,run){
+  const leg = run ? (Math.sin(run*Math.PI*10)>0?0:2) : 0;
+  px(x+1,y+7,2,4,"#f0ece0"); px(x+8,y+7-leg,2,4,"#f0ece0");   // socks
+  px(x+4,y+7+leg,2,4,"#f0ece0"); px(x+11,y+7,2,4,"#f0ece0");
+  px(x+1,y+2,13,6,"#241f1c");                                  // black saddle
+  px(x+1,y+6,13,2,"#b07a3e");                                  // tan underline
+  px(x+13,y,6,6,"#241f1c");                                    // head
+  px(x+15,y+3,4,3,"#b07a3e");                                  // tan muzzle
+  px(x+16,y+1,3,1,"#f0ece0");                                  // blaze
+  px(x+13,y-2,2,3,"#241f1c"); px(x+17,y-2,2,3,"#241f1c");      // ears
+  px(x+1,y+1,4,3,"#f0ece0");                                   // ruff
+  const tail = run ? Math.sin(run*Math.PI*8)*2 : 0;
+  px(x-4,y+1+tail,5,3,"#241f1c"); px(x-6,y+2+tail,2,2,"#f0ece0");
+}
+
+function drawFox(x,y,run){
+  const leg = Math.sin(run*Math.PI*14)>0?0:2;
+  px(x+2,y+6,2,4,"#2b201a"); px(x+8,y+6-leg,2,4,"#2b201a");
+  px(x+5,y+6+leg,2,4,"#2b201a"); px(x+10,y+6,2,4,"#2b201a");
+  px(x+1,y+2,12,5,"#b4472c");                                  // body
+  px(x+12,y,5,5,"#b4472c");                                    // head
+  px(x+16,y+2,3,2,"#2b201a");                                  // snout
+  px(x+12,y-2,2,3,"#8f3623"); px(x+15,y-2,2,3,"#8f3623");      // ears
+  px(x-6,y+1,7,3,"#b4472c"); px(x-8,y+1,3,3,"#f0ece0");        // brush
+}
+
+function drawFoxRaid(p){
+  const W=VIEW.W;
+  // deep night, one lantern's worth of light
+  cx.fillStyle="rgba(8,10,20,.86)"; cx.fillRect(0,0,W,VIEW.H);
+  for(let i=0;i<20;i++) px((i*97)%W,(i*41)%50,2,2,"rgba(210,215,235,.55)");
+  const mi=moonIdx(G.day), mp=moonPos(mi);
+  drawMoon(mp.x|0, mp.y|0, 7, mi, 0.85);
+
+  const dog=own("dog");
+  // fox comes down off the hill, takes one, and goes back up
+  const outbound = p<0.55;
+  const fx = outbound ? -30+ (p/0.55)*(W*0.55) : W*0.55 - ((p-0.55)/0.45)*(W*0.75);
+  const fy = 108 + Math.sin(p*Math.PI*6)*2;
+
+  // flock scattering away from it
+  G.flock.slice(0,10).forEach((s,i)=>{
+    const h=sheepHome(i);
+    const flee = Math.max(0, 1-Math.abs(h.x-fx)/120) * ease(Math.min(1,p*1.6));
+    drawSheep(h.x + (h.x<fx?-1:1)*flee*36, h.y - flee*3, s, false);
+  });
+
+  drawFox(fx, fy, p);
+  // the one it carries off
+  if(!outbound) px(fx+16,fy+2,7,5,"#cfcab8");
+
+  if(dog){
+    const dx = 40 + ease(Math.min(1,p*1.1))*(W*0.45);
+    drawDog(dx, 112, p);
+    if(p>0.6) for(let i=0;i<5;i++){
+      const t=(p-0.6)/0.4;
+      cx.fillStyle="rgba(240,236,224,"+(0.5*(1-t)).toFixed(2)+")";
+      cx.fillRect((dx+20+i*8)|0,(106-t*14)|0,2,2);
+    }
+  }
+  drawShepherd({dy:2});
+}
+
+function drawWolf(p, armed){
+  const W=VIEW.W, H=VIEW.H;
+  cx.fillStyle="#080a14"; cx.fillRect(0,0,W,H);
+  for(let i=0;i<40;i++) px((i*83)%W,(i*29)%62,2,2,"rgba(215,220,240,.65)");
+
+  // the full moon, low and enormous over the corrie
+  const mp2=moonPos(4);
+  drawMoon(mp2.x|0, 30, 17, 4, 1);
+
+  // hill line
+  for(let x=0;x<W;x+=4){
+    const y=70+Math.round(Math.sin((x/W)*3.2)*13);
+    px(x,y,4,H-y,"#111524");
+  }
+  px(0,100,W,H-100,"#161b26");
+
+  const stage = p<0.34 ? 0 : p<0.5 ? 1 : p<0.62 ? 2 : 3;
+
+  // ---- unarmed: he keeps coming, and the flock is scattered ----
+  if(!armed){
+    const wx1 = 300 - ease(Math.min(1,p/0.6))*200;
+    const leg=Math.sin(p*Math.PI*18)>0?0:3;
+    // flock breaking in every direction
+    for(let i=0;i<9;i++){
+      const gone = p>0.45+i*0.05;
+      if(gone) continue;
+      const hx=30+i*46, run=ease(Math.min(1,p*1.4))*70;
+      drawSheep(hx-(hx<wx1?run:-run), 118-Math.abs(Math.sin(p*9+i))*3, {fleece:6,b:"blackface"}, false);
+    }
+    // one ewe left, close to him
+    if(p>0.6) drawSheep(96,120,{fleece:6,b:"blackface"},false);
+
+    px(wx1+3,92+9,3,7,"#0d0f16"); px(wx1+11,92+9-leg,3,7,"#0d0f16");
+    px(wx1+7,92+9+leg,3,7,"#0d0f16"); px(wx1+15,92+9,3,7,"#0d0f16");
+    px(wx1,93,20,9,"#22252f");
+    px(wx1+18,89,9,8,"#22252f"); px(wx1+25,93,4,3,"#0d0f16");
+    px(wx1+18,85,3,5,"#22252f"); px(wx1+23,85,3,5,"#22252f");
+    px(wx1+21,91,2,2,"#d8a23c"); px(wx1+25,91,2,2,"#d8a23c");
+    px(wx1-9,91,10,4,"#22252f");
+
+    // the shepherd, empty-handed, backing off
+    const sx2=76+Math.sin(p*Math.PI*6)*2, sy2=88;
+    px(sx2+2,sy2+20,3,6,"#2a2620"); px(sx2+7,sy2+20,3,6,"#2a2620");
+    px(sx2,sy2+8,12,13,"#3b4030");
+    px(sx2+3,sy2+2,7,7,"#9d8368"); px(sx2+2,sy2,9,3,"#23261d");
+    for(let i=0;i<9;i++) px(sx2+14,sy2+4+i*2,2,2,"#6b5433"); // just the crook
+    if(p>0.75){ cx.fillStyle="rgba(180,71,44,"+(0.22*Math.sin((p-0.75)/0.25*Math.PI)).toFixed(2)+")";
+      cx.fillRect(0,0,W,H); }
+    return;
+  }
+
+  // wolf comes down the skyline, far bigger than any fox
+  const wx0 = 300 - ease(Math.min(1,p/0.34))*110;
+  const wy0 = 92;
+  if(stage<3){
+    const leg=Math.sin(p*Math.PI*16)>0?0:3;
+    px(wx0+3,wy0+9,3,7,"#0d0f16"); px(wx0+11,wy0+9-leg,3,7,"#0d0f16");
+    px(wx0+7,wy0+9+leg,3,7,"#0d0f16"); px(wx0+15,wy0+9,3,7,"#0d0f16");
+    px(wx0,wy0+1,20,9,"#22252f");                  // body
+    px(wx0+18,wy0-3,9,8,"#22252f");                // head
+    px(wx0+25,wy0+1,4,3,"#0d0f16");                // muzzle
+    px(wx0+18,wy0-7,3,5,"#22252f"); px(wx0+23,wy0-7,3,5,"#22252f");
+    px(wx0+21,wy0-1,2,2,"#d8a23c"); px(wx0+25,wy0-1,2,2,"#d8a23c"); // eyes
+    px(wx0-9,wy0-1,10,4,"#22252f");                // tail
+  }
+
+  // the shepherd, sword drawn
+  const sx=110, sy=88;
+  px(sx+2,sy+20,3,6,"#2a2620"); px(sx+7,sy+20,3,6,"#2a2620");
+  px(sx,sy+8,12,13,"#3b4030");
+  px(sx+3,sy+2,7,7,"#9d8368"); px(sx+2,sy,9,3,"#23261d");
+
+  // broadsword: raised, then swung
+  if(stage<2){
+    px(sx+13,sy-14,3,20,"#cdd3d8"); px(sx+11,sy+5,7,3,"#8a6a3c"); // blade up
+    if(stage===1) for(let i=0;i<6;i++) px(sx+14,sy-16-i*2,3,2,"rgba(232,236,214,"+(0.6-i*0.09)+")");
+  } else {
+    px(sx+13,sy+4,22,3,"#cdd3d8"); px(sx+11,sy+2,4,7,"#8a6a3c"); // blade across
+  }
+
+  // the clash
+  if(stage===2){
+    const t=(p-0.5)/0.12;
+    for(let i=0;i<14;i++){
+      const a=i/14*Math.PI*2, d=t*30;
+      cx.fillStyle="rgba(232,236,214,"+(0.9*(1-t)).toFixed(2)+")";
+      cx.fillRect((wx0+6+Math.cos(a)*d)|0,(wy0+4+Math.sin(a)*d)|0,3,3);
+    }
+    cx.fillStyle="rgba(255,255,240,"+(0.55*(1-t)).toFixed(2)+")"; cx.fillRect(0,0,W,H);
+  }
+
+  // the pelt, laid over his shoulder
+  if(stage===3){
+    const t=(p-0.62)/0.38;
+    px(sx-4,sy+6,20,10,"#3a3d47");
+    px(sx-8,sy+8,5,5,"#22252f");
+    for(let i=0;i<10;i++){
+      const q=(t+i/10)%1;
+      cx.fillStyle="rgba(138,106,156,"+(0.55*(1-q)).toFixed(2)+")";
+      cx.fillRect((sx-14+i*7)|0,(sy+4-q*30)|0,3,3);
+    }
+  }
+}
+
+function drawPub(p){
+  const W=VIEW.W,H=VIEW.H;
+  // fade the glen out, the room in
+  const inRoom=Math.min(1, p<0.15 ? p/0.15 : p>0.85 ? (1-p)/0.15 : 1);
+  cx.fillStyle="rgba(20,23,15,"+inRoom.toFixed(2)+")"; cx.fillRect(0,0,W,H);
+  if(inRoom<0.9) return;
+
+  px(0,0,W,H,"#2a2018");
+  // wall boards and a low fire
+  for(let x=0;x<W;x+=26) px(x,0,2,H,"#221a13");
+  px(30,84,54,46,"#3a2c1e"); px(38,104,38,22,"#e0a33c");
+  px(44,110,26,14,"#f0c86a");
+  // bar
+  px(120,96,W-150,10,"#4a3826"); px(120,106,W-150,34,"#33261a");
+  // the shepherd at the bar, back to us
+  px(196,64,14,34,"#4a4f3c"); px(198,58,10,7,"#2f3327");
+  // the pint, filling
+  const fill=Math.min(1,Math.max(0,(p-0.3)/0.4));
+  px(228,74,14,24,"#9aa3a5");
+  px(230,96-fill*20,10,fill*20,"#c98a2e");
+  if(fill>0.9) px(230,74,10,4,"#f2eddb");
+  // a few blether-marks from the corner
+  for(let i=0;i<4;i++){
+    const t=(p*1.3+i/4)%1;
+    cx.fillStyle="rgba(224,163,60,"+(0.4*(1-t)).toFixed(2)+")";
+    cx.fillRect((300+i*14)|0,(70-t*30)|0,3,3);
+  }
+}
+
+// the moon, drawn at its actual phase and carried across the sky as the cycle turns
+function moonPos(idx){
+  return { x: 34 + idx*((VIEW.W-68)/7), y: 44 - Math.sin(idx/7*Math.PI)*26 };
+}
+function drawMoon(mx,my,r,idx,alpha){
+  const p = idx/8, a = Math.cos(2*Math.PI*p), waxing = p < 0.5;
+  for(let y=-r;y<=r;y++){
+    const lim = Math.sqrt(Math.max(0, r*r - y*y));
+    for(let x=-r;x<=r;x++){
+      if(x*x+y*y > r*r) continue;
+      const nx=x/r, ny=y/r, edge=a*Math.sqrt(Math.max(0,1-ny*ny));
+      const lit = waxing ? nx > edge : nx < -edge;
+      if(lit) px(mx+x,my+y,1,1,"rgba(232,236,214,"+alpha.toFixed(2)+")");
+      else    px(mx+x,my+y,1,1,"rgba(46,52,64,"+(alpha*0.5).toFixed(2)+")");
+    }
+  }
+  // maria, only where they'd be lit
+  if(idx>=3 && idx<=5){
+    px(mx-Math.round(r*0.35),my-Math.round(r*0.25),Math.max(1,r>>2),Math.max(1,r>>2),"rgba(215,219,196,"+alpha.toFixed(2)+")");
+    px(mx+Math.round(r*0.2),my+Math.round(r*0.3),Math.max(1,r>>2),Math.max(1,r>>2),"rgba(215,219,196,"+alpha.toFixed(2)+")");
+  }
+}
+
+function drawNight(p){
+  const W=VIEW.W,H=VIEW.H;
+  // dusk down, then dawn back up
+  const dark=Math.sin(p*Math.PI);
+  cx.fillStyle="rgba(8,10,20,"+(dark*0.88).toFixed(2)+")"; cx.fillRect(0,0,W,H);
+  if(dark>0.35){
+    const a=(dark-0.35)/0.65;
+    for(let i=0;i<26;i++){
+      const x=(i*97)%W, y=(i*41)%56, tw=Math.sin(performance.now()/300+i)>0?1:0.5;
+      cx.fillStyle="rgba(220,225,240,"+(a*tw*0.9).toFixed(2)+")";
+      cx.fillRect(x,y,2,2);
+    }
+    // tonight's moon, in its place on the arc
+    const idx=moonIdx(G.day), pos=moonPos(idx);
+    drawMoon(pos.x|0, pos.y|0, isFull(G.day)?9:7, idx, a);
+  }
+}
+
+function loop(){
+  if(A.type){
+    A.p=(performance.now()-A.start)/A.dur;
+    if(A.p>=1){
+      const cb=A.onEnd; A.onEnd=null;
+      if(QUEUE.length){ const n=QUEUE.shift(); play(n.type, n.onEnd); }
+      else { A.type=null; A.p=0; render(); }
+      if(cb) cb();
+    }
+  }
+  if(!G.over) drawScene();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- sound ---------- */
+const SND = {
+  ac:null, on:true, master:null, music:null, sfx:null, verb:null,
+  timer:null, step:0, started:false
+};
+
+function audioInit(){
+  if(SND.ac) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  const ac = SND.ac = new AC();
+
+  // a small hall, built from decaying noise
+  const len = ac.sampleRate*2.1, ir = ac.createBuffer(2,len,ac.sampleRate);
+  for(let c=0;c<2;c++){ const d=ir.getChannelData(c);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6); }
+  const verb = SND.verb = ac.createConvolver(); verb.buffer = ir;
+  const verbGain = ac.createGain(); verbGain.gain.value = 0.34;
+
+  const master = SND.master = ac.createGain(); master.gain.value = 0.85;
+  // tape-ish top end roll-off
+  const tone = ac.createBiquadFilter(); tone.type="lowpass"; tone.frequency.value=3200; tone.Q.value=0.4;
+
+  SND.music = ac.createGain(); SND.music.gain.value = 0.30;
+  SND.sfx   = ac.createGain(); SND.sfx.gain.value   = 0.55;
+
+  SND.music.connect(tone); SND.sfx.connect(tone);
+  tone.connect(master);
+  tone.connect(verb); verb.connect(verbGain); verbGain.connect(master);
+  master.connect(ac.destination);
+
+  startMusic();
+}
+
+const now = () => SND.ac.currentTime;
+
+// plucked string, harp-ish: two detuned voices under a fast decay
+function pluck(freq, t, dur=1.5, gain=0.5, bus){
+  const ac=SND.ac, out=ac.createGain();
+  out.gain.setValueAtTime(0,t);
+  out.gain.linearRampToValueAtTime(gain,t+0.008);
+  out.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  const lp=ac.createBiquadFilter(); lp.type="lowpass";
+  lp.frequency.setValueAtTime(Math.min(6000,freq*7),t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(220,freq*1.6),t+dur*0.7);
+  [[0,"triangle",1],[7,"sine",0.55],[-6,"triangle",0.3]].forEach(([det,type,lvl])=>{
+    const o=ac.createOscillator(); o.type=type; o.frequency.value=freq; o.detune.value=det;
+    const g=ac.createGain(); g.gain.value=lvl;
+    o.connect(g); g.connect(lp); o.start(t); o.stop(t+dur+0.05);
+  });
+  lp.connect(out); out.connect(bus||SND.music);
+}
+
+function drone(freq, t, dur, gain=0.16){
+  const ac=SND.ac, g=ac.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(gain,t+0.9);
+  g.gain.setValueAtTime(gain,t+dur-1.2);
+  g.gain.linearRampToValueAtTime(0,t+dur);
+  const lp=ac.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=900;
+  [1,1.5,2].forEach((m,i)=>{
+    const o=ac.createOscillator(); o.type= i===1?"sine":"sawtooth";
+    o.frequency.value=freq*m; o.detune.value=(i-1)*5;
+    const og=ac.createGain(); og.gain.value=[0.5,0.28,0.16][i];
+    o.connect(og); og.connect(lp); o.start(t); o.stop(t+dur+0.1);
+  });
+  // slow tape wobble
+  const lfo=ac.createOscillator(); lfo.frequency.value=0.23;
+  const la=ac.createGain(); la.gain.value=4;
+  lfo.connect(la); la.connect(lp.detune); lfo.start(t); lfo.stop(t+dur+0.1);
+  lp.connect(g); g.connect(SND.music);
+}
+
+function noiseBurst(t, dur, type, f, q, gain, bus){
+  const ac=SND.ac, n=Math.max(1,Math.floor(ac.sampleRate*dur));
+  const b=ac.createBuffer(1,n,ac.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1);
+  const s=ac.createBufferSource(); s.buffer=b;
+  const bp=ac.createBiquadFilter(); bp.type=type; bp.frequency.value=f; bp.Q.value=q;
+  const g=ac.createGain();
+  g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(bp); bp.connect(g); g.connect(bus||SND.sfx); s.start(t); s.stop(t+dur+0.02);
+  return g;
+}
+
+function tone1(t,f0,f1,dur,type,gain,bus){
+  const ac=SND.ac, o=ac.createOscillator(), g=ac.createGain();
+  o.type=type||"sine";
+  o.frequency.setValueAtTime(f0,t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(gain,t+Math.min(0.05,dur*0.2));
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(bus||SND.sfx); o.start(t); o.stop(t+dur+0.05);
+  return o;
+}
+
+/* --- the score: D dorian, 68bpm, sparse --- */
+const HZ = n => 440*Math.pow(2,(n-69)/12);
+const PENT = [62,64,66,69,71,74,76,78,81];   // D E F# A B D E F# A
+const LOWS = [38,45,50];                      // D2 A2 D3
+
+function startMusic(){
+  if(SND.timer) return;
+  const beat = 60/68;
+  let bar = 0, next = now()+0.15;
+  SND.timer = setInterval(()=>{
+    if(!SND.ac || SND.ac.state==="suspended") return;
+    while(next < now()+0.6){
+      const t = next, night = A.type==="sleep"||A.type==="fox"||A.type==="wolf";
+      const wet = G.forecast && G.forecast[0]==="rain";
+
+      // drone changes every 4 bars
+      if(bar % 4 === 0) drone(HZ(LOWS[(bar/4)%3===2?1:0]), t, beat*4*4, night?0.20:0.14);
+
+      // a soft pulse on 1 and 3
+      noiseBurst(t, 0.11, "lowpass", night?150:220, 1, night?0.05:0.09);
+      noiseBurst(t+beat*2, 0.07, "bandpass", 1900, 2, 0.025);
+
+      // melody: sparse random walk, quieter at night, sparser in rain
+      const density = night ? 0.35 : wet ? 0.42 : 0.6;
+      for(let s=0; s<8; s++){
+        if(Math.random() > density/2.4) continue;
+        const idx = Math.max(0, Math.min(PENT.length-1,
+          Math.round(3 + Math.sin(bar*0.7+s*0.9)*2.2 + (Math.random()*2-1)*1.4)));
+        pluck(HZ(PENT[idx]), t+s*(beat/2), 1.5+Math.random(), night?0.22:0.32);
+        if(Math.random()<0.16) pluck(HZ(PENT[idx]+7), t+s*(beat/2)+0.03, 1.2, 0.13);
+      }
+      next += beat*4; bar++;
+    }
+  }, 140);
+}
+
+/* --- effects --- */
+const FX = {
+  bleat(){ const t=now();
+    const o=tone1(t,330,250,0.42,"sawtooth",0.16);
+    const lfo=SND.ac.createOscillator(); lfo.frequency.value=22;
+    const g=SND.ac.createGain(); g.gain.value=26;
+    lfo.connect(g); g.connect(o.frequency); lfo.start(t); lfo.stop(t+0.42);
+  },
+  snip(){ const t=now();
+    noiseBurst(t,0.05,"bandpass",4200,7,0.30);
+    noiseBurst(t+0.12,0.05,"bandpass",3600,7,0.24); },
+  coins(){ const t=now();
+    [0,0.07,0.15,0.25].forEach((d,i)=> tone1(t+d, 1500+i*180, 900, 0.22, "triangle", 0.13)); },
+  fox(){ const t=now();
+    tone1(t,900,420,0.16,"sawtooth",0.2); tone1(t+0.2,980,460,0.13,"sawtooth",0.16); },
+  wolf(){ const t=now();
+    const o=tone1(t,180,300,2.6,"sawtooth",0.22);
+    o.frequency.setValueAtTime(180,t);
+    o.frequency.linearRampToValueAtTime(330,t+0.6);
+    o.frequency.setValueAtTime(330,t+1.7);
+    o.frequency.linearRampToValueAtTime(200,t+2.6);
+    const lfo=SND.ac.createOscillator(); lfo.frequency.value=5.2;
+    const g=SND.ac.createGain(); g.gain.value=7;
+    lfo.connect(g); g.connect(o.frequency); lfo.start(t); lfo.stop(t+2.6); },
+  bark(){ const t=now();
+    tone1(t,420,180,0.13,"square",0.14); noiseBurst(t,0.09,"bandpass",900,2,0.16); },
+  sword(){ const t=now();
+    noiseBurst(t,0.5,"highpass",2600,1,0.34);
+    tone1(t,2400,900,0.5,"triangle",0.16); },
+  pipes(){ const t=now();
+    drone(HZ(50),t,2.0,0.10);
+    [62,69,74,76,74,69].forEach((n,i)=>{
+      const o=tone1(t+0.15+i*0.28, HZ(n), HZ(n), 0.3, "sawtooth", 0.10);
+    }); },
+  pipe(){ const t=now(); noiseBurst(t,0.9,"lowpass",520,0.7,0.06); },
+  pub(){ const t=now();
+    const g=noiseBurst(t,2.2,"bandpass",700,0.8,0.10);
+    tone1(t+0.9,760,700,0.14,"sine",0.10);
+    tone1(t+1.05,640,600,0.18,"sine",0.09); },
+  cart(){ const t=now();
+    for(let i=0;i<9;i++) noiseBurst(t+i*0.16,0.1,"bandpass",300+((i%2)*120),3,0.10); },
+  muck(){ const t=now();
+    for(let i=0;i<5;i++) noiseBurst(t+i*0.22,0.16,"lowpass",420,1,0.11); },
+  night(){ const t=now(); noiseBurst(t,2.2,"lowpass",320,0.6,0.10); },
+  buy(){ const t=now();
+    tone1(t,880,880,0.1,"triangle",0.12); tone1(t+0.1,1320,1320,0.16,"triangle",0.11); }
+};
+
+const SFX_FOR = {
+  gather:"bleat", shear:"snip", market:"cart", tend:"bleat", muck:"muck",
+  pipe:"pipe", music:"pipes", pub:"pub", move:"bleat", sleep:"night",
+  fox:"fox", wolf:"sword", wolflost:"wolf", buysheep:"buy"
+};
+
+function sfx(name){
+  if(!SND.on || !SND.ac) return;
+  const f = FX[name]; if(f) try{ f(); }catch(e){}
+}
+
+function soundToggle(){
+  SND.on = !SND.on;
+  if(SND.master) SND.master.gain.value = SND.on ? 0.85 : 0;
+  $("snd").textContent = SND.on ? "Sound on" : "Sound off";
+}
+
+// browsers need a gesture before any of this is allowed to make noise
+function firstGesture(){
+  if(SND.started) return;
+  SND.started = true;
+  audioInit();
+  if(SND.ac && SND.ac.state === "suspended") SND.ac.resume();
+}
+["pointerdown","keydown","touchstart"].forEach(e=>
+  addEventListener(e, firstGesture, {once:false, passive:true}));
+
+/* ---------- the pocket watch ---------- */
+/* ---------- the pocket watch is above; tabs below ---------- */
+function noteRoutine(entry){
+  if(G.recording) G.draft.push(entry);
+}
+function startRecording(){
+  G.recording=true; G.draft=[];
+  say("You set the watch. Work the day as you mean it to go.","cozy");
+  render();
+}
+function stopRecording(){
+  if(!G.recording) return;
+  G.recording=false;
+  if(G.draft.length){ G.routine=G.draft.slice();
+    say("The watch has your day: "+G.routine.length+" turns of work.","cozy"); }
+  G.draft=[];
+}
+function runRoutine(){
+  if(!G.routine || !G.routine.length || G.running) return;
+  G.running=true; G.step=0;
+  stepRoutine();
+}
+function stepRoutine(){
+  if(!G.running) return;
+  if(G.step >= G.routine.length || G.taps<=0){ G.running=false; render(); return; }
+  const e=G.routine[G.step++];
+
+  if(e.move !== undefined){
+    if(e.move===G.at) return stepRoutine();
+    G.at=e.move; G.gatheredToday=false;
+    say("The watch has you on the "+G.pastures[e.move].n+".","hi");
+    play("move", stepRoutine); spend(); return;
+  }
+  const act=ACTIONS.find(a=>a.id===e.act);
+  if(!act || !act.can() || G.taps<costOf(act)) return stepRoutine();
+  act.run();
+  if(act.anim) play(act.anim, stepRoutine); else setTimeout(stepRoutine,60);
+  spend(costOf(act));
+}
+let TAB="day";
+function goTab(t){
+  TAB=t;
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.go===t));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("show", p.dataset.tab===t));
+}
+document.querySelectorAll("#tabs button").forEach(b=> b.onclick=()=>goTab(b.dataset.go));
+goTab("day");
+
+/* ---------- render ---------- */
+function render(){
+  if(G.over) return;
+  $("s-day").textContent=G.day;
+  $("s-taps").textContent=G.taps;
+  $("s-taps").className="v "+(G.taps===0?"warn":"good");
+  $("s-flock").textContent=G.flock.length;
+  $("s-money").textContent="£"+G.money;
+  $("s-money").className="v "+(G.money<10?"warn":"");
+  $("s-wool").textContent=G.wool+" st";
+  $("s-wx").textContent=wx().name;
+  const mv=$("s-moon");
+  mv.textContent=moonName(G.day);
+  mv.className="v "+(isFull(G.day)?"good":"");
+
+  // actions
+  const a=$("actions"); a.innerHTML="";
+
+  if(own("watch")){
+    const w=document.createElement("button");
+    w.className="act watch";
+    if(G.recording){
+      w.innerHTML='<span class="n">Recording the day &middot; '+G.draft.length+' set</span>'+
+                  '<span class="d">Work as you mean it to go. The watch stops when you sleep.</span>';
+      w.onclick=()=>{ stopRecording(); render(); };
+    } else if(G.routine){
+      w.innerHTML='<span class="n">Run the day by the watch &middot; '+G.routine.length+' turns</span>'+
+                  '<span class="d">It will skip anything that cannot be done today. Tap here to set it afresh.</span>';
+      w.onclick=()=>runRoutine();
+      w.oncontextmenu=e=>{ e.preventDefault(); startRecording(); };
+      const re=document.createElement("button");
+      re.className="act watch small";
+      re.innerHTML='<span class="n">Set the watch again</span>';
+      re.onclick=()=>startRecording();
+      a.appendChild(w); a.appendChild(re);
+    } else {
+      w.innerHTML='<span class="n">Set the watch</span>'+
+                  '<span class="d">Record today, and the watch will keep that day for you after.</span>';
+      w.onclick=()=>startRecording();
+    }
+    if(!G.routine || G.recording) a.appendChild(w);
+  }
+
+  ACTIONS.forEach(act=>{
+    const c=costOf(act);
+    const b=document.createElement("button");
+    b.className="act"+(act.cozy?" cozy":"")+(c===0?" free":"");
+    b.innerHTML='<span class="n">'+act.name+(c===0?' <em>free</em>':'')+
+                '</span><span class="d">'+act.desc()+'</span>';
+    b.disabled = G.taps<c || !act.can() || busy();
+    b.onclick=()=>{ noteRoutine({act:act.id}); act.run(); if(act.anim) play(act.anim, act.id==="ask"?win:null); spend(c); };
+    a.appendChild(b);
+  });
+  const sl=document.createElement("button");
+  sl.className="act sleep";
+  sl.disabled = busy();
+  sl.innerHTML='<span class="n">Sleep</span><span class="d">'+
+    (G.taps>0? "You still have "+G.taps+" tap"+(G.taps>1?"s":"")+" in you." : "The day is spent.")+'</span>';
+  sl.onclick=sleep; a.appendChild(sl);
+
+  // pastures
+  const ps=$("pastures"); ps.innerHTML="";
+  G.pastures.forEach((p,i)=>{
+    const d=document.createElement("div");
+    d.className="past"+(i===G.at?" here":"");
+    d.innerHTML='<div class="nm">'+p.n+(i===G.at?"  &larr; flock here":"")+'</div>'+
+      '<div class="meta">grass '+Math.round(p.grass)+'% &middot; feed &times;'+p.quality+' &middot; fox risk '+Math.round(p.risk*100)+'%</div>'+
+      '<div class="bar"><i style="width:'+p.grass+'%"></i></div>';
+    d.onclick=()=>moveTo(i);
+    ps.appendChild(d);
+  });
+
+  // recent events, shown where the player is actually looking
+  const rc=$("recent");
+  const latest=G.log.slice(0,3);
+  rc.innerHTML = latest.map((l,i)=>
+    '<div class="'+l.cls+(i===0?" new":"")+'">'+l.t+'</div>').join("");
+  rc.style.display = latest.length ? "block" : "none";
+
+  // log
+  $("log").innerHTML = G.log.map(l=>'<div class="'+l.cls+'">'+l.t+'</div>').join("");
+
+  // forecast
+  $("fc").innerHTML = G.forecast.map((k,i)=>
+    '<div>'+(i===0?"today":i===1?"tomorrow":"after")+'<b>'+WX[k].name+'</b>'+
+    '<i class="'+(isFull(G.day+i)?"full":"")+'">'+moonName(G.day+i)+'</i></div>').join("");
+
+  // buffs
+  const bl=Object.entries(G.buffs).map(([k,v])=>k+" ("+v+"d)");
+  // shop
+  const sh=$("shop"); sh.innerHTML="";
+
+  const stockHead=document.createElement("div");
+  stockHead.className="shead"; stockHead.textContent="Stock — buy as many as you can afford";
+  sh.appendChild(stockHead);
+
+  Object.entries(BREEDS).forEach(([k,b])=>{
+    const owned=G.flock.filter(s=>s.b===k).length;
+    const btn=document.createElement("button");
+    btn.className="act buy stock";
+    btn.innerHTML='<span class="n">'+b.name+'  &middot; £'+b.cost+
+      (owned?'  <em>&times;'+owned+' in the flock</em>':'')+'</span>'+
+      '<span class="d">'+b.note+' &middot; fleece &times;'+b.g.toFixed(2)+' growth, &times;'+b.v.toFixed(2)+' value</span>';
+    btn.disabled = G.money<b.cost || busy();
+    btn.onclick=()=>buyEwe(k);
+    sh.appendChild(btn);
+  });
+
+  const toolHead=document.createElement("div");
+  toolHead.className="shead"; toolHead.textContent="Tools — one of each";
+  sh.appendChild(toolHead);
+
+  UPGRADES.forEach(u=>{
+    const b=document.createElement("button");
+    b.className="act buy"+(own(u.id)?" owned":"");
+    b.innerHTML='<span class="n">'+u.name+(own(u.id)?"":"  &middot; £"+u.cost)+
+                '</span><span class="d">'+(own(u.id)?"In the steading. "+u.what:u.what)+'</span>';
+    b.disabled = own(u.id) || G.money<u.cost || busy();
+    b.onclick=()=>buy(u);
+    sh.appendChild(b);
+  });
+
+  const lifeHead=document.createElement("div");
+  lifeHead.className="shead"; lifeHead.textContent="The croft — what it is all for";
+  sh.appendChild(lifeHead);
+
+  LIFE.forEach(m=>{
+    const locked = m.need && !own(m.need);
+    const b=document.createElement("button");
+    b.className="act buy life"+(own(m.id)?" owned":"");
+    b.innerHTML='<span class="n">'+m.name+(own(m.id)?"":"  &middot; £"+m.cost)+'</span>'+
+      '<span class="d">'+(own(m.id) ? "Done." :
+        locked ? "First: "+LIFE.find(x=>x.id===m.need).name.toLowerCase()+"." : m.what)+'</span>';
+    b.disabled = own(m.id) || locked || G.money<m.cost || busy();
+    b.onclick=()=>buyLife(m);
+    sh.appendChild(b);
+  });
+
+  if(own("pelt")){
+    const t=document.createElement("button");
+    t.className="act buy owned pelt"; t.disabled=true;
+    t.innerHTML='<span class="n">The last wolf\'s pelt</span>'+
+      '<span class="d">Taken on the High Corrie under a full moon. Foxes will not come near this ground.</span>';
+    sh.appendChild(t);
+  }
+
+  $("buffs").textContent = bl.length? "In you: "+bl.join(", ") : "";
+}
+
+say("You handed in your notice. Six sheep, a thousand pounds, and a hill.","gold");
+say("TEST PURSE — starting money is £1000. Change money:1000 back to 40 to play it straight.","cozy");
+say("Wool is worth most between the fourth and ninth day of growth. After that it mats.","hi");
+render();
+VIEW=fitCanvas();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
