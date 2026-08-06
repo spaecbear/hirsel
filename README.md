@@ -65,7 +65,8 @@ Things that are easy to break by accident:
 - **The fox takes its sheep only after the raid animation ends.** Same for the wolf mauling.
   Watching the counter drop before the animal arrives was a real playtest complaint.
 - **The sword, the wolf and the summon conditions are never explained in the UI.**
-  Not in tooltips, not in achievements (those two are hidden), not in cheat codes.
+  Not in tooltips, not in achievements (those two are hidden), not in cheat codes. The pelt
+  is the exception the player earns: once taken, the shepherd wears it in every scene.
 - **Both wolf warnings stay.** Dawn of the full moon, and the fourth action on the corrie
   with one tap still in hand.
 - **The three-day forecast is public.** It is what makes the game plannable.
@@ -138,7 +139,7 @@ The simulation is untouched — only the words and the sprites swap.
 `src/sim/config.ts` → `OPEN_QUESTIONS` holds the ones the design doc flagged, at their
 current values, with notes. Change them there rather than hunting for numbers:
 
-1. opening difficulty at £40 (`startMoneyShip`)
+1. opening difficulty at £40 (`startMoney`) — now the live default, so this one is under test
 2. crook vs dog overlap — no flag, needs playtest data
 3. survivors after a wolf mauling (`survivorsAfterWolf`, currently 1)
 4. the wolf punishing the two best early purchases — by design, watch it
@@ -146,7 +147,12 @@ current values, with notes. Change them there rather than hunting for numbers:
 6. seasons — not built. The day loop is structured so a season layer can sit on top
 7. dog ageing and retirement — not built; `Sheep.age` exists as the pattern to follow
 
-### Test mode
+### Starting money
 
-Starting money is £1000 by default, with a line in the opening log. Settings → The game →
-Purse switches to the £40 ship value. It takes effect on a new run.
+£40, the ship value, with no test mode. The spec's §13 £1000 test purse has been removed
+along with its settings toggle — testing is done with the `SILLER` code (+£500), which keeps
+one code path through the opening instead of two.
+
+The number lives in `OPEN_QUESTIONS.startMoney`. It is open question §14.1: if reaching the
+crook takes more than about fifteen days, raise this. Never hand out taps — the scarcity is
+the game.

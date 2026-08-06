@@ -1,6 +1,4 @@
 /** Player preferences. Separate from the save file — they outlive any one run. */
-import { TEST_MODE_DEFAULT } from "./config";
-
 export type ArtStyle = "hirsel" | "og";
 export type MotionPref = "auto" | "full" | "reduced";
 
@@ -11,7 +9,6 @@ export interface Settings {
   muted: boolean;
   art: ArtStyle;
   motion: MotionPref;
-  testMode: boolean;
   autosave: boolean;
   /** "TOD" — you keep foxes, and the sheep come for them */
   inverse: boolean;
@@ -26,7 +23,6 @@ export const DEFAULT_SETTINGS: Settings = {
   muted: false,
   art: "hirsel",
   motion: "auto",
-  testMode: TEST_MODE_DEFAULT,
   autosave: true,
   inverse: false,
   cheatsFound: [],

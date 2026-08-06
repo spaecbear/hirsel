@@ -8,8 +8,7 @@ import {
   CROFT,
   OPEN_QUESTIONS,
   PASTURES,
-  START_MONEY_SHIP,
-  START_MONEY_TEST,
+  START_MONEY,
   TOOLS,
   WEATHER_BAG,
 } from "./config";
@@ -49,7 +48,6 @@ import type {
 } from "./types";
 
 export interface GameOptions {
-  testMode?: boolean;
   seed?: number;
 }
 
@@ -65,7 +63,6 @@ export interface ActionDef {
 }
 
 export function newGame(opts: GameOptions = {}): GameState {
-  const testMode = opts.testMode ?? true;
   const seed = opts.seed ?? (Math.random() * 2 ** 32) >>> 0;
   const rng = makeRng(seed);
   const flock: Sheep[] = [];
@@ -83,7 +80,7 @@ export function newGame(opts: GameOptions = {}): GameState {
   return {
     day: 1,
     taps: BALANCE.baseTaps,
-    money: testMode ? START_MONEY_TEST : START_MONEY_SHIP,
+    money: START_MONEY,
     wool: 0,
     flock,
     nextSheepId: BALANCE.startFlock + 1,
@@ -265,6 +262,11 @@ export class Game {
       return "none";
     }
     this.wolf();
+    // normal play reaches the wolf through spend(), which does these two
+    // afterwards; the cheat path has to do them itself or the pelt is taken
+    // without the achievement firing or the HUD noticing
+    this.award();
+    this.changed();
     return armed ? "pelt" : "mauled";
   }
 

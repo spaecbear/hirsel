@@ -27,8 +27,21 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "hundred-days", name: "Still here", hint: "Reach day 100.", won: (g) => g.day >= 100 },
   { id: "clean", name: "No fox got in", hint: "Reach day 20 without losing a sheep to a fox.", won: (g) => g.day >= 20 && g.stats.foxLosses === 0 },
   { id: "aye", name: "She said aye", hint: "Finish the croft and ask her.", won: (g) => g.over?.kind === "win" },
-  { id: "pelt", name: "The last one", hint: "—", secret: true, won: (g) => owns(g, "pelt") },
-  { id: "mauled", name: "Caught out late", hint: "—", secret: true, won: (g) => g.stats.wolfMaulings > 0 },
+  // hidden: the hint is only ever read by someone who has already been there
+  {
+    id: "pelt",
+    name: "The last wolf in Scotland",
+    hint: "You had the reach of him. He is on your back now.",
+    secret: true,
+    won: (g) => owns(g, "pelt"),
+  },
+  {
+    id: "mauled",
+    name: "Caught out late",
+    hint: "The high ground was no place to be, and you were told.",
+    secret: true,
+    won: (g) => g.stats.wolfMaulings > 0,
+  },
 ];
 
 const KEY = "hirsel.achievements.v1";

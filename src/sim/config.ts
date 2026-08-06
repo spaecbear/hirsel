@@ -7,10 +7,13 @@
  */
 import type { Breed, BreedId, Weather, WeatherId } from "./types";
 
-/** §13 — test mode. Flag, not a magic number. */
-export const TEST_MODE_DEFAULT = true;
-export const START_MONEY_TEST = 1000;
-export const START_MONEY_SHIP = 40;
+/**
+ * Starting money. The £1000 test purse of §13 is gone — testing is done with
+ * the SILLER cheat now, which keeps one code path instead of two.
+ * This is open question §14.1: if the crook takes more than ~15 days to
+ * reach, raise this rather than handing out taps.
+ */
+export const START_MONEY = 40;
 
 export const BALANCE = {
   startFlock: 6,
@@ -62,7 +65,7 @@ export const BALANCE = {
  */
 export const OPEN_QUESTIONS = {
   /** (1) opening difficulty — raise starting money, never taps, if the crook takes >15 days */
-  startMoneyShip: START_MONEY_SHIP,
+  startMoney: START_MONEY,
   /** (3) one ewe after a mauling may be unrecoverable. Set to 2 to soften. */
   survivorsAfterWolf: 1,
   /** (9) cap the watch's routine at 3–4 turns if players sleep-skip whole days. 0 = uncapped */

@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ACTIONS, Game, newGame } from "../src/sim/game";
 import { BALANCE, OPEN_QUESTIONS } from "../src/sim/config";
+import { ACHIEVEMENTS } from "../src/sim/achievements";
 import type { AnimId, GameState, Sheep } from "../src/sim/types";
 
 /** run the game with animations resolved instantly, in order */
 function harness(patch: Partial<GameState> = {}) {
-  const state = Object.assign(newGame({ seed: 7, testMode: false }), patch);
+  const state = Object.assign(newGame({ seed: 7 }), patch);
   const game = new Game(state);
   const played: AnimId[] = [];
   game.onAnim = (anim, after) => {
@@ -22,7 +23,7 @@ beforeEach(() => {
 });
 
 describe("the day", () => {
-  it("starts with six blackface, three taps, and forty pounds on the ship purse", () => {
+  it("starts with six blackface, three taps, and forty pounds", () => {
     const { state } = harness();
     expect(state.flock).toHaveLength(BALANCE.startFlock);
     expect(state.flock.every((s) => s.breed === "blackface")).toBe(true);
@@ -112,7 +113,7 @@ describe("the night", () => {
   });
 
   it("takes a sheep only after the raid animation has finished", () => {
-    const state = Object.assign(newGame({ seed: 3, testMode: false }), { flock: [sheep(4), sheep(4)] });
+    const state = Object.assign(newGame({ seed: 3 }), { flock: [sheep(4), sheep(4)] });
     const game = new Game(state);
     game.rng = () => 0; // every roll hits
     let pending: (() => void) | undefined;
@@ -129,7 +130,7 @@ describe("the night", () => {
   });
 
   it("ends the run when the last sheep goes", () => {
-    const state = Object.assign(newGame({ seed: 3, testMode: false }), { flock: [sheep(4)] });
+    const state = Object.assign(newGame({ seed: 3 }), { flock: [sheep(4)] });
     const game = new Game(state);
     game.rng = () => 0;
     game.onAnim = (_a, after) => after?.();
@@ -186,6 +187,17 @@ describe("the last wolf", () => {
     expect(game.forceWolf()).toBe("pelt");
     expect(played).toContain("wolf");
     expect(state.owned.pelt).toBe(true);
+  });
+
+  it("earns the hidden achievement for taking the pelt, and only then", () => {
+    const { game, state } = harness({ flock: [sheep(4)], owned: { sword: true } });
+    expect(state.achievements).not.toContain("pelt");
+    game.forceWolf();
+    expect(state.achievements).toContain("pelt");
+    // and it stays hidden until it is earned
+    const ach = ACHIEVEMENTS.find((a) => a.id === "pelt")!;
+    expect(ach.secret).toBe(true);
+    expect(ACHIEVEMENTS.find((a) => a.id === "mauled")!.secret).toBe(true);
   });
 
   it("forced without the sword still costs the flock", () => {

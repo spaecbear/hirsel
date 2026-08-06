@@ -322,6 +322,31 @@ function drawSheep(g: Painter, x: number, y: number, s: Sheep, o: { shorn?: bool
   g.px(dir > 0 ? x - 2 : x + w, y + 2, 2, 3, wool);
 }
 
+/**
+ * Set from the state each frame: once the pelt is taken he wears it, in every
+ * scene, for the rest of the run. It is the one permanent visible reward in
+ * the game — the croft is a building, this is on his back.
+ */
+let PELT = false;
+
+/** the wolf skin: hood with the ears still on it, mantle over the shoulders, brush down the back */
+function drawPelt(g: Painter, x: number, y: number) {
+  // mantle across the shoulders, over the coat
+  g.px(x - 2, y + 5, 16, 7, "#3a3d47");
+  g.px(x - 2, y + 5, 16, 2, "#4a4e5a"); // moonlit along the top
+  g.px(x - 2, y + 11, 16, 1, "#2a2d36");
+  // the brush, hanging down his back
+  g.px(x - 4, y + 10, 4, 8, "#3a3d47");
+  g.px(x - 4, y + 17, 4, 3, "#8f939c");
+  // the head worn as a hood, ears still on it
+  g.px(x + 1, y - 5, 11, 5, "#3a3d47");
+  g.px(x + 1, y - 5, 11, 1, "#4a4e5a");
+  g.px(x + 1, y - 8, 3, 4, "#3a3d47");
+  g.px(x + 8, y - 8, 3, 4, "#3a3d47");
+  g.px(x + 2, y - 7, 1, 2, "#22252f"); // the hollows where the ears fold
+  g.px(x + 9, y - 7, 1, 2, "#22252f");
+}
+
 function drawShepherd(g: Painter, x: number, y: number, o: { crook?: boolean; arm?: number; walk?: number; sit?: boolean } = {}) {
   const step = o.walk ? (Math.sin(o.walk * Math.PI * 8) > 0 ? 1 : 0) : 0;
   g.a(x - 1, y + 26, 14, 2, 0, 0, 0, 0.25);
@@ -342,6 +367,8 @@ function drawShepherd(g: Painter, x: number, y: number, o: { crook?: boolean; ar
   g.px(x + 7, y + 2, 1, 1, "#26201a");
   g.px(x + 2, y - 3, 9, 4, "#2f3327"); // bunnet
   g.px(x + 9, y - 2, 3, 2, "#2f3327");
+  // the pelt goes on over the coat and the bunnet, under the arm and crook
+  if (PELT) drawPelt(g, x, y);
   // arm
   if (o.arm !== undefined) g.px(x + 10, y + 8 + o.arm, 4, 3, "#c9a583");
   if (o.crook) {
@@ -757,10 +784,10 @@ function wolfScene(g: Painter, st: GameState, p: number, armed: boolean) {
 
   if (stage === 3) {
     const t = (p - 0.62) / 0.38;
-    // the pelt over his shoulder
-    g.px(sx - 6, sy + 5, 24, 12, "#3a3d47");
-    g.px(sx - 6, sy + 5, 24, 2, "#4a4e5a");
-    g.px(sx - 11, sy + 7, 6, 6, "#252935");
+    // he puts it on here, and it is the same pelt he wears from now on
+    PELT = true;
+    drawShepherd(g, sx, sy, {});
+    PELT = false;
     for (let i = 0; i < 12; i++) {
       const q = (t + i / 12) % 1;
       g.a(sx - 16 + i * 7, sy + 4 - q * 34, 3, 3, 138, 106, 156, 0.55 * (1 - q));
@@ -823,6 +850,8 @@ export const HIRSEL_ART: ArtPack = {
     const k = s.anim;
     const p = s.p;
     INV = s.inverse;
+    // he is not wearing it during the fight — the set piece hands it to him
+    PELT = owns(st, "pelt") && k !== "wolf";
 
     if (k === "pub") {
       // still draw the glen underneath so the fade has something to leave

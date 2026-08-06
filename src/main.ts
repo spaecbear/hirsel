@@ -25,7 +25,7 @@ import { $, toast } from "./ui/dom";
 const settings: Settings = loadSettings();
 const packs: Record<string, ArtPack> = { hirsel: HIRSEL_ART, og: OG_ART };
 
-let game = new Game(undefined, { testMode: settings.testMode });
+let game = new Game();
 const animator = new Animator();
 const canvas = $<HTMLCanvasElement>("scene");
 const screen = new Screen(canvas, packs[settings.art] ?? HIRSEL_ART);
@@ -37,8 +37,7 @@ const view = new View(game, animator, settings);
 /* ---------- opening ---------- */
 function openingLines(g: Game) {
   const lex = lexicon(settings.inverse);
-  g.say(`You handed in your notice. Six ${lex.beasts}, ${settings.testMode ? "a thousand pounds" : "forty pounds"}, and a hill.`, "gold");
-  if (settings.testMode) g.say("TEST PURSE — starting money is £1000. Switch to the ship purse in Settings.", "cozy");
+  g.say(`You handed in your notice. Six ${lex.beasts}, forty pounds, and a hill.`, "gold");
   g.say(`${lex.woolCap} is worth most between the fourth and ninth day of growth. After that it mats.`, "hi");
 }
 
@@ -55,7 +54,7 @@ function wire(g: Game) {
 
 function startGame(state?: GameState) {
   animator.clear();
-  game = new Game(state, { testMode: settings.testMode });
+  game = new Game(state);
   view.setGame(game);
   wire(game);
   if (!state) openingLines(game);

@@ -68,12 +68,6 @@ export function buildSettings(api: SettingsApi) {
 
     /* ---- the game ---- */
     const game = group("The game");
-    game.appendChild(
-      seg("Purse", [["Test £1000", s.testMode], ["Ship £40", !s.testMode]], (i) => {
-        api.apply({ testMode: i === 0 });
-        toast("Takes effect on a new run.");
-      }),
-    );
     game.appendChild(seg("Autosave", [["On", s.autosave], ["Off", !s.autosave]], (i) => api.apply({ autosave: i === 0 })));
     const btns = el("div", { class: "set-btns" });
     btns.appendChild(mkBtn("Save now", () => api.saveNow()));

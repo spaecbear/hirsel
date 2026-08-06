@@ -61,9 +61,7 @@ export class View {
     this.renderFlock();
     this.renderShop();
     this.renderGlen();
-    $("foot").textContent =
-      `day ${g.day} · seed ${g.seed.toString(16)} · ` +
-      `${this.settings.testMode ? "test purse" : "ship purse"}${this.settings.inverse ? " · tod" : ""}`;
+    $("foot").textContent = `day ${g.day} · seed ${g.seed.toString(16)}${this.settings.inverse ? " · tod" : ""}`;
   }
 
   private renderHud(flockLabel: string, woolLabel: string) {
