@@ -14,6 +14,16 @@ export default defineConfig({
      */
     port: 5313,
     strictPort: true,
+    /*
+     * Bind every interface, not just [::1].
+     *
+     * Vite's default binds IPv6 loopback alone, so a browser that resolves
+     * "localhost" to 127.0.0.1 gets connection refused from a server that is
+     * demonstrably running. It also means the Network URL Vite prints works,
+     * so the phone layout can be tested on an actual phone over Wi-Fi —
+     * which matters here, mobile being a first-class target rather than a port.
+     */
+    host: true,
   },
   build: {
     target: "es2020",
