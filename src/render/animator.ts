@@ -4,6 +4,13 @@ import type { AnimId } from "../sim/types";
 interface Job {
   anim: AnimId;
   after?: () => void;
+  /** anything the scene needs that isn't in the game state yet */
+  payload?: AnimPayload;
+}
+
+/** the ewe walking in has not joined the flock yet, so her breed travels here */
+export interface AnimPayload {
+  breed?: string;
 }
 
 /**
@@ -12,6 +19,7 @@ interface Job {
  */
 export class Animator {
   current: AnimId | null = null;
+  payload: AnimPayload | undefined;
   p = 0;
   private start = 0;
   private dur = 0;
@@ -25,16 +33,17 @@ export class Animator {
     return this.current !== null || this.queue.length > 0;
   }
 
-  play(anim: AnimId, after?: () => void) {
+  play(anim: AnimId, after?: () => void, payload?: AnimPayload) {
     if (this.current) {
-      this.queue.push({ anim, after });
+      this.queue.push({ anim, after, payload });
       return;
     }
-    this.begin({ anim, after });
+    this.begin({ anim, after, payload });
   }
 
   private begin(job: Job) {
     this.current = job.anim;
+    this.payload = job.payload;
     this.after = job.after;
     this.dur = this.reduced ? 1 : (ANIM_MS[job.anim] ?? 1200);
     this.start = performance.now();
@@ -50,6 +59,7 @@ export class Animator {
     this.p = 1;
     const done = this.after;
     this.current = null;
+    this.payload = undefined;
     this.after = undefined;
     done?.();
     const next = this.queue.shift();
@@ -61,6 +71,7 @@ export class Animator {
   clear() {
     this.queue.length = 0;
     this.current = null;
+    this.payload = undefined;
     this.after = undefined;
     this.p = 0;
   }

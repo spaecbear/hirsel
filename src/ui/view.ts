@@ -105,8 +105,10 @@ export class View {
     const hasWatch = owns(g, "watch");
     if (this.workTab === "watch" && !hasWatch) this.workTab = "work";
 
-    // Sleep is pinned above the list, so it never scrolls out of reach
-    a.appendChild(
+    // Sleep and the sub-tabs live in a header that stays put while the list
+    // scrolls underneath it
+    const head = el("div", { class: "day-head" });
+    head.appendChild(
       button(
         "act sleep pin",
         `<span class="n">Sleep</span><span class="d">${
@@ -137,7 +139,8 @@ export class View {
       });
       bar.appendChild(b);
     }
-    a.appendChild(bar);
+    head.appendChild(bar);
+    a.appendChild(head);
 
     if (this.workTab === "watch") {
       if (g.recording) {

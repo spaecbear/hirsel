@@ -148,6 +148,36 @@ describe("the night", () => {
   });
 });
 
+describe("buying stock", () => {
+  it("takes the money now but only adds the ewe once she has walked in", () => {
+    const state = Object.assign(newGame({ seed: 5 }), { money: 100, flock: [sheep(4)] });
+    const game = new Game(state);
+    let arrive: (() => void) | undefined;
+    let carried: { breed?: string } | undefined;
+    game.onAnim = (anim, after, payload) => {
+      if (anim === "buysheep") {
+        arrive = after;
+        carried = payload;
+      } else after?.();
+    };
+    game.buyEwe("shetland");
+    expect(state.money).toBe(46); // paid at once
+    expect(state.flock).toHaveLength(1); // but not in the flock yet
+    expect(carried?.breed).toBe("shetland"); // the animation knows what is coming
+    arrive?.();
+    expect(state.flock).toHaveLength(2);
+    expect(state.flock[1].breed).toBe("shetland");
+    expect(state.stats.sheepBought).toBe(1);
+  });
+
+  it("refuses when the purse is short, and spends nothing", () => {
+    const { game, state } = harness({ money: 10 });
+    game.buyEwe("shetland");
+    expect(state.money).toBe(10);
+    expect(state.flock).toHaveLength(BALANCE.startFlock);
+  });
+});
+
 describe("the last wolf", () => {
   const armed = (sword: boolean) =>
     harness({
@@ -158,17 +188,28 @@ describe("the last wolf", () => {
       flock: [sheep(4), sheep(4), sheep(4), sheep(4)],
     });
 
-  it("fires the instant the fifth action is spent, with no prompt", () => {
+  it("does not come while the day is still being worked — he comes at night", () => {
     const { game, played } = armed(true);
-    for (let i = 0; i < 4; i++) game.doAction("pipe");
-    expect(played).not.toContain("wolf");
-    game.doAction("pipe");
+    for (let i = 0; i < 5; i++) game.doAction("pipe");
+    expect(played).not.toContain("wolf"); // five actions on the corrie, and nothing yet
+    game.sleep();
     expect(played).toContain("wolf");
+  });
+
+  it("lets you walk off the corrie after the fifth action and get away with it", () => {
+    const { game, state, played } = armed(false);
+    state.taps = 6;
+    for (let i = 0; i < 5; i++) game.doAction("pipe");
+    game.moveTo(0); // down off the high ground before lying down
+    game.sleep();
+    expect(played).not.toContain("wolflost");
+    expect(state.flock).toHaveLength(4);
   });
 
   it("with the sword you take the pelt and foxes stop mattering", () => {
     const { game, state } = armed(true);
     for (let i = 0; i < 5; i++) game.doAction("pipe");
+    game.sleep();
     expect(state.owned.pelt).toBe(true);
     expect(state.flock).toHaveLength(4);
   });
@@ -176,9 +217,20 @@ describe("the last wolf", () => {
   it("without the sword the flock is cut to the survivors, after the animation", () => {
     const { game, state } = armed(false);
     for (let i = 0; i < 5; i++) game.doAction("pipe");
+    game.sleep();
     expect(state.owned.pelt).toBeUndefined();
     expect(state.flock).toHaveLength(OPEN_QUESTIONS.survivorsAfterWolf);
     expect(state.stats.wolfMaulings).toBe(1);
+  });
+
+  it("no fox comes near ground he has walked over", () => {
+    const { game, state, played } = armed(false);
+    game.rng = () => 0; // every fox roll would otherwise hit
+    for (let i = 0; i < 5; i++) game.doAction("pipe");
+    game.sleep();
+    expect(played).toContain("wolflost");
+    expect(played).not.toContain("fox");
+    expect(state.stats.foxLosses).toBe(0);
   });
 
   it("can be forced by the 1680 code with none of the conditions met", () => {

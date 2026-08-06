@@ -11,6 +11,8 @@ export interface Scene {
   reduced: boolean;
   /** TOD cheat: the flock is foxes and the raider is a ram */
   inverse: boolean;
+  /** for animations about something not yet in the state — the bought ewe */
+  payload?: { breed?: string };
 }
 
 export interface ArtPack {

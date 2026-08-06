@@ -43,9 +43,9 @@ function openingLines(g: Game) {
 }
 
 function wire(g: Game) {
-  g.onAnim = (anim, after) => {
+  g.onAnim = (anim, after, payload) => {
     sfx.forAnim(anim, owns(g.state, "dog"));
-    animator.play(anim, after);
+    animator.play(anim, after, payload);
     view.render();
   };
   g.onAchievement = (a) => toast(`Achievement — ${a.name}`);
@@ -199,12 +199,24 @@ function frame(now: number) {
     time: now,
     reduced: animator.reduced,
     inverse: settings.inverse,
+    payload: animator.payload,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);
 }
 
-addEventListener("resize", () => screen.fit());
+/* the day panel's header sticks below the scene, so it needs its live height */
+const sceneEl = document.querySelector<HTMLElement>(".scene");
+function measureScene() {
+  if (sceneEl) document.documentElement.style.setProperty("--scene-h", `${sceneEl.offsetHeight}px`);
+}
+if (sceneEl && "ResizeObserver" in window) new ResizeObserver(measureScene).observe(sceneEl);
+measureScene();
+
+addEventListener("resize", () => {
+  screen.fit();
+  measureScene();
+});
 matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", () => applySettings({}));
 
 /* ---------- boot ---------- */

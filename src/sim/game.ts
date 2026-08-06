@@ -120,7 +120,7 @@ export class Game {
   rng: Rng;
   private listeners: Listener[] = [];
   /** the UI hands this in: play an animation, call back when it finishes */
-  onAnim: (anim: AnimId, after?: () => void) => void = (_a, after) => after?.();
+  onAnim: (anim: AnimId, after?: () => void, payload?: { breed?: string }) => void = (_a, after) => after?.();
   onAchievement: (a: Achievement) => void = () => {};
   /** true while an animation-driven sequence owns the buttons */
   busy = false;
@@ -168,7 +168,9 @@ export class Game {
     if (wolfWarningDue(g)) {
       this.say("The flock will not settle. Something is watching from above the corrie.", "bad");
     }
-    if (wolfSummoned(g)) this.wolf();
+    // the wolf is not called here: he comes at night, when you lie down on his
+    // ground. Spending the fifth action only sets the conditions — walking back
+    // off the corrie before you sleep still gets you out of it.
     this.award();
     this.changed();
   }
@@ -235,12 +237,20 @@ export class Game {
     const b = BREEDS[breed];
     if (g.money < b.cost) return;
     g.money -= b.cost;
-    g.flock.push({ id: g.nextSheepId++, fleece: 1, breed, age: 0 });
-    g.stats.sheepBought++;
-    this.say(`Bought a ${this.lex.breeds[breed]} ${this.lex.unit} for £${b.cost}.`, "gold");
-    this.onAnim("buysheep");
-    this.award();
-    this.changed();
+    // she is not in the flock until she has walked into the field — otherwise
+    // the counter goes up and the animation then walks a second one in
+    this.onAnim(
+      "buysheep",
+      () => {
+        g.flock.push({ id: g.nextSheepId++, fleece: 1, breed, age: 0 });
+        g.stats.sheepBought++;
+        this.say(`Bought a ${this.lex.breeds[breed]} ${this.lex.unit} for £${b.cost}.`, "gold");
+        this.award();
+        this.changed();
+      },
+      { breed },
+    );
+    this.changed(); // the money goes now; she arrives in her own time
   }
 
   /* ---------- the last wolf ---------- */
@@ -312,6 +322,14 @@ export class Game {
     const p = here(g);
     const w = weatherOn(g);
 
+    /*
+     * The last wolf, if the day and the ground have called him. He comes after
+     * the night falls and before anything else in it: no fox is coming near
+     * ground he has walked over, so the fox check is skipped when he does.
+     */
+    const wolfCame = wolfSummoned(g);
+    if (wolfCame) this.wolf();
+
     // 1. grazing and fleece growth
     const { eaten, fed, growth } = grazing(g);
     p.grass -= eaten;
@@ -332,7 +350,7 @@ export class Game {
 
     // 3. fox check — resolved after the raid animation, never before
     const risk = foxRisk(g);
-    if (this.rng() < risk && g.flock.length > 0) {
+    if (!wolfCame && this.rng() < risk && g.flock.length > 0) {
       this.onAnim("fox", () => {
         const lost = g.flock.pop();
         if (lost) g.stats.foxLosses++;

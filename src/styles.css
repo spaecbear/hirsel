@@ -310,6 +310,19 @@ canvas {
   text-align: center;
 }
 
+/* Sleep and the sub-tabs stay put while the action list scrolls under them.
+   It sticks *below* the scene block rather than at top:0 — two sticky elements
+   at the same offset collide, which was a real bug in the prototype. The scene
+   measures itself into --scene-h, since the HUD rewraps at different widths. */
+.day-head {
+  position: sticky;
+  top: var(--scene-h, 0px);
+  z-index: 4;
+  background: var(--peat-2);
+  margin: -11px -11px 0;
+  padding: 11px 11px 0;
+}
+
 /* sub-tabs inside the day panel — the day's actions in short lists */
 .subtabs {
   display: flex;

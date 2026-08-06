@@ -664,11 +664,12 @@ function muckScene(g: Painter, p: number) {
   for (let i = 0; i < Math.floor(p * 16); i++) g.px(26 + i * 28, GROUND + 14, 3, 6, "#8fae5f");
 }
 
-function buySheepScene(g: Painter, st: GameState, p: number) {
+function buySheepScene(g: Painter, st: GameState, p: number, breed?: string) {
   const x = -24 + ease(clamp01(p * 1.2)) * (SHEP_X - 50);
   drawShepherd(g, SHEP_X, GROUND - 26, { crook: true });
+  // she is not in the flock yet, so her breed rides along with the animation
   const last = st.flock[st.flock.length - 1];
-  const s: Sheep = { id: -1, fleece: 1, breed: last ? last.breed : "blackface", age: 0 };
+  const s: Sheep = { id: -1, fleece: 1, breed: (breed as Sheep["breed"]) ?? last?.breed ?? "blackface", age: 0 };
   drawSheep(g, x, GROUND + 8 - Math.abs(Math.sin(p * Math.PI * 7)) * 2, s, { run: p });
   if (p > 0.7) {
     for (let i = 0; i < 5; i++) {
@@ -883,7 +884,7 @@ export const HIRSEL_ART: ArtPack = {
     else if (k === "music") musicScene(g, p);
     else if (k === "tend") tendScene(g, p);
     else if (k === "muck") muckScene(g, p);
-    else if (k === "buysheep") buySheepScene(g, st, p);
+    else if (k === "buysheep") buySheepScene(g, st, p, s.payload?.breed);
     else if (k === "gather") gatherScene(g, st, p);
     else if (k === "move") {
       drawShepherd(g, SHEP_X, sy, { crook: true, walk: p });

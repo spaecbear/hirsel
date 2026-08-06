@@ -205,11 +205,11 @@ function drawMuck(g: Painter, p: number) {
   for (let i = 0; i < Math.floor(p * 14); i++) g.px(24 + i * 30, 124, 3, 5, "#8fae5f");
 }
 
-function drawBuySheep(g: Painter, st: GameState, p: number) {
+function drawBuySheep(g: Painter, st: GameState, p: number, breed?: string) {
   const x = -20 + ease(Math.min(1, p * 1.2)) * (SHEP.x - 40);
   drawShepherd(g, { crook: true });
   const last = st.flock[st.flock.length - 1];
-  const s: Sheep = { id: -1, fleece: 1, breed: last ? last.breed : "blackface", age: 0 };
+  const s: Sheep = { id: -1, fleece: 1, breed: (breed as Sheep["breed"]) ?? last?.breed ?? "blackface", age: 0 };
   drawSheep(g, x, 116 - Math.abs(Math.sin(p * Math.PI * 7)) * 2, s, false);
   if (p > 0.7) {
     for (let i = 0; i < 4; i++) {
@@ -454,7 +454,7 @@ export const OG_ART: ArtPack = {
     if (k === "music") drawMusic(g, p);
     if (k === "tend") drawTend(g, p);
     if (k === "muck") drawMuck(g, p);
-    if (k === "buysheep") drawBuySheep(g, st, p);
+    if (k === "buysheep") drawBuySheep(g, st, p, s.payload?.breed);
     if (k === "gather") drawShepherd(g, { crook: true, dy: Math.sin(p * Math.PI * 4) });
     if (k === "move") drawShepherd(g, { crook: true, dy: Math.sin(p * Math.PI * 8) });
     if (k === "sleep") {
