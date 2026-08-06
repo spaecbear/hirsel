@@ -16,6 +16,7 @@ import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldL
 import { drawText, drawTextCentred, textWidth } from "../text";
 import {
   TERRAIN,
+  mix,
   drawBurn,
   drawCloudCap,
   drawMottle,
@@ -55,26 +56,75 @@ const wxOf = (st: GameState) => st.forecast[0];
 
 function drawSky(g: Painter, L: WorldLayout, st: GameState, night: number, time: number) {
   const [top, low] = SKY[wxOf(st)];
-  const band = L.horizonY + 8;
-  // per-row dither, so the ramp reads as one sky rather than a stack of stripes
-  for (let y = 0; y < band; y++) {
-    const mix = Math.pow(y / band, 1.4);
-    for (let x = 0; x < L.W; x += 2) {
-      const t = ((x >> 1) & 1) + ((y & 1) << 1);
-      g.px(x, y, 2, 1, t / 4 < mix ? low : top);
+  const h = L.horizonY + 8;
+  const wx = wxOf(st);
+
+  /*
+   * Solid bands with a dithered seam between them, rather than dithering the
+   * whole sky. Mixing every row produced a field of horizontal dashes that
+   * read as scan lines across the entire top of the screen — the noise was
+   * louder than the picture, and it made the sky messages unreadable. Ordered
+   * dither belongs at the joins, where it blends two flat colours; everywhere
+   * else the colour should just be flat.
+   */
+  const bands = 6;
+  const bandH = h / bands;
+  const tone = (i: number) => mix(top, low, i / (bands - 1));
+
+  for (let i = 0; i < bands; i++) {
+    const y0 = Math.round(i * bandH);
+    const y1 = Math.round((i + 1) * bandH);
+    g.px(0, y0, L.W, y1 - y0, tone(i));
+  }
+  for (let i = 1; i < bands; i++) {
+    const y = Math.round(i * bandH);
+    for (let x = 0; x < L.W; x++) {
+      if ((x & 1) === 0) g.px(x, y - 1, 1, 1, tone(i));
+      else g.px(x, y, 1, 1, tone(i - 1));
     }
   }
 
-  if (wxOf(st) === "sun" && night < 0.4) {
-    const sx = Math.round(L.W * 0.76);
-    const sy = Math.round(L.horizonY * 0.3);
-    g.px(sx, sy, 9, 9, "#f0d79a");
-    g.px(sx - 2, sy + 2, 13, 5, "#f0d79a");
-    g.a(sx - 5, sy - 4, 19, 17, 240, 215, 154, 0.16);
+  // cloud as shapes, not as texture laid over everything
+  if (wx === "overcast" || wx === "rain") {
+    const heavy = wx === "rain";
+    for (let i = 0; i < 9; i++) {
+      const drift = (time / (heavy ? 9000 : 14000) + i * 0.37) % 1.4;
+      const cx = Math.round((1.4 - drift) * (L.W + 60)) - 30;
+      const cy = Math.round(h * (0.12 + hash(i * 3) * 0.5));
+      const cw = 26 + Math.round(hash(i * 5) * 44);
+      const ch = 5 + Math.round(hash(i * 7) * 6);
+      const body = mix(top, low, heavy ? 0.15 : 0.62);
+      const lit = mix(body, "#c9cfd2", heavy ? 0.2 : 0.42);
+      g.px(cx, cy, cw, ch, body);
+      g.px(cx + 4, cy - 2, cw - 12, 2, body);
+      g.px(cx + 4, cy - 2, cw - 16, 1, lit); // the lit top edge
+      for (let x = 0; x < cw; x += 2) if (hash(x + i * 13) > 0.4) g.px(cx + x, cy + ch, 2, 1, body);
+    }
   }
 
-  // birds, only when the weather is fit for them
-  if ((wxOf(st) === "sun" || wxOf(st) === "overcast") && night < 0.3) {
+  if (wx === "sun" && night < 0.4) {
+    const sx = Math.round(L.W * 0.76);
+    const sy = Math.round(L.horizonY * 0.28);
+    g.a(sx - 6, sy - 5, 21, 19, 240, 215, 154, 0.13);
+    g.px(sx, sy, 9, 9, "#f5e3b4");
+    g.px(sx - 2, sy + 2, 13, 5, "#f5e3b4");
+    g.px(sx + 2, sy - 2, 5, 13, "#f5e3b4");
+    for (let i = 0; i < 3; i++) {
+      const wisp = Math.round(((time / 16000 + i * 0.4) % 1.3) * (L.W + 40)) - 20;
+      const wy = Math.round(h * (0.2 + hash(i * 11) * 0.3));
+      g.a(L.W - wisp, wy, 30 + i * 8, 2, 230, 236, 238, 0.16);
+    }
+  }
+
+  if (wx === "mist") {
+    // haar: flat and featureless, which is the character of it
+    for (let b = 0; b < 3; b++) {
+      const y = Math.round(h * (0.4 + b * 0.2) + Math.sin(time / (1400 + b * 400)) * 2);
+      g.a(0, y, L.W, 8, 206, 210, 205, 0.1);
+    }
+  }
+
+  if ((wx === "sun" || wx === "overcast") && night < 0.3) {
     for (let i = 0; i < 4; i++) {
       const drift = (time / 90 + i * 60) % (L.W + 40);
       const x = Math.round(L.W - drift);
@@ -330,17 +380,29 @@ const MSG_COLOUR: Record<string, string> = {
   cozy: "#8a6a9c",
 };
 
-function drawMessages(g: Painter, L: WorldLayout, messages: SkyMessage[]) {
-  let y = Math.round(L.horizonY * 0.42);
+function drawMessages(g: Painter, L: WorldLayout, messages: SkyMessage[], safeTop: number) {
+  let y = Math.round(Math.max(L.horizonY * 0.42, safeTop + 20));
   for (const m of messages) {
     // in fast, out slow: it should be readable before it starts leaving
     const fade = m.age < 0.12 ? m.age / 0.12 : m.age > 0.6 ? 1 - (m.age - 0.6) / 0.4 : 1;
-    const alpha = clamp01(fade) * 0.92;
+    const alpha = clamp01(fade) * 0.95;
     if (alpha > 0.02) {
       const drift = Math.round(m.age * 7);
-      drawTextCentred(g, m.text, L.W / 2, y - drift, MSG_COLOUR[m.cls] ?? MSG_COLOUR[""], alpha);
+      const ty = y - drift;
+      /*
+       * A dark plate behind the line. Narration over open sky was legible
+       * enough, but over cloud, a hillside or the moon it disappeared —
+       * and it is the game's whole voice, so it has to be readable wherever
+       * it happens to drift.
+       */
+      const w = textWidth(m.text);
+      const x = Math.round(L.W / 2 - w / 2);
+      g.a(x - 5, ty - 3, w + 10, 13, 8, 10, 6, 0.5 * alpha);
+      g.a(x - 5, ty - 3, w + 10, 1, 60, 74, 46, 0.35 * alpha);
+      g.a(x - 5, ty + 9, w + 10, 1, 60, 74, 46, 0.35 * alpha);
+      drawTextCentred(g, m.text, L.W / 2, ty, MSG_COLOUR[m.cls] ?? MSG_COLOUR[""], alpha);
     }
-    y += 11;
+    y += 15;
   }
 }
 
@@ -348,20 +410,27 @@ function drawMessages(g: Painter, L: WorldLayout, messages: SkyMessage[]) {
  * the HUD
  * ================================================================== */
 
-function drawHud(g: Painter, L: WorldLayout, st: GameState, zen: boolean) {
-  const h = 13;
+function drawHud(g: Painter, L: WorldLayout, st: GameState, zen: boolean, safeTop: number) {
+  /*
+   * The canvas runs under the status bar and the notch, so the strip has to
+   * start below whatever the device is covering — plus a couple of rows of
+   * its own, because text hard against the top edge is hard to read even
+   * where nothing is covering it.
+   */
+  const pad = safeTop + 3;
+  const h = 13 + pad;
   g.a(0, 0, L.W, h, 11, 13, 8, 0.72);
   g.a(0, h, L.W, 1, 60, 74, 46, 0.8);
 
   const left = `DAY ${st.day}`;
-  drawText(g, left, 3, 3, "#ddd9c8", 0.95);
+  drawText(g, left, 3, pad, "#ddd9c8", 0.95);
   /*
    * An actual count, not a row of dots. How many taps are left and how many
    * the day holds is the single most important number in the game, and dots
    * made you count pixels to read it.
    */
   const taps = zen ? "TAPS ∞" : st.taps === 0 ? "SPENT" : `TAPS ${st.taps}/${tapsPerDay(st)}`;
-  drawText(g, taps, 3 + textWidth(left) + 7, 3, st.taps === 0 && !zen ? "#b4472c" : "#e0a33c", 0.95);
+  drawText(g, taps, 3 + textWidth(left) + 7, pad, st.taps === 0 && !zen ? "#b4472c" : "#e0a33c", 0.95);
 
   /*
    * The weather is not written down: it is falling on the hill in front of
@@ -369,14 +438,14 @@ function drawHud(g: Painter, L: WorldLayout, st: GameState, zen: boolean) {
    * is what stops the three groups colliding on a phone.
    */
   const right = `£${st.money}  ${st.wool}st`;
-  drawText(g, right, L.W - textWidth(right) - 3, 3, "#ddd9c8", 0.95);
+  drawText(g, right, L.W - textWidth(right) - 3, pad, "#ddd9c8", 0.95);
 
   // the one warning always on screen without being a sentence
   if (isFullMoon(st.day)) {
     const t = "FULL MOON";
     const cx = L.W / 2;
     if (cx - textWidth(t) / 2 > 3 + textWidth(left) + textWidth(taps) + 10) {
-      drawTextCentred(g, t, cx, 3, "#e8ecd6", 0.95);
+      drawTextCentred(g, t, cx, pad, "#e8ecd6", 0.95);
     }
   }
 }
@@ -953,6 +1022,7 @@ export const GLEN_ART: ArtPack = {
     const k = s.anim;
     const p = s.p;
     const L = layoutWorld(g.W, g.H, st, { shepherdAt: s.shepherdAt });
+    const safeTop = s.safeTop ?? 0;
     const night = k === "sleep" ? Math.sin(p * Math.PI) : 0;
 
     setSpriteState({
@@ -976,7 +1046,7 @@ export const GLEN_ART: ArtPack = {
     if (s.interior) {
       const I = layoutInterior(g.W, g.H);
       drawInterior(g, I, st, s.time, s.hover ?? null, k === "sleep", !!s.spotlightBed);
-      drawHud(g, L, st, !!s.zen);
+      drawHud(g, L, st, !!s.zen, safeTop);
       return;
     }
 
@@ -994,14 +1064,14 @@ export const GLEN_ART: ArtPack = {
 
     if (k === "pub") {
       pubScene(g, L, p, s.time);
-      drawMessages(g, L, s.messages ?? []);
-      drawHud(g, L, st, !!s.zen);
+      drawMessages(g, L, s.messages ?? [], safeTop);
+      drawHud(g, L, st, !!s.zen, safeTop);
       return;
     }
     if (k === "fox") {
       foxRaid(g, L, s);
-      drawMessages(g, L, s.messages ?? []);
-      drawHud(g, L, st, !!s.zen);
+      drawMessages(g, L, s.messages ?? [], safeTop);
+      drawHud(g, L, st, !!s.zen, safeTop);
       return;
     }
 
@@ -1011,8 +1081,8 @@ export const GLEN_ART: ArtPack = {
 
     if (s.active) drawHighlight(g, L, s.active, s.time);
     if (s.spotlight) drawHighlight(g, L, s.spotlight, s.time * 2.2);
-    drawMessages(g, L, s.messages ?? []);
-    drawHud(g, L, st, !!s.zen);
+    drawMessages(g, L, s.messages ?? [], safeTop);
+    drawHud(g, L, st, !!s.zen, safeTop);
     if (s.hover) {
       const spot = L.hotspots.find((h) => h.id === s.hover);
       if (spot) drawHoverLabel(g, L, hoverLabel(spot.id, st));

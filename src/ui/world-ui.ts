@@ -29,6 +29,12 @@ interface Row {
   tone?: "cozy" | "gold" | "stock" | "life";
   /** not a choice — something to read. Rendered as text, not a dimmed button. */
   info?: boolean;
+  /**
+   * Close the sheet after picking this, so whatever it sets off is visible.
+   * Buying a beast walks her onto the hill and selling wool sends the cart
+   * off down the road — on a phone the sheet covered both of them.
+   */
+  closes?: boolean;
   onPick: () => void;
 }
 
@@ -220,9 +226,12 @@ export class WorldUi {
           `<span class="n">${r.label}</span><span class="d">${r.detail}</span>`,
           () => {
             r.onPick();
-            // trades keep the sheet open so you can buy more than one thing;
-            // anything that spends a tap plays an animation, so it closes
-            if (id === "cart" || id === "croft") this.refresh();
+            /*
+             * Trades normally keep the sheet open, so several things can be
+             * bought in a row without reopening it. Anything with something
+             * to watch closes instead — the animation is the point.
+             */
+            if ((id === "cart" || id === "croft") && !r.closes) this.refresh();
             else this.close();
             this.onChange();
           },
@@ -439,6 +448,7 @@ export class WorldUi {
       detail: market.desc(g),
       disabled: g.taps < cost || !market.can(g),
       tone: "gold",
+      closes: true, // the cart rolls off down the road
       onPick: () => this.game.doAction("market"),
     });
 
@@ -463,6 +473,7 @@ export class WorldUi {
         detail: `${b.note} · fleece ×${b.growth.toFixed(2)} growth, ×${b.value.toFixed(2)} value`,
         disabled: g.money < b.cost,
         tone: "stock",
+        closes: true, // she walks onto the hill; the sheet was covering her
         onPick: () => this.game.buyEwe(breed),
       });
     }

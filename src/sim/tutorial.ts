@@ -12,7 +12,7 @@
  * not to hand them the story.
  */
 import { BREEDS } from "./config";
-import { canShear, here, readyToShear } from "./rules";
+import { canShear, here, priceOn, readyToShear } from "./rules";
 import type { GameState } from "./types";
 import type { HotspotId } from "../render/layout";
 
@@ -30,22 +30,25 @@ export interface TutorialStep {
   readOnly?: boolean;
 }
 
-/** how much extra is in the purse so the first ewe is effectively free */
-export const TUTORIAL_CREDIT = BREEDS.blackface.cost;
 export const TUTORIAL_START_FLOCK = 5;
+
+/**
+ * The first clip is rigged to pay for the sixth ewe exactly.
+ *
+ * Being handed the money taught nothing; earning it in the first three steps
+ * teaches the whole economy — fleece becomes wool, wool becomes money, money
+ * becomes another beast — before anything is asked of the player. The fleece
+ * is set so the clip comes to `TUTORIAL_WOOL` stone, and day one's price is
+ * fixed by `priceOn(1)`, so the sale always lands on the cost of a Blackface.
+ */
+export const TUTORIAL_TARGET_PAY = BREEDS.blackface.cost;
 
 export const TUTORIAL: TutorialStep[] = [
   {
     id: "welcome",
-    text: "This is the hill. Five beasts on it, and enough in the purse for a sixth. Today costs you nothing — take your time.",
+    text: "This is the hill. Five beasts on it and forty pounds to your name. Today costs you nothing — take your time.",
     readOnly: true,
     done: (_g, seen) => seen.has("welcome"),
-  },
-  {
-    id: "buy",
-    text: "Tap the cart. Buying and selling never costs you a tap — only money. Take a ewe to make it six.",
-    target: "cart",
-    done: (g) => g.flock.length >= 6,
   },
   {
     id: "flock",
@@ -56,19 +59,27 @@ export const TUTORIAL: TutorialStep[] = [
   {
     id: "shear",
     text:
-      "Fleece grows every night they graze, and it is worth most between the fourth and ninth day of growth. " +
-      "Leave it longer than that and it mats — matted wool fetches next to nothing. " +
-      "You cannot shear in rain or haar either, so take it while the weather holds.",
+      "Now shear them. Fleece grows every night they graze and is worth most between the fourth and ninth day of growth — " +
+      "leave it longer and it mats, and matted wool fetches next to nothing. You cannot shear in rain or haar either, " +
+      "so take it while the weather holds.",
     target: "flock",
+    // day one is forced fair, but never park a player on a step the weather
+    // or an empty hill has made impossible
     skip: (g) => !canShear(g) || readyToShear(g.flock) === 0,
     done: (g) => g.wool > 0,
   },
   {
     id: "market",
-    text: "Wool is only money once it is sold. The cart pays by the stone, and the price moves day to day.",
+    text: "Wool is only money once it is sold. Take it to the cart — the price moves day to day, so it can be worth holding on.",
     target: "cart",
-    skip: (g) => g.wool === 0,
+    skip: (g) => g.wool === 0 && g.stats.earned === 0,
     done: (g) => g.stats.earned > 0,
+  },
+  {
+    id: "buy",
+    text: "That clip paid for a ewe. Buy one from the cart to make it six — buying and selling never costs you a tap, only money.",
+    target: "cart",
+    done: (g) => g.flock.length >= 6,
   },
   {
     id: "ground",
@@ -158,15 +169,23 @@ export function latchDone(g: GameState, seen: Set<string>) {
 /** everything the tutorial wants true at the start of the first day */
 export function tutorialSetup(g: GameState) {
   g.flock.length = Math.min(g.flock.length, TUTORIAL_START_FLOCK);
-  g.money += TUTORIAL_CREDIT;
-  // make sure there is something worth shearing, or that step can never run
-  let ready = g.flock.filter((s) => s.fleece >= 4).length;
+
+  /*
+   * Work backwards from the price of a ewe to the fleece on the hill: how
+   * many stone must be sold at day one's price to clear it, then spread that
+   * across the flock in the "prime" band, where a fleece is worth its own
+   * number. Every beast is left shearable so none of it is left behind.
+   */
+  const price = priceOn(g.day);
+  // the smallest clip that still clears the price of a ewe — rounding up a
+  // whole stone overshot and handed out change nobody had earned
+  let stone = Math.max(1, Math.round((TUTORIAL_TARGET_PAY * 100) / price));
+  while (Math.round((stone * price) / 100) < TUTORIAL_TARGET_PAY) stone++;
+  const each = Math.floor(stone / g.flock.length);
+  let left = stone - each * g.flock.length;
   for (const s of g.flock) {
-    if (ready >= 2) break;
-    if (s.fleece < 4) {
-      s.fleece = 5;
-      ready++;
-    }
+    // 4 is the minimum shearable, 8 the top of the prime band
+    s.fleece = Math.min(8, Math.max(4, each + (left-- > 0 ? 1 : 0)));
   }
   // and something worth mucking
   g.pastures[0].grass = 62;

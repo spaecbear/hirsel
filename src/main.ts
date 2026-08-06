@@ -344,12 +344,26 @@ function frame(now: number) {
     shepherdAt: settings.ui === "glen" ? shepherdAt : null,
     walking: settings.ui === "glen" && world.walk.walking,
     zen: settings.zen,
+    safeTop: safeTopLogical(),
     interior: settings.ui === "glen" && world.interior,
     spotlight: settings.ui === "glen" && !world.interior ? tutorial.spotlight : null,
     spotlightBed: settings.ui === "glen" && world.interior && tutorial.pointingAtBed,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);
+}
+
+/**
+ * How many logical rows the notch or status bar is covering. The glen canvas
+ * is full-bleed, so without this the HUD sits underneath them.
+ */
+const safeProbe = document.getElementById("safe-probe");
+function safeTopLogical() {
+  if (settings.ui !== "glen" || !safeProbe) return 0;
+  const css = safeProbe.getBoundingClientRect().height;
+  if (!css) return 0;
+  const rows = css / (canvas.getBoundingClientRect().height / Math.max(1, screen.H));
+  return Math.round(rows);
 }
 
 /* the retro day panel's header sticks below the scene, so it needs its height */

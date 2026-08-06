@@ -76,9 +76,15 @@ never plays when continuing a save.
 ## The first day
 
 A brand new player gets a walkthrough: the day's taps are switched off, the flock starts one
-short with the price of a ewe in the purse (so buying the sixth costs nothing net and leaves
-them at exactly the normal £40), and each step points at a thing to tap and waits until they
-have done it.
+short at the ordinary £40, and each step points at a thing to tap and waits until they have
+done it.
+
+**The sixth ewe is earned, not given.** The order is gather → shear → sell → buy, and the
+first clip is rigged to pay for exactly one Blackface: `tutorialSetup` works backwards from
+the ewe's price through day one's fixed market rate to the number of stone needed, then
+spreads that across the flock inside the "prime" band. Being handed the money taught nothing;
+earning it in the first three steps teaches the whole economy — fleece becomes wool, wool
+becomes money, money becomes another beast — before anything is asked of the player.
 
 It teaches the loop, the fleece value curve, matting, the weather that blocks shearing, tools,
 the house, the night, and **both ways a run ends badly**. It teaches nothing about how one ends
@@ -94,6 +100,9 @@ Two things it must keep doing, both learned the hard way:
 - **A skipped step is retired, not deferred.** Shearing skips itself when nothing is ready, but
   fleece grows overnight — so it un-skipped and reappeared on day two telling the player to
   shear. Passing a step retires it for good.
+
+Every step still keeps its skip guard even though day one is rigged: nothing should be able to
+park a new player on a step the weather or an empty hill has made impossible.
 
 The first day's weather is forced fair. Shearing and selling are the whole economy, and with
 rain rolled for day one the walkthrough skipped both — a new player could finish it never
@@ -146,6 +155,21 @@ rather than a journey. `render/terrain.ts` draws each from somewhere real:
 
 Atmospheric perspective does the work on the slope: each ridge is mixed further toward the sky
 colour, which is what makes distance read rather than just stacking silhouettes.
+
+### The sky
+
+Flat bands with a dithered seam at each join, rather than dithering every row. Mixing the
+whole sky produced a field of horizontal dashes that read as scan lines over the top half of
+the screen — the noise was louder than the picture, and it made the narration unreadable.
+Ordered dither belongs at the joins, where it blends two flat colours. Cloud is drawn as
+shapes with a lit top edge and a ragged dithered underside; haar is deliberately flat and
+featureless, because that is the character of it.
+
+Sky messages carry a dark backing plate. Over open sky bare text was fine, but over cloud, a
+hillside or the moon it disappeared — and it is the game's whole voice.
+
+The HUD offsets itself by the top safe-area inset, measured from a zero-size probe element,
+since the glen canvas runs full-bleed under the notch and status bar.
 
 ### Built for the shape of the screen
 

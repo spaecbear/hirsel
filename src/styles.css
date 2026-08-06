@@ -279,6 +279,18 @@ body.mode-retro .glen-chrome {
   border-color: #8a6a4a;
 }
 
+/* Zero-size, invisible, and only there to be measured: its height is the
+   top safe-area inset, which the full-bleed canvas needs so the HUD does not
+   end up under a notch or a status bar. */
+#safe-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: env(safe-area-inset-top);
+  pointer-events: none;
+}
+
 /* the first day's walkthrough. Sits at the top, clear of the sheet at the
    bottom, so a prompt and the thing it is telling you to tap are never
    fighting for the same corner of the screen. */

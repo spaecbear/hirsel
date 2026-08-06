@@ -40,6 +40,8 @@ export interface Scene {
   spotlight?: HotspotId | null;
   /** the tutorial is pointing at the bed, which is only inside */
   spotlightBed?: boolean;
+  /** logical rows covered by a notch or status bar at the top of the screen */
+  safeTop?: number;
 }
 
 export interface ArtPack {

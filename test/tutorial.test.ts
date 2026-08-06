@@ -1,28 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { TUTORIAL, TUTORIAL_CREDIT, TUTORIAL_START_FLOCK, currentStep, latchDone, tutorialSetup } from "../src/sim/tutorial";
-import { newGame } from "../src/sim/game";
+import { TUTORIAL, TUTORIAL_START_FLOCK, TUTORIAL_TARGET_PAY, currentStep, latchDone, tutorialSetup } from "../src/sim/tutorial";
+import { Game, newGame } from "../src/sim/game";
 import { BALANCE, BREEDS, START_MONEY } from "../src/sim/config";
 import { canShear, readyToShear } from "../src/sim/rules";
 
 describe("the first day's setup", () => {
-  it("starts a beast short, with the price of one in the purse", () => {
+  it("starts a beast short, at the ordinary starting purse — the ewe is earned, not given", () => {
     const g = newGame({ seed: 4 });
     tutorialSetup(g);
     expect(g.flock).toHaveLength(TUTORIAL_START_FLOCK);
     expect(TUTORIAL_START_FLOCK).toBe(BALANCE.startFlock - 1);
-    // buying the missing ewe should leave them exactly where a normal run starts
-    expect(g.money - BREEDS.blackface.cost).toBe(START_MONEY);
-    expect(TUTORIAL_CREDIT).toBe(BREEDS.blackface.cost);
+    expect(g.money).toBe(START_MONEY); // no handout
+    expect(TUTORIAL_TARGET_PAY).toBe(BREEDS.blackface.cost);
   });
 
-  it("guarantees the shearing and mucking steps can actually happen, whatever was rolled", () => {
-    for (let seed = 0; seed < 30; seed++) {
+  it("rigs the first clip to pay for exactly one ewe, whatever was rolled", () => {
+    for (let seed = 0; seed < 40; seed++) {
       const g = newGame({ seed });
-      tutorialSetup(g); // sets fair weather itself, so this can never be skipped
-      expect(readyToShear(g.flock), `seed ${seed}`).toBeGreaterThanOrEqual(2);
-      expect(canShear(g)).toBe(true);
-      expect(g.pastures[0].grass).toBeLessThanOrEqual(BALANCE.muckMaxGrass);
+      tutorialSetup(g);
+      expect(canShear(g), `seed ${seed}`).toBe(true);
+      expect(readyToShear(g.flock)).toBe(g.flock.length); // none left behind
+
+      // shear and sell exactly as the game would
+      const game = new Game(g);
+      game.onAnim = (_a, after) => after?.();
+      const before = g.money;
+      game.doAction("shear");
+      game.doAction("market");
+      const paid = g.money - before;
+      // exactly enough for the ewe, with no change nobody earned
+      expect(paid, `seed ${seed} paid ${paid}`).toBe(BREEDS.blackface.cost);
     }
+  });
+
+  it("leaves ground worth mucking", () => {
+    const g = newGame({ seed: 4 });
+    tutorialSetup(g);
+    expect(g.pastures[0].grass).toBeLessThanOrEqual(BALANCE.muckMaxGrass);
   });
 });
 
@@ -33,16 +47,17 @@ describe("the walkthrough", () => {
     const seen = new Set<string>();
     expect(currentStep(g, seen)?.id).toBe("welcome");
 
-    // walk it: each step's own condition, in order
+    // walk it: each step's own condition, in order. Shearing comes before
+    // buying, so the sixth ewe is paid for out of the first clip.
     seen.add("welcome");
-    expect(currentStep(g, seen)?.id).toBe("buy");
-    g.flock.push({ id: 99, fleece: 3, breed: "blackface", age: 0 });
     expect(currentStep(g, seen)?.id).toBe("flock");
     g.gatheredToday = true;
     expect(currentStep(g, seen)?.id).toBe("shear");
-    g.wool = 12;
+    g.wool = 22;
     expect(currentStep(g, seen)?.id).toBe("market");
-    g.stats.earned = 9;
+    g.stats.earned = 24;
+    expect(currentStep(g, seen)?.id).toBe("buy");
+    g.flock.push({ id: 99, fleece: 3, breed: "blackface", age: 0 });
     expect(currentStep(g, seen)?.id).toBe("ground");
     seen.add("did-muck");
     expect(currentStep(g, seen)?.id).toBe("hills");
@@ -68,7 +83,6 @@ describe("the walkthrough", () => {
     const g = newGame({ seed: 4 });
     tutorialSetup(g);
     const seen = new Set(["welcome"]);
-    g.flock.push({ id: 99, fleece: 3, breed: "blackface", age: 0 });
     g.gatheredToday = true;
     latchDone(g, seen);
     expect(seen.has("flock")).toBe(true);
@@ -85,8 +99,8 @@ describe("the walkthrough", () => {
     tutorialSetup(g);
     g.forecast[0] = "rain"; // nothing to be done about shearing today
     const seen = new Set(["welcome"]);
-    g.flock.push({ id: 99, fleece: 3, breed: "blackface", age: 0 });
     g.gatheredToday = true;
+    g.wool = 0;
     latchDone(g, seen);
     expect(seen.has("shear")).toBe(true);
 
@@ -101,10 +115,10 @@ describe("the walkthrough", () => {
     const g = newGame({ seed: 4 });
     tutorialSetup(g);
     g.forecast[0] = "rain"; // no shearing in this
-    const seen = new Set(["welcome"]);
-    g.flock.push({ id: 99, fleece: 3, breed: "blackface", age: 0 });
+    const seen = new Set(["welcome", "shear", "market", "buy"]);
     g.gatheredToday = true;
-    // shear is impossible, and market has nothing to sell, so both fall away
+    // shearing is impossible today, so the walkthrough moves on rather than
+    // parking the player on a step they cannot complete
     expect(currentStep(g, seen)?.id).toBe("ground");
   });
 
