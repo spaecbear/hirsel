@@ -3,6 +3,8 @@
  * numbers were tuned and stay tuned — but the words and the sprites turn over:
  * you keep a skulk of foxes, and it is sheep that come off the hill at night.
  */
+import type { BreedId } from "./types";
+
 export interface Lexicon {
   flock: string;
   flockCap: string;
@@ -13,6 +15,10 @@ export interface Lexicon {
   woolCap: string;
   gather: string;
   shear: string;
+  /** what the steading is selling, and what one of them is called */
+  stock: string;
+  unit: string;
+  breeds: Record<BreedId, string>;
   raidLine: (dog: boolean) => string;
 }
 
@@ -26,6 +32,14 @@ export const NORMAL: Lexicon = {
   woolCap: "Wool",
   gather: "Gather the flock",
   shear: "Shear",
+  stock: "Stock — buy as many as you can afford",
+  unit: "ewe",
+  breeds: {
+    blackface: "Scottish Blackface",
+    cheviot: "Cheviot",
+    hebridean: "Hebridean",
+    shetland: "Shetland",
+  },
   raidLine: (dog) =>
     dog
       ? "A fox came off the hill. She drove it off, but not before it took one."
@@ -42,6 +56,16 @@ export const INVERSE: Lexicon = {
   woolCap: "Brush",
   gather: "Gather the skulk",
   shear: "Comb the brushes",
+  stock: "Earths — take on as many as you can afford",
+  unit: "vixen",
+  // the same four beasts underneath: growth and value are untouched, so the
+  // hill tod is the hardy one and the silver is the one worth the money
+  breeds: {
+    blackface: "Hill tod",
+    cheviot: "Border tod",
+    hebridean: "Black tod",
+    shetland: "Silver tod",
+  },
   raidLine: (dog) =>
     dog
       ? "A ram came down off the hill. She saw it away, but not before it had one."

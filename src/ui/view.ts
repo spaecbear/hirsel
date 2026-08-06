@@ -2,7 +2,6 @@ import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
 import { BALANCE, BREEDS, CROFT, TOOLS } from "../sim/config";
 import {
-  breedOf,
   flockValue,
   grade,
   isFullMoon,
@@ -219,20 +218,20 @@ export class View {
   /** hover for breed, fleece grade and age */
   private renderFlock() {
     const g = this.game.state;
+    const lex = lexicon(this.settings.inverse);
     const box = $("flock");
     box.innerHTML = "";
     const tiles = el("div", { class: "tiles" });
     for (const s of g.flock.slice(0, 40)) {
       const gr = grade(s.fleece);
-      const b = breedOf(s);
       tiles.appendChild(
         el(
           "div",
           {
             class: `tile ${gr.label}`,
-            title: `${b.name} · fleece ${s.fleece.toFixed(1)} (${gr.label}) · ${s.age} day${s.age === 1 ? "" : "s"} in the flock`,
+            title: `${lex.breeds[s.breed]} · ${lex.wool} ${s.fleece.toFixed(1)} (${gr.label}) · ${s.age} day${s.age === 1 ? "" : "s"} in the ${lex.flock}`,
           },
-          `<b>${b.name.split(" ")[0]}</b>${gr.label}`,
+          `<b>${lex.breeds[s.breed].split(" ")[0]}</b>${gr.label}`,
         ),
       );
     }
@@ -242,7 +241,7 @@ export class View {
         el(
           "div",
           { class: "note" },
-          `${readyToShear(g.flock)} ready to shear · about ${Math.round(flockValue(g.flock))} stone standing on the hill · feed £${Math.ceil(g.flock.length / 2)} a night`,
+          `${readyToShear(g.flock)} ready · about ${Math.round(flockValue(g.flock))} stone standing on the hill · feed £${Math.ceil(g.flock.length / 2)} a night`,
         ),
       );
     }
@@ -253,14 +252,15 @@ export class View {
     const sh = $("shop");
     sh.innerHTML = "";
 
-    sh.appendChild(el("div", { class: "shead" }, "Stock — buy as many as you can afford"));
+    const lex = lexicon(this.settings.inverse);
+    sh.appendChild(el("div", { class: "shead" }, lex.stock));
     (Object.keys(BREEDS) as BreedId[]).forEach((k) => {
       const b = BREEDS[k];
       const owned = g.flock.filter((s) => s.breed === k).length;
       sh.appendChild(
         button(
           "act buy stock",
-          `<span class="n">${b.name} · £${b.cost}${owned ? `  <em>×${owned} in the flock</em>` : ""}</span>` +
+          `<span class="n">${lex.breeds[k]} · £${b.cost}${owned ? `  <em>×${owned} in the ${lex.flock}</em>` : ""}</span>` +
             `<span class="d">${b.note} · fleece ×${b.growth.toFixed(2)} growth, ×${b.value.toFixed(2)} value</span>`,
           () => this.game.buyEwe(k),
           g.money < b.cost || this.busy,

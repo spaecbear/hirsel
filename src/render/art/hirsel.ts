@@ -329,6 +329,9 @@ function drawSheep(g: Painter, x: number, y: number, s: Sheep, o: { shorn?: bool
  */
 let PELT = false;
 
+/** likewise: he has no crook in his hand until he has bought one */
+let HAS_CROOK = false;
+
 /** the wolf skin: hood with the ears still on it, mantle over the shoulders, brush down the back */
 function drawPelt(g: Painter, x: number, y: number) {
   // mantle across the shoulders, over the coat
@@ -371,7 +374,7 @@ function drawShepherd(g: Painter, x: number, y: number, o: { crook?: boolean; ar
   if (PELT) drawPelt(g, x, y);
   // arm
   if (o.arm !== undefined) g.px(x + 10, y + 8 + o.arm, 4, 3, "#c9a583");
-  if (o.crook) {
+  if (o.crook && HAS_CROOK) {
     for (let i = 0; i < 11; i++) g.px(x + 13, y + 1 + i * 2, 2, 2, "#6b5433");
     g.px(x + 11, y - 1, 4, 2, "#6b5433");
   }
@@ -852,6 +855,7 @@ export const HIRSEL_ART: ArtPack = {
     INV = s.inverse;
     // he is not wearing it during the fight — the set piece hands it to him
     PELT = owns(st, "pelt") && k !== "wolf";
+    HAS_CROOK = owns(st, "crook");
 
     if (k === "pub") {
       // still draw the glen underneath so the fade has something to leave

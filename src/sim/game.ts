@@ -33,6 +33,7 @@ import {
   wolfWarningDue,
 } from "./rules";
 import { checkAchievements, loadEarned, type Achievement } from "./achievements";
+import { NORMAL, type Lexicon } from "./lexicon";
 import type {
   ActionId,
   AnimId,
@@ -123,6 +124,8 @@ export class Game {
   onAchievement: (a: Achievement) => void = () => {};
   /** true while an animation-driven sequence owns the buttons */
   busy = false;
+  /** what things are called this run — TOD swaps the words, never the numbers */
+  lex: Lexicon = NORMAL;
 
   constructor(state?: GameState, opts: GameOptions = {}) {
     this.state = state ?? newGame(opts);
@@ -234,7 +237,7 @@ export class Game {
     g.money -= b.cost;
     g.flock.push({ id: g.nextSheepId++, fleece: 1, breed, age: 0 });
     g.stats.sheepBought++;
-    this.say(`Bought a ${b.name} ewe for £${b.cost}.`, "gold");
+    this.say(`Bought a ${this.lex.breeds[breed]} ${this.lex.unit} for £${b.cost}.`, "gold");
     this.onAnim("buysheep");
     this.award();
     this.changed();
@@ -333,12 +336,7 @@ export class Game {
       this.onAnim("fox", () => {
         const lost = g.flock.pop();
         if (lost) g.stats.foxLosses++;
-        this.say(
-          owns(g, "dog")
-            ? "A fox came off the hill. She drove it off, but not before it took one."
-            : "A fox came off the hill in the night. One sheep lost.",
-          "bad",
-        );
+        this.say(this.lex.raidLine(owns(g, "dog")), "bad");
         if (g.flock.length === 0) this.lose("The last of them gone", "You are a shepherd with no sheep. The croft goes quiet.");
         this.changed();
       });

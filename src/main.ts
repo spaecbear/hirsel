@@ -49,6 +49,7 @@ function wire(g: Game) {
     view.render();
   };
   g.onAchievement = (a) => toast(`Achievement — ${a.name}`);
+  g.lex = lexicon(settings.inverse);
   g.subscribe(() => view.render());
   g.hydrateAchievements();
 }
@@ -72,8 +73,9 @@ function applySettings(patch: Partial<Settings>) {
   document.body.classList.toggle("no-motion", animator.reduced);
   const pack = packs[settings.art] ?? HIRSEL_ART;
   screen.setPack(pack);
-  // turned-over glen, turned-over tune
+  // turned-over glen: turned-over tune, and turned-over words
   score.setTune(settings.inverse ? TOD_JIG : HIRSEL_AIR);
+  game.lex = lexicon(settings.inverse);
   soundBtn.textContent = settings.muted ? "Sound off" : "Sound on";
   soundBtn.setAttribute("aria-pressed", String(!settings.muted));
   view.render();
