@@ -14,12 +14,23 @@ npm run dev
 
 | script | what it does |
 | --- | --- |
-| `npm run dev` | Vite dev server on :5173 |
+| `npm run dev` | Vite dev server on **:5313** |
 | `npm run build` | typecheck, then production build to `dist/` |
 | `npm run preview` | serve the built output |
 | `npm test` | Vitest over the simulation |
 | `npm run typecheck` | `tsc --noEmit` |
 | `node scripts/make-icons.mjs` | regenerate the PWA PNG icons from the pixel design |
+
+### Why port 5313 and not 5173
+
+`localhost:5173` is a single origin shared by every Vite project on a machine, and service
+workers, caches and `localStorage` are all scoped per origin. A worker left behind by another
+project will happily serve this one a stale page — which presents as "my changes aren't showing
+up". Hirsel gets its own port, with `strictPort` so a clash fails loudly instead of quietly
+moving to 5174 and showing you somebody else's app.
+
+Consequence worth knowing: saves live in `localStorage`, so a run started on a different port
+won't appear on this one. Settings → Export file moves a run between origins.
 
 ## Deploying to Vercel
 
