@@ -137,6 +137,21 @@ The engine exposes `setRecordedBed(buffer)`, which plays a recorded loop on the 
 with the same reverb and tape roll-off — a real recorded theme drops in *alongside* the synth
 layer rather than replacing the system.
 
+### Rain
+
+`src/audio/rain.ts`. A steady lowpass-filtered noise hush, plus individual drip ticks layered
+over it, both generated at runtime — no files. Fades in and out over 1.4s as the day's weather
+changes, driven by the same `forecast[0] === "rain"` check the score already uses to thin
+itself, and routed through the existing `sfxBus` so the Effects slider and Mute already
+control it without a new setting.
+
+The drips are short and high-frequency, which is the exact shape that read as a watermark last
+time (see the pulse note above) — the difference is the schedule. Each drip's timing is drawn
+from a randomised interval (`DRIP_MIN_GAP + random × DRIP_JITTER`), never a fixed subdivision.
+`AudioEngine.noiseBed()` is the reusable piece — a persistent looping filtered-noise source
+whose gain the caller fades — so a future ambience layer (wind for the haar, the burn in
+spate) can reuse it rather than growing its own noise-loop plumbing.
+
 ### Cheat codes
 
 Settings → Cheat codes. `RETRO`, `SILLER`, `TOD`, `HIRSEL`, `LANGDAY`, `HAAR`, `1680`.

@@ -283,6 +283,36 @@ export class AudioEngine {
     this.noise(t, 0.07, "lowpass", 260, 0.8, gain * 0.5, bus ?? this.musicBus);
   }
 
+  /**
+   * A persistent, looping filtered-noise bed — for ambience that has to run
+   * continuously (rain on the ground) rather than fire once and decay. The
+   * source itself never stops; the caller fades the returned gain node in
+   * and out. Generic enough that any future weather layer (wind, the burn in
+   * spate) can reuse it rather than growing its own noise-loop plumbing.
+   */
+  noiseBed(type: BiquadFilterType, freq: number, q: number, bus?: AudioNode): GainNode | null {
+    const ac = this.ac;
+    if (!ac) return null;
+    const len = Math.floor(ac.sampleRate * 2);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const filt = ac.createBiquadFilter();
+    filt.type = type;
+    filt.frequency.value = freq;
+    filt.Q.value = q;
+    const gain = ac.createGain();
+    gain.gain.value = 0;
+    src.connect(filt);
+    filt.connect(gain);
+    gain.connect(bus ?? this.sfxBus);
+    src.start();
+    return gain;
+  }
+
   /** drop a recorded theme in alongside the synth score */
   setRecordedBed(buffer: AudioBuffer | null, gain = 0.5) {
     if (!this.ac) return;

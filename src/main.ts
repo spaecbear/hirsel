@@ -15,6 +15,7 @@ import type { ArtPack } from "./render/art/types";
 
 import { AudioEngine } from "./audio/engine";
 import { Score } from "./audio/score";
+import { Rain } from "./audio/rain";
 import { HIRSEL_AIR, TOD_JIG } from "./audio/tunes";
 import { Sfx } from "./audio/sfx";
 
@@ -32,6 +33,7 @@ const canvas = $<HTMLCanvasElement>("scene");
 const screen = new Screen(canvas, packs[settings.art] ?? HIRSEL_ART);
 const audio = new AudioEngine();
 const score = new Score(audio);
+const rain = new Rain(audio);
 const sfx = new Sfx(audio);
 const view = new View(game, animator, settings);
 
@@ -153,6 +155,7 @@ function firstGesture() {
   if (audio.start()) {
     audio.setLevels({ master: settings.master, music: settings.music, sfx: settings.sfx, muted: settings.muted });
     score.start();
+    rain.start();
   }
 }
 for (const evt of ["pointerdown", "keydown", "touchstart"]) {
@@ -190,7 +193,9 @@ function showEnd() {
 function frame(now: number) {
   animator.tick(now);
   const g = game.state;
-  score.mood = { night: animator.current === "sleep" || animator.current === "fox" || animator.current === "wolf", rain: g.forecast[0] === "rain" };
+  const isRaining = g.forecast[0] === "rain";
+  score.mood = { night: animator.current === "sleep" || animator.current === "fox" || animator.current === "wolf", rain: isRaining };
+  rain.setActive(isRaining);
   screen.painter.cx.save();
   (packs[settings.art] ?? HIRSEL_ART).draw(screen.painter, {
     state: g,
@@ -235,7 +240,7 @@ requestAnimationFrame(frame);
 
 /* ---------- dev handles, for poking at the running game in the console ---------- */
 if (import.meta.env.DEV) {
-  (window as unknown as Record<string, unknown>).hirsel = { get game() { return game; }, audio, score, sfx, animator, settings };
+  (window as unknown as Record<string, unknown>).hirsel = { get game() { return game; }, audio, score, rain, sfx, animator, settings };
 }
 
 /* ---------- PWA ---------- */
