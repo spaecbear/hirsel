@@ -18,6 +18,8 @@ export class TutorialUi {
   private banner: HTMLElement;
   step: TutorialStep | null = null;
   active = false;
+  /** held back while a cutscene has the screen */
+  private suspended = false;
   onFinish: () => void = () => {};
 
   constructor(private game: Game) {
@@ -32,6 +34,17 @@ export class TutorialUi {
     this.active = true;
     this.seen.clear();
     this.refresh();
+  }
+
+  /** hide the banner without losing progress, for the length of a cutscene */
+  suspend(on: boolean) {
+    if (this.suspended === on) return;
+    this.suspended = on;
+    if (on) this.banner.classList.remove("on");
+    else {
+      this.step = null; // force a redraw of whatever step we are on
+      this.refresh();
+    }
   }
 
   stop() {
@@ -58,7 +71,7 @@ export class TutorialUi {
   }
 
   refresh() {
-    if (!this.active) return;
+    if (!this.active || this.suspended) return;
     const g = this.game.state;
     latchDone(g, this.seen); // a step once passed does not come back
     const next = currentStep(g, this.seen);

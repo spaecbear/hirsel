@@ -291,6 +291,33 @@ body.mode-retro .glen-chrome {
   pointer-events: none;
 }
 
+/* Cutscene lines. Same crisp DOM text as the Sound/Settings chips, rather
+   than the canvas bitmap font — at 7px, hardened to 1-bit, those lines were
+   unreadable, and they carry the whole reason the run is happening. */
+.caption {
+  position: absolute;
+  top: 16%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  background: rgba(11, 13, 8, 0.86);
+  border: 1px solid var(--gorse);
+  color: var(--wool);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  line-height: 1.5;
+  text-align: center;
+  padding: 12px 18px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  pointer-events: none;
+}
+.caption.on {
+  opacity: 1;
+}
+
 /* the first day's walkthrough. Sits at the top, clear of the sheet at the
    bottom, so a prompt and the thing it is telling you to tap are never
    fighting for the same corner of the screen. */

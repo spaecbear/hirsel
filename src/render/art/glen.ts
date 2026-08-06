@@ -794,23 +794,6 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
 }
 
 /**
- * A line of the intro, on a plate so it can actually be read.
- *
- * Bare text sat over a dark room or a bright sky at 7px was faint either way,
- * and these two lines are the only words in the opening — they carry the
- * whole reason the run is happening.
- */
-function drawCard(g: Painter, text: string, cx: number, y: number, alpha: number) {
-  if (alpha <= 0.02) return;
-  const w = textWidth(text);
-  const x = Math.round(cx - w / 2);
-  g.a(x - 8, y - 5, w + 16, 17, 8, 10, 6, 0.72 * alpha);
-  g.a(x - 8, y - 5, w + 16, 1, 224, 163, 60, 0.5 * alpha);
-  g.a(x - 8, y + 11, w + 16, 1, 224, 163, 60, 0.5 * alpha);
-  drawTextCentred(g, text, cx, y, "#f0ecd8", alpha);
-}
-
-/**
  * The day you walked out. Runs once, at the start of a run.
  *
  * Three beats: the desk you are leaving, the door, and the hill you are
@@ -838,10 +821,7 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
     drawShepherd(g, Math.round(L.W * 0.34), deskY - 26 - rise * 4, {});
     // the lamp overhead, and the window that is not his yet
     g.a(Math.round(L.W * 0.34) - 10, deskY - 46, 32, 26, 240, 214, 150, 0.08);
-    // up quickly, held for most of the beat, gone just before the door
-    const t = clamp01((p - 0.03) / 0.08) * clamp01((0.42 - p) / 0.05);
-    drawCard(g, "You handed in your notice.", L.W / 2, Math.round(L.H * 0.18), t);
-    return;
+    return; // the line itself is DOM text — see updateCaption in main.ts
   }
 
   if (beat === 1) {
@@ -874,8 +854,6 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
   // seen from behind: he is walking away up it. Front-facing, he looked like
   // he was shuffling sideways up the slope with his face to the camera.
   drawShepherd(g, Math.round(wx), Math.round(wy), { crook: true, walk: time / 90, back: true });
-  const fade = clamp01((p - 0.66) / 0.06) * clamp01((1 - p) / 0.06);
-  drawCard(g, "A hill, and whatever you can make of it.", L.W / 2, Math.round(L.H * 0.16), fade);
 }
 
 

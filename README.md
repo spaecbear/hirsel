@@ -175,7 +175,17 @@ bottom it was built exactly like the scree in the same file, and read as purple 
 the grass — a player said so. It is a soft mat now: a dark woody base with bloom speckled over
 it in banks, so there is no silhouette to mistake for a stone.
 
-Both lines of the opening, and every sky message, carry a dark backing plate. Over open sky bare text was fine, but over cloud, a
+Sky messages carry a dark backing plate — over open sky bare text was fine, but over cloud, a
+hillside or the moon it disappeared.
+
+**The two cutscene lines are DOM text, not canvas pixels.** The bitmap font renders at 7px and
+is hardened to 1-bit, and no amount of backing plate made those readable; they are the only
+words in the opening and they carry the whole reason the run is happening, so they get the same
+crisp text as the Sound and Settings chips. `updateCaption` in `main.ts` drives them off the
+animation's progress.
+
+The walkthrough is suspended for the length of the opening, so its first prompt lands when he
+has actually arrived on the hill rather than over the top of the cutscene. Over open sky bare text was fine, but over cloud, a
 hillside or the moon it disappeared — and it is the game's whole voice.
 
 The HUD offsets itself by the top safe-area inset, measured from a zero-size probe element,

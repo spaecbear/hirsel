@@ -273,11 +273,15 @@ for (const evt of ["pointerdown", "keydown", "touchstart"]) {
 /* ---------- night bookkeeping the UI owns ---------- */
 let lastDay = 1;
 animator.onStart = (anim) => {
+  // the opening gets the screen to itself; the walkthrough waits until he
+  // has actually arrived on the hill
+  if (anim === "quit") tutorial.suspend(true);
   if (anim === "sleep" && settings.ui === "retro" && innerWidth <= 760) view.goTab("glen");
   if (anim === "wolf" || anim === "wolflost") score.cue("wolf");
   else if (anim === "fox") score.cue("fox");
 };
 animator.onIdle = () => {
+  tutorial.suspend(false);
   render();
   const g = game.state;
   // autosave lands only once the night (and any raid) has fully played out
@@ -324,9 +328,32 @@ function showEnd() {
   $("over").classList.add("on");
 }
 
+/**
+ * The cutscene lines, as DOM text rather than canvas pixels.
+ *
+ * They used to be drawn with the bitmap font at 7px and hardened to 1-bit,
+ * which no amount of backing plate made readable. These are the only words in
+ * the opening and they carry the whole reason the run is happening, so they
+ * get the same crisp text as the Sound and Settings chips.
+ */
+const captionEl = $("caption");
+let captionText = "";
+function updateCaption(anim: string | null, p: number) {
+  let want = "";
+  if (anim === "quit") {
+    if (p < 0.4) want = "You handed in your notice.";
+    else if (p >= 0.66) want = "A hill, and whatever you can make of it.";
+  }
+  if (want === captionText) return;
+  captionText = want;
+  captionEl.textContent = want;
+  captionEl.classList.toggle("on", want !== "");
+}
+
 /* ---------- the frame loop ---------- */
 function frame(now: number) {
   animator.tick(now);
+  updateCaption(animator.current, animator.p);
   const g = game.state;
   const isRaining = g.forecast[0] === "rain";
   score.mood = {
