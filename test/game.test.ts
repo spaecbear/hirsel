@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ACTIONS, Game, newGame } from "../src/sim/game";
-import { BALANCE, OPEN_QUESTIONS } from "../src/sim/config";
+import { BALANCE, OPEN_QUESTIONS, START_MONEY } from "../src/sim/config";
 import { ACHIEVEMENTS } from "../src/sim/achievements";
+import { here, readyToShear, weatherOn } from "../src/sim/rules";
 import type { AnimId, GameState, Sheep } from "../src/sim/types";
 
 /** run the game with animations resolved instantly, in order */
@@ -325,5 +326,69 @@ describe("the pocket watch", () => {
     game.runRoutine();
     expect(state.buffs.tended).toBe(BALANCE.tendDays);
     expect(state.at).toBe(1);
+  });
+});
+
+describe("the economy", () => {
+  /**
+   * A modest, non-optimal policy: gather without the crook, shear and sell
+   * when possible, muck thin ground, otherwise sleep. No tool purchases, no
+   * pub, no pipe — a player who hasn't found the fast strategies yet.
+   *
+   * This test exists because of a direct player report: "a run of rain and I
+   * can't get to market before I starve." Simulating this policy at the
+   * spec's original 62±32p market found the report was right — median final
+   * money after 30 days was £40, flat against the start, worst case £2.
+   * Rain and haar together are ~43% of WEATHER_BAG, so a multi-day dead
+   * streak isn't a tail case. Raised to 80±34p; this pins the fix down so a
+   * future tuning pass can't silently walk it back to unplayable.
+   */
+  function playDay(game: Game) {
+    const g = game.state;
+    let guard = 0;
+    while (g.taps > 0 && guard++ < 10) {
+      if (!g.gatheredToday && !g.owned.crook) {
+        game.doAction("gather");
+        continue;
+      }
+      if (readyToShear(g.flock) > 0 && weatherOn(g).shear) {
+        game.doAction("shear");
+        continue;
+      }
+      if (g.wool > 0) {
+        game.doAction("market");
+        continue;
+      }
+      if (here(g).grass <= 60) {
+        game.doAction("muck");
+        continue;
+      }
+      break;
+    }
+    game.sleep();
+  }
+
+  function playMonth(seed: number) {
+    const game = new Game(undefined, { seed });
+    game.onAnim = (_a, after) => after?.();
+    let minMoney = game.state.money;
+    for (let d = 0; d < 30 && !game.state.over; d++) {
+      playDay(game);
+      minMoney = Math.min(minMoney, game.state.money);
+    }
+    return { bust: game.state.over?.kind === "lose", minMoney, final: game.state.money };
+  }
+
+  it("does not starve a careful-but-unoptimised player over a month, at the shipped market price", () => {
+    const N = 40;
+    const runs = Array.from({ length: N }, (_, i) => playMonth(5000 + i));
+    const busts = runs.filter((r) => r.bust);
+    const median = runs.map((r) => r.final).sort((a, b) => a - b)[Math.floor(N / 2)];
+
+    expect(busts, `${busts.length}/${N} runs starved: ${JSON.stringify(busts)}`).toHaveLength(0);
+    // a month of work should leave the player ahead, not flat against the start
+    expect(median).toBeGreaterThan(START_MONEY);
+    // and never within a single bad night's feed of going under
+    expect(Math.min(...runs.map((r) => r.minMoney))).toBeGreaterThan(10);
   });
 });

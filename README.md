@@ -183,3 +183,16 @@ one code path through the opening instead of two.
 The number lives in `OPEN_QUESTIONS.startMoney`. It is open question §14.1: if reaching the
 crook takes more than about fifteen days, raise this. Never hand out taps — the scarcity is
 the game.
+
+### Market price — raised after a player report
+
+The spec's 62±32p (30–95p) was simulated headlessly: a modest, tool-free policy across 40
+seeded 30-day runs came out with a **median final purse of £40** — flat against the £40
+start — and a **worst case of £2**, one bad-weather streak from starving. That matched a
+direct report ("a run of rain and I can't get to market before I starve"). Rain and haar
+together are ~43% of days in `WEATHER_BAG`, so a multi-day dead streak isn't a tail case; the
+per-sheep margin over feed has to survive it, not just the average day.
+
+Raised to **80±34p (46–114p)** (`BALANCE.marketBase` / `marketSwing`). Same simulation: median
+final £63, worst case £21, zero busts. The reasoning is written next to the constants in
+`config.ts` rather than only here, since that's where the next tuning pass will be looking.

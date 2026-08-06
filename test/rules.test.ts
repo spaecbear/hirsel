@@ -55,14 +55,15 @@ describe("moon", () => {
 });
 
 describe("market", () => {
-  it("stays inside roughly 30–95p and is stable within a day", () => {
+  it("stays inside base ± swing and is stable within a day", () => {
     for (let d = 1; d < 400; d++) {
       const p = priceOn(d);
-      expect(p).toBeGreaterThanOrEqual(30);
-      expect(p).toBeLessThanOrEqual(95);
+      expect(p).toBeGreaterThanOrEqual(BALANCE.marketBase - BALANCE.marketSwing);
+      expect(p).toBeLessThanOrEqual(BALANCE.marketBase + BALANCE.marketSwing);
       expect(priceOn(d)).toBe(p);
     }
   });
+
 });
 
 describe("taps", () => {

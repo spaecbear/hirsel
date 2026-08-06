@@ -56,8 +56,19 @@ export const BALANCE = {
   /** salt lick: they eat less of the hill for the same growth */
   saltlickGraze: 0.75,
 
-  marketBase: 62,
-  marketSwing: 32,
+  /**
+   * The spec's original 62±32 (30–95p) leaves almost no margin over feed.
+   * Simulating a modest, non-tool-buying policy across 40 seeded 30-day runs
+   * at 62±32 gave a median final purse of £40 — flat against the £40 start —
+   * with a worst case of £2, i.e. one bad weather streak from starving.
+   * Raised to 80±34 (46–114p) on player report ("can't survive a run of
+   * rain"): same test gives median £63 and a worst case of £21, zero busts.
+   * Rain and haar together are ~43% of days (2+1 of 7 in WEATHER_BAG), so a
+   * multi-day dead streak is common, not a tail case — the margin has to
+   * survive it, not just the average day.
+   */
+  marketBase: 80,
+  marketSwing: 34,
 
   wolfActionsNeeded: 5,
   wolfWarnOnAction: 4,
