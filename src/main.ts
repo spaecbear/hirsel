@@ -114,6 +114,7 @@ const settingsUi = buildSettings({
   hasSave,
   cheatContext: () => ({
     game,
+    settings,
     toggleRetro: () => applySettings({ art: settings.art === "og" ? "hirsel" : "og" }),
     toggleInverse: () => applySettings({ inverse: !settings.inverse }),
     setSpeed: () => {},
@@ -158,6 +159,9 @@ for (const evt of ["pointerdown", "keydown", "touchstart"]) {
 let lastDay = 1;
 animator.onStart = (anim) => {
   if (anim === "sleep" && innerWidth <= 760) view.goTab("glen");
+  // the air gets out of the way for these two
+  if (anim === "wolf" || anim === "wolflost") score.cue("wolf");
+  else if (anim === "fox") score.cue("fox");
 };
 animator.onIdle = () => {
   view.render();

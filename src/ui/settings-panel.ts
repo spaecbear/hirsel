@@ -112,15 +112,32 @@ export function buildSettings(api: SettingsApi) {
     row.appendChild(go);
     cheats.appendChild(row);
 
+    // found codes stay found, across runs. Tap one to fire it again rather
+    // than retyping it every playthrough.
     const known = new Set(s.cheatsFound);
-    const list = el("div", { class: "ach" });
+    const list = el("div", { class: "ach cheat-list" });
     for (const c of CHEATS) {
-      const got = known.has(c.code);
-      list.appendChild(
-        el("div", { class: got ? "got" : "" }, got ? `${c.code}<span>${c.blurb}</span>` : `?????<span>not found yet</span>`),
-      );
+      if (!known.has(c.code)) {
+        list.appendChild(el("div", {}, `?????<span>not found yet</span>`));
+        continue;
+      }
+      const on = c.kind === "toggle" && c.isOn?.(api.cheatContext());
+      const mark = c.kind === "toggle" ? `<i>${on ? "on" : "off"}</i>` : `<i>use</i>`;
+      const b = el(
+        "button",
+        { type: "button", class: `got${on ? " lit" : ""}` },
+        `<b class="k">${c.code}${mark}</b><span>${c.blurb}</span>`,
+      ) as HTMLButtonElement;
+      b.addEventListener("click", () => {
+        toast(c.apply(api.cheatContext()));
+        draw();
+      });
+      list.appendChild(b);
     }
     cheats.appendChild(list);
+    cheats.appendChild(
+      el("div", { class: "note" }, "Codes stay found between runs — work them from here rather than typing them again."),
+    );
     if (s.inverse) cheats.appendChild(el("div", { class: "note" }, "TOD is on. Enter it again to put the glen back the right way round."));
     box.appendChild(cheats);
 

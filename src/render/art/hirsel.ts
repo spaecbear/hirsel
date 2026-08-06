@@ -372,40 +372,74 @@ function drawDog(g: Painter, x: number, y: number, run: number) {
   g.px(x - 7, y + 1 + tail, 3, 3, "#f2eee2");
 }
 
-function drawFox(g: Painter, x: number, y: number, run: number) {
+/**
+ * The fox, which walks off the hill one way and back the other — so it needs
+ * to turn round. Local coordinates run 0 (tail tip) to 29 (snout) and are
+ * mirrored when it heads left; `x` is the trailing edge either way.
+ */
+function drawFox(g: Painter, x: number, y: number, run: number, facing: 1 | -1 = 1) {
+  const SPAN = 29;
   const leg = Math.sin(run * Math.PI * 16) > 0 ? 0 : 2;
-  g.px(x + 2, y + 6, 2, 4, "#2b201a");
-  g.px(x + 8, y + 6 - leg, 2, 4, "#2b201a");
-  g.px(x + 5, y + 6 + leg, 2, 4, "#2b201a");
-  g.px(x + 10, y + 6, 2, 4, "#2b201a");
-  g.px(x + 1, y + 2, 12, 5, C.fox);
-  g.px(x + 1, y + 2, 12, 1, "#c85a38");
-  g.px(x + 12, y, 6, 5, C.fox);
-  g.px(x + 17, y + 2, 3, 2, "#2b201a");
-  g.px(x + 16, y + 1, 1, 1, "#e8d27a");
-  g.px(x + 12, y - 2, 2, 3, "#8f3623");
-  g.px(x + 15, y - 2, 2, 3, "#8f3623");
-  g.px(x - 7, y + 1, 8, 4, C.fox);
-  g.px(x - 9, y + 1, 3, 3, "#f0ece0");
+  const p = (dx: number, dy: number, w: number, h: number, c: string) =>
+    g.px(facing > 0 ? x + dx : x + SPAN - dx - w, y + dy, w, h, c);
+
+  p(2, 1, 8, 4, C.fox); // brush
+  p(0, 1, 3, 3, "#f0ece0"); // white tip
+  p(11, 6, 2, 4, "#2b201a"); // legs
+  p(17, 6 - leg, 2, 4, "#2b201a");
+  p(14, 6 + leg, 2, 4, "#2b201a");
+  p(19, 6, 2, 4, "#2b201a");
+  p(10, 2, 12, 5, C.fox); // body
+  p(10, 2, 12, 1, "#c85a38"); // sunlit back
+  p(21, 0, 6, 5, C.fox); // head
+  p(26, 2, 3, 2, "#2b201a"); // snout
+  p(25, 1, 1, 1, "#e8d27a"); // eye
+  p(21, -2, 2, 3, "#8f3623"); // ears
+  p(24, -2, 2, 3, "#8f3623");
 }
 
-function drawWolfBeast(g: Painter, x: number, y: number, run: number, eyes = true) {
+/**
+ * The wolf, facing LEFT. He comes down off the skyline towards the shepherd,
+ * so his head has to be on the leading edge — drawn facing right he walked
+ * backwards down the hill.
+ *
+ * Local coordinates run from the nose at 0 to the tail tip at 49, and `x` is
+ * the nose. Everything takes an alpha so he can fade up out of the dark
+ * behind his own eyes: eyes first, then the shape of him.
+ */
+const WOLF_BODY: [number, number, number] = [37, 41, 53];
+const WOLF_SPINE: [number, number, number] = [51, 56, 73];
+const WOLF_DARK: [number, number, number] = [13, 15, 22];
+const WOLF_LEG: [number, number, number] = [18, 20, 28];
+const WOLF_EYE: [number, number, number] = [232, 178, 60];
+
+function drawWolfBeast(g: Painter, x: number, y: number, run: number, body = 1, eyeGlow = 1) {
   const leg = Math.sin(run * Math.PI * 14) > 0 ? 0 : 3;
-  g.px(x + 4, y + 11, 4, 9, "#0d0f16");
-  g.px(x + 14, y + 11 - leg, 4, 9, "#0d0f16");
-  g.px(x + 9, y + 11 + leg, 4, 9, "#12141c");
-  g.px(x + 19, y + 11, 4, 9, "#12141c");
-  g.px(x, y + 1, 26, 11, "#252935");
-  g.px(x, y + 1, 26, 2, "#333849"); // moonlit spine
-  g.px(x + 23, y - 4, 11, 10, "#252935");
-  g.px(x + 32, y + 1, 5, 4, "#0d0f16");
-  g.px(x + 23, y - 9, 4, 6, "#252935");
-  g.px(x + 29, y - 9, 4, 6, "#252935");
-  if (eyes) {
-    g.px(x + 26, y - 1, 3, 2, "#e8b23c");
-    g.px(x + 31, y - 1, 3, 2, "#e8b23c");
+  const p = (dx: number, dy: number, w: number, h: number, c: [number, number, number], a = body) =>
+    g.a(x + dx, y + dy, w, h, c[0], c[1], c[2], a);
+
+  if (body > 0.02) {
+    p(37, -1, 12, 5, WOLF_BODY); // brush
+    p(11, 1, 26, 11, WOLF_BODY); // barrel
+    p(11, 1, 26, 2, WOLF_SPINE); // moonlight along the back
+    // fore legs under the head, hind legs under the tail
+    p(13, 11, 4, 9, WOLF_DARK);
+    p(19, 11 - leg, 4, 9, WOLF_DARK);
+    p(27, 11 + leg, 4, 12, WOLF_LEG);
+    p(33, 11, 4, 9, WOLF_LEG);
+    p(4, -4, 11, 10, WOLF_BODY); // head
+    p(0, 1, 5, 4, WOLF_DARK); // muzzle
+    p(5, -9, 4, 6, WOLF_BODY); // ears
+    p(11, -9, 4, 6, WOLF_BODY);
   }
-  g.px(x - 11, y - 1, 12, 5, "#252935");
+
+  if (eyeGlow > 0.01) {
+    // the halo goes down first, so the eyes read before the shape does
+    p(3, -3, 14, 5, WOLF_EYE, eyeGlow * 0.12);
+    p(5, -2, 11, 3, WOLF_EYE, eyeGlow * 0.22);
+    p(6, -1, 3, 2, WOLF_EYE, eyeGlow);
+    p(11, -1, 3, 2, WOLF_EYE, eyeGlow);
+  }
 }
 
 /* ---------- weather overlays ---------- */
@@ -632,9 +666,10 @@ function foxRaidScene(g: Painter, st: GameState, p: number, time: number) {
     drawSheep(g, h.x + (h.x < fx ? -1 : 1) * flee * 40, h.y - flee * 4, s, { run: flee, flip: h.x > fx });
   });
 
+  // it turns round when it heads back up the hill, carrying one
   if (INV) drawRam(g, fx, fy - 2, p);
-  else drawFox(g, fx, fy, p);
-  if (!outbound) g.px(fx + 16, fy + 1, 8, 5, INV ? "#b4472c" : "#cfcab8");
+  else drawFox(g, fx, fy, p, outbound ? 1 : -1);
+  if (!outbound) g.px(fx + 1, fy + 1, 8, 5, INV ? "#b4472c" : "#cfcab8");
 
   if (dog) {
     const dx = 44 + ease(clamp01(p * 1.1)) * (W * 0.45);
@@ -665,24 +700,38 @@ function wolfScene(g: Painter, st: GameState, p: number, armed: boolean) {
   const sx = 120;
   const sy = GROUND - 28;
 
+  /*
+   * The entrance. Nothing is on the skyline but two gold eyes, which open,
+   * hold, and blink once. Only then does the rest of him fade up around them
+   * and start moving. He waits where he is while the eyes are all there is —
+   * a shape that slid downhill invisibly would give the game away.
+   */
+  const EYES_OPEN = 0.1; // eyes up
+  const EYES_HOLD = 0.2; // ...and held, before the body arrives
+  const BODY_IN = 0.34; // fully resolved
+  const eyeGlow = clamp01(p / EYES_OPEN) * (Math.abs(p - 0.17) < 0.012 ? 0.15 : 1); // one blink
+  const bodyAlpha = clamp01((p - EYES_HOLD) / (BODY_IN - EYES_HOLD));
+  /** 0 until the eyes have had their moment, then he moves */
+  const march = (end: number) => ease(clamp01((p - EYES_HOLD) / (end - EYES_HOLD)));
+
   if (!armed) {
-    const wolfX = 320 - ease(clamp01(p / 0.6)) * 210;
+    const wolfX = 330 - march(0.62) * 220;
     for (let i = 0; i < 9; i++) {
       if (p > 0.45 + i * 0.05) continue;
       const hx = 30 + i * 48;
-      const run = ease(clamp01(p * 1.4)) * 80;
+      const run = ease(clamp01((p - EYES_HOLD) * 1.8)) * 80;
       drawSheep(g, hx - (hx < wolfX ? run : -run), GROUND + 8 - Math.abs(Math.sin(p * 9 + i)) * 3, { id: -1, fleece: 6, breed: "blackface", age: 0 }, { run: p, flip: hx > wolfX });
     }
     if (p > 0.6) drawSheep(g, 96, GROUND + 12, { id: -1, fleece: 6, breed: "blackface", age: 0 }, { graze: false });
-    drawWolfBeast(g, wolfX, GROUND - 20, p);
+    drawWolfBeast(g, wolfX, GROUND - 20, p, bodyAlpha, eyeGlow);
     drawShepherd(g, sx - 40 + Math.sin(p * Math.PI * 6) * 2, sy, { crook: true });
     if (p > 0.75) g.a(0, 0, W, H, 180, 71, 44, 0.22 * Math.sin(((p - 0.75) / 0.25) * Math.PI));
     return;
   }
 
   const stage = p < 0.34 ? 0 : p < 0.5 ? 1 : p < 0.62 ? 2 : 3;
-  const wolfX = 320 - ease(clamp01(p / 0.34)) * 130;
-  if (stage < 3) drawWolfBeast(g, wolfX, GROUND - 20, p);
+  const wolfX = 330 - march(0.42) * 150;
+  if (stage < 3) drawWolfBeast(g, wolfX, GROUND - 20, p, bodyAlpha, eyeGlow);
 
   drawShepherd(g, sx, sy, {});
   if (stage < 2) {

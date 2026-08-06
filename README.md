@@ -108,6 +108,12 @@ subdivision. An earlier version pinged a 1.9kHz bandpassed noise burst on beat t
 bar, and a faint periodic high ping is indistinguishable from an audio watermark. The pulse is
 a low bodhrán thud for that reason.
 
+Two cues take the glen over when they fire, ducking the air out through its own bus and
+bringing it back afterwards: the **wolf** (D against A flat — the tritone, about as far from a
+Dorian air as two notes get — over a heartbeat that quickens as he comes down the hill) and the
+**fox** (tense rather than evil: the tonic with a minor second rubbing against it, and four
+clipped notes falling). They are triggered from the animation, not the game state.
+
 The engine exposes `setRecordedBed(buffer)`, which plays a recorded loop on the same music bus
 with the same reverb and tape roll-off — a real recorded theme drops in *alongside* the synth
 layer rather than replacing the system.
@@ -115,6 +121,10 @@ layer rather than replacing the system.
 ### Cheat codes
 
 Settings → Cheat codes. `RETRO`, `SILLER`, `TOD`, `HIRSEL`, `LANGDAY`, `HAAR`, `1680`.
+
+A code stays found for good — `cheatsFound` lives in settings, not the save file — and every
+found code becomes a button in that list, so later runs work them from the menu instead of
+retyping. `RETRO` and `TOD` hold state and show `on`/`off`; the rest are one-shots marked `use`.
 
 Codes show as `?????` until entered, which is what keeps `1680` from giving the secret away
 to a player who hasn't gone looking for it. It summons the wolf with none of the real

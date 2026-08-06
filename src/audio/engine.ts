@@ -77,7 +77,7 @@ export class AudioEngine {
   }
 
   /** plucked string: three detuned voices under a fast decay */
-  pluck(freq: number, t: number, dur = 1.5, gain = 0.5) {
+  pluck(freq: number, t: number, dur = 1.5, gain = 0.5, bus?: AudioNode) {
     const ac = this.ac;
     if (!ac) return;
     const out = ac.createGain();
@@ -103,7 +103,7 @@ export class AudioEngine {
       },
     );
     lp.connect(out);
-    out.connect(this.musicBus);
+    out.connect(bus ?? this.musicBus);
   }
 
   drone(freq: number, t: number, dur: number, gain = 0.16, bus?: AudioNode) {
@@ -219,7 +219,7 @@ export class AudioEngine {
    * arrives once the note has settled — a whistle played by a person, not a
    * sine wave. Two oscillators a hair apart so it isn't glassy.
    */
-  whistle(freq: number, t: number, dur: number, gain = 0.2) {
+  whistle(freq: number, t: number, dur: number, gain = 0.2, bus?: AudioNode) {
     const ac = this.ac;
     if (!ac) return;
     const out = ac.createGain();
@@ -261,11 +261,11 @@ export class AudioEngine {
     this.noise(t, Math.min(0.12, dur), "bandpass", freq * 2.2, 0.9, gain * 0.35, out);
 
     lp.connect(out);
-    out.connect(this.musicBus);
+    out.connect(bus ?? this.musicBus);
   }
 
   /** bodhrán: a low skin thud, pitch dropping away. No high tick anywhere near it. */
-  thump(t: number, gain = 0.1, low = false) {
+  thump(t: number, gain = 0.1, low = false, bus?: AudioNode) {
     const ac = this.ac;
     if (!ac) return;
     const o = ac.createOscillator();
@@ -276,11 +276,11 @@ export class AudioEngine {
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
     o.connect(g);
-    g.connect(this.musicBus);
+    g.connect(bus ?? this.musicBus);
     o.start(t);
     o.stop(t + 0.3);
     // the skin of the drum, well below anything that could read as a ping
-    this.noise(t, 0.07, "lowpass", 260, 0.8, gain * 0.5, this.musicBus);
+    this.noise(t, 0.07, "lowpass", 260, 0.8, gain * 0.5, bus ?? this.musicBus);
   }
 
   /** drop a recorded theme in alongside the synth score */

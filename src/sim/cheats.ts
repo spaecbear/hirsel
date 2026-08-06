@@ -5,9 +5,11 @@
  * conditions — §15 stands, cheats included.
  */
 import type { Game } from "./game";
+import type { Settings } from "./settings";
 
 export interface CheatContext {
   game: Game;
+  settings: Settings;
   toggleRetro: () => void;
   toggleInverse: () => void;
   setSpeed: (mult: number) => void;
@@ -19,6 +21,14 @@ export interface Cheat {
   code: string;
   name: string;
   blurb: string;
+  /**
+   * `toggle` codes hold a state and show it; `action` codes do a thing once.
+   * Either way, once a code is found it stays found and can be worked from the
+   * menu in any later run without being typed again.
+   */
+  kind: "toggle" | "action";
+  /** toggles only: is it currently on? */
+  isOn?: (c: CheatContext) => boolean;
   apply: (c: CheatContext) => string;
 }
 
@@ -26,6 +36,8 @@ export const CHEATS: Cheat[] = [
   {
     code: "RETRO",
     name: "Retro",
+    kind: "toggle",
+    isOn: (c) => c.settings.art === "og",
     blurb: "Switch between the original prototype art and the new scene.",
     apply: (c) => {
       c.toggleRetro();
@@ -34,6 +46,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "SILLER",
+    kind: "action",
     name: "Siller",
     blurb: "£500 in the purse. For testing, and for the shameless.",
     apply: (c) => {
@@ -46,6 +59,8 @@ export const CHEATS: Cheat[] = [
   {
     code: "TOD",
     name: "Tod",
+    kind: "toggle",
+    isOn: (c) => c.settings.inverse,
     blurb: "The glen turns over. You keep foxes, and the sheep come off the hill for them.",
     apply: (c) => {
       c.toggleInverse();
@@ -54,6 +69,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "HIRSEL",
+    kind: "action",
     name: "Hirsel",
     blurb: "Twelve more beasts on the ground.",
     apply: (c) => {
@@ -66,6 +82,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "LANGDAY",
+    kind: "action",
     name: "Lang day",
     blurb: "Fill the taps back up. Once per use, not permanent.",
     apply: (c) => {
@@ -79,6 +96,7 @@ export const CHEATS: Cheat[] = [
     // the last wolf in Scotland was killed some time in the 1680s
     code: "1680",
     name: "1680",
+    kind: "action",
     blurb: "He comes down off the skyline whether the night agrees or not. What happens after that is between him and whatever is hanging above your fire.",
     apply: (c) => {
       c.closeSettings();
@@ -94,6 +112,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "HAAR",
+    kind: "action",
     name: "Haar",
     blurb: "Roll the forecast over. Sometimes that is all you need.",
     apply: (c) => {

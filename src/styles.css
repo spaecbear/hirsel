@@ -55,6 +55,10 @@ h1 {
   font-weight: 700;
 }
 
+.top {
+  padding-bottom: 4px;
+}
+
 .sub {
   font-size: 11px;
   color: var(--stone);
@@ -89,7 +93,7 @@ h1 {
   gap: 0;
   flex-wrap: wrap;
   border: 2px solid var(--moss);
-  margin: 16px 0 0;
+  margin: 0;
   background: var(--peat-2);
 }
 .stat {
@@ -145,8 +149,10 @@ canvas {
   top: 0;
   z-index: 5;
   background: var(--peat);
-  padding-top: 18px;
-  margin-top: -18px;
+  /* padding, no negative margin: pulling the block up crushed the title and
+     the Sound/Settings chips underneath it. The padding gives the stuck block
+     an opaque strip above the HUD without eating the header. */
+  padding-top: 14px;
 }
 
 .tabs {
@@ -715,11 +721,69 @@ body.modal {
   color: var(--gorse);
   border-color: var(--gorse);
 }
-.ach div span {
+.ach div span,
+.ach button span {
   display: block;
   color: var(--stone);
   font-size: 9px;
   margin-top: 2px;
+  line-height: 1.5;
+}
+
+/* a found cheat is a button: tap it again in a later run rather than retyping */
+.cheat-list button {
+  /* Buttons centre their content vertically whatever `display` and
+     `align-content` say, so a card stretched to match a taller neighbour left
+     its code floating in mid-air. A flex column is the one thing that holds. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 3px;
+  flex: 1 1 150px;
+  background: var(--peat);
+  border: 1px solid var(--gorse);
+  color: var(--gorse);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-align: left;
+  padding: 8px 7px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.cheat-list button:hover,
+.cheat-list button:focus-visible {
+  background: var(--moss);
+  color: var(--wool);
+}
+.cheat-list button .k {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+}
+/* the state marker: on/off for toggles, "use" for one-shots */
+.cheat-list button i {
+  font-style: normal;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--stone);
+  border: 1px solid var(--moss);
+  padding: 1px 4px;
+}
+.cheat-list button.lit {
+  border-color: var(--heather);
+  color: var(--heather);
+}
+.cheat-list button.lit i {
+  color: var(--heather);
+  border-color: var(--heather);
+}
+.cheat-list button:hover span {
+  color: var(--wool);
 }
 
 .toast {
@@ -767,7 +831,6 @@ body.modal {
   }
   .scene {
     padding-top: 10px;
-    margin-top: -10px;
   }
   /* four to a row: the whole HUD fits in two rows on a phone */
   .stat {
