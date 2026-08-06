@@ -339,6 +339,54 @@ function showEnd() {
  * the opening and they carry the whole reason the run is happening, so they
  * get the same crisp text as the Sound and Settings chips.
  */
+/**
+ * The word of the glen, as text. Each line is a real element: main writes its
+ * opacity and drift every frame from the age the feed reports, which keeps the
+ * fade the canvas version had without the canvas font nobody could read.
+ */
+const skyLogEl = $("sky-log");
+let skyKey = "";
+function updateSkyLog(now: number) {
+  if (settings.ui !== "glen") {
+    if (skyKey !== "") {
+      skyKey = "";
+      skyLogEl.innerHTML = "";
+    }
+    return;
+  }
+  const lines = sky.list(now);
+  const key = lines.map((l) => `${l.cls}:${l.text}`).join("|");
+  if (key !== skyKey) {
+    skyKey = key;
+    skyLogEl.innerHTML = "";
+    for (const l of lines) {
+      const node = document.createElement("div");
+      node.className = `line ${l.cls}`;
+      node.textContent = l.text;
+      skyLogEl.appendChild(node);
+    }
+  }
+  // in fast, out slow: readable before it starts leaving
+  const kids = skyLogEl.children;
+  for (let i = 0; i < kids.length && i < lines.length; i++) {
+    const age = lines[i].age;
+    const fade = age < 0.1 ? age / 0.1 : age > 0.62 ? 1 - (age - 0.62) / 0.38 : 1;
+    const node = kids[i] as HTMLElement;
+    node.style.opacity = String(Math.max(0, Math.min(1, fade)));
+    node.style.transform = `translateY(${-Math.round(age * 8)}px)`;
+  }
+}
+
+const hintEl = $("hint");
+let hintText = "";
+function updateHint() {
+  const want = settings.ui === "glen" && !animator.busy ? world.hintText() : "";
+  if (want === hintText) return;
+  hintText = want;
+  hintEl.textContent = want;
+  hintEl.classList.toggle("on", want !== "");
+}
+
 const captionEl = $("caption");
 let captionText = "";
 function updateCaption(anim: string | null, p: number) {
@@ -365,6 +413,8 @@ function frame(now: number) {
   };
   rain.setActive(isRaining);
   sky.sync(g.log, now);
+  updateSkyLog(now);
+  updateHint();
   const shepherdAt = world.walk.tick(now);
 
   screen.painter.cx.save();
@@ -376,32 +426,17 @@ function frame(now: number) {
     reduced: animator.reduced,
     inverse: settings.inverse,
     payload: animator.payload,
-    messages: settings.ui === "glen" ? sky.list(now) : [],
     hover: settings.ui === "glen" ? world.hover : null,
     active: settings.ui === "glen" ? world.active : null,
     shepherdAt: settings.ui === "glen" ? shepherdAt : null,
     walking: settings.ui === "glen" && world.walk.walking,
     zen: settings.zen,
-    safeTop: safeTopLogical(),
     interior: settings.ui === "glen" && world.interior,
     spotlight: settings.ui === "glen" && !world.interior ? tutorial.spotlight : null,
     spotlightBed: settings.ui === "glen" && world.interior && tutorial.pointingAtBed,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);
-}
-
-/**
- * How many logical rows the notch or status bar is covering. The glen canvas
- * is full-bleed, so without this the HUD sits underneath them.
- */
-const safeProbe = document.getElementById("safe-probe");
-function safeTopLogical() {
-  if (settings.ui !== "glen" || !safeProbe) return 0;
-  const css = safeProbe.getBoundingClientRect().height;
-  if (!css) return 0;
-  const rows = css / (canvas.getBoundingClientRect().height / Math.max(1, screen.H));
-  return Math.round(rows);
 }
 
 /* the retro day panel's header sticks below the scene, so it needs its height */

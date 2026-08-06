@@ -2,7 +2,7 @@ import type { Painter } from "../painter";
 import type { AnimId, GameState, LogClass } from "../../sim/types";
 import type { HotspotId } from "../layout";
 
-/** a line of narration drifting up the sky, newest brightest */
+/** a line of narration drifting over the hill, newest brightest */
 export interface SkyMessage {
   text: string;
   cls: LogClass;
@@ -22,8 +22,6 @@ export interface Scene {
   inverse: boolean;
   /** for animations about something not yet in the state — the bought ewe */
   payload?: { breed?: string };
-  /** narration surfacing in the sky, newest first */
-  messages?: SkyMessage[];
   /** what the pointer is over, so it can be picked out of the scene */
   hover?: HotspotId | null;
   /** the thing the player last tapped, pulsing while its sheet is open */
@@ -40,8 +38,6 @@ export interface Scene {
   spotlight?: HotspotId | null;
   /** the tutorial is pointing at the bed, which is only inside */
   spotlightBed?: boolean;
-  /** logical rows covered by a notch or status bar at the top of the screen */
-  safeTop?: number;
 }
 
 export interface ArtPack {

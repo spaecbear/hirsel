@@ -524,6 +524,48 @@ export class WorldUi {
     return rows;
   }
 
+  /**
+   * What the thing under the pointer is. Written here rather than in the art
+   * because it needs the game state and TOD's vocabulary — and because it is
+   * text, which the canvas has no business rendering.
+   */
+  hintText(): string {
+    const g = this.game.state;
+    if (g.over) return "";
+    if (this.interior) {
+      switch (this.hover) {
+        case "bed":
+          return "The bed — sleep the night";
+        case "hearth":
+          return "The hearth";
+        case "door":
+          return "Out to the hill";
+        case "kit":
+          return "What you have";
+        default:
+          return owns(g, "hearth") ? "" : "Four walls and a draught.";
+      }
+    }
+    switch (this.hover) {
+      case "croft":
+        return owns(g, "ring") ? "The croft — finished" : "The croft — go in";
+      case "cart":
+        return `The cart — ${this.lexicon.wool} ${priceOn(g.day)}p a stone`;
+      case "flock":
+        return `${this.lexicon.flockCap} — ${g.flock.length} on the hill`;
+      case "shepherd":
+        return "Yourself";
+      case "ground":
+        return `${here(g).name} — grass ${Math.round(here(g).grass)}%`;
+      case "hills":
+        return "The hills — move them";
+      case "sky":
+        return "Word of the glen";
+      default:
+        return "";
+    }
+  }
+
   /** the hint line under the scene, for players who haven't found a target yet */
   idleHint(): string {
     const g = this.game.state;

@@ -192,10 +192,15 @@ words in the opening and they carry the whole reason the run is happening, so th
 crisp text as the Sound and Settings chips. `updateCaption` in `main.ts` drives the captions
 off the animation's progress; `WorldUi.drawHud` writes the top strip.
 
-The rule that fell out of it: **the bitmap font is for labels on a hillside, not for anything
-the player has to read.** It renders at 7px hardened to 1-bit, which suits a hover hint and
-suits nothing else. Sky messages stay on canvas because they belong to the weather; the
-numbers you play by, and the words that carry the story, are text.
+**Everything the player reads is DOM text.** The canvas draws the world; the words about the
+world are text over the top of it. That covers the HUD, the narration drifting over the hill,
+the hover hint, the cutscene lines, the walkthrough and every sheet.
+
+This took four rounds of "I still can't read that" to land, so it is worth stating plainly:
+the pixel font was a mistake for anything longer than a word. It rendered at 7px and was
+hard-thresholded to 1-bit, which no backing plate could rescue. `render/text.ts` has been
+deleted rather than left lying around for someone to reach for again — if a future feature
+wants text on the hill, it wants a DOM element positioned over the canvas, not a bitmap font.
 
 The walkthrough is suspended for the length of the opening, so its first prompt lands when he
 has actually arrived on the hill rather than over the top of the cutscene. Over open sky bare text was fine, but over cloud, a

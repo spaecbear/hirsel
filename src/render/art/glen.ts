@@ -13,7 +13,6 @@
 import { clamp01, ease, type Painter } from "../painter";
 import { drawMoonDisc, moonPos } from "../moon";
 import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldLayout } from "../layout";
-import { drawText, drawTextCentred, textWidth } from "../text";
 import {
   TERRAIN,
   mix,
@@ -44,9 +43,9 @@ import {
   setSpriteState,
   shade,
 } from "../sprites";
-import { isFullMoon, moonPhase, owns, priceOn } from "../../sim/rules";
+import { isFullMoon, moonPhase, owns } from "../../sim/rules";
 import type { GameState, Sheep } from "../../sim/types";
-import type { ArtPack, Scene, SkyMessage } from "./types";
+import type { ArtPack, Scene } from "./types";
 
 const wxOf = (st: GameState) => st.forecast[0];
 
@@ -379,53 +378,9 @@ function drawNight(g: Painter, L: WorldLayout, st: GameState, amount: number, ti
  * the word of the glen, in the sky
  * ================================================================== */
 
-const MSG_COLOUR: Record<string, string> = {
-  "": "#b9c0ac",
-  hi: "#ddd9c8",
-  gold: "#e0a33c",
-  bad: "#b4472c",
-  cozy: "#8a6a9c",
-};
-
-function drawMessages(g: Painter, L: WorldLayout, messages: SkyMessage[], safeTop: number) {
-  let y = Math.round(Math.max(L.horizonY * 0.42, safeTop + 20));
-  for (const m of messages) {
-    // in fast, out slow: it should be readable before it starts leaving
-    const fade = m.age < 0.12 ? m.age / 0.12 : m.age > 0.6 ? 1 - (m.age - 0.6) / 0.4 : 1;
-    const alpha = clamp01(fade) * 0.95;
-    if (alpha > 0.02) {
-      const drift = Math.round(m.age * 7);
-      const ty = y - drift;
-      /*
-       * A dark plate behind the line. Narration over open sky was legible
-       * enough, but over cloud, a hillside or the moon it disappeared —
-       * and it is the game's whole voice, so it has to be readable wherever
-       * it happens to drift.
-       */
-      const w = textWidth(m.text);
-      const x = Math.round(L.W / 2 - w / 2);
-      g.a(x - 5, ty - 3, w + 10, 13, 8, 10, 6, 0.5 * alpha);
-      g.a(x - 5, ty - 3, w + 10, 1, 60, 74, 46, 0.35 * alpha);
-      g.a(x - 5, ty + 9, w + 10, 1, 60, 74, 46, 0.35 * alpha);
-      drawTextCentred(g, m.text, L.W / 2, ty, MSG_COLOUR[m.cls] ?? MSG_COLOUR[""], alpha);
-    }
-    y += 15;
-  }
-}
-
 /* ================================================================== *
  * the HUD
  * ================================================================== */
-
-/** a hint of what the thing under your finger is */
-function drawHoverLabel(g: Painter, L: WorldLayout, label: string) {
-  const w = textWidth(label) + 8;
-  const x = Math.round(L.W / 2 - w / 2);
-  const y = L.H - 16;
-  g.a(x, y, w, 12, 11, 13, 8, 0.75);
-  g.a(x, y, w, 1, 224, 163, 60, 0.5);
-  drawText(g, label, x + 4, y + 3, "#e0a33c", 0.95);
-}
 
 /** outline the thing you are about to act on */
 function drawHighlight(g: Painter, L: WorldLayout, id: string, pulse: number) {
@@ -826,7 +781,7 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
  * the croft you are paying for is somewhere you actually stand rather than a
  * row of ticks in a shop. The bed is how the day ends.
  */
-function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number, hover: string | null, isNight: boolean, spotlightBed: boolean) {
+function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number, isNight: boolean, spotlightBed: boolean) {
   const hearthBuilt = owns(st, "hearth");
 
   // walls: rough stone, and floorboards below
@@ -943,19 +898,6 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
     }
   }
 
-  // labels for whatever is under the finger
-  const spot = I.hotspots.find((s) => s.id === hover);
-  if (spot) {
-    const label = hover === "bed" ? "Sleep the night" : hover === "door" ? "Out to the hill" : spot.label;
-    const w = textWidth(label) + 8;
-    const x = Math.round(I.W / 2 - w / 2);
-    g.a(x, I.H - 16, w, 12, 11, 13, 8, 0.78);
-    drawText(g, label, x + 4, I.H - 13, "#e0a33c", 0.95);
-  }
-
-  if (!hearthBuilt) {
-    drawTextCentred(g, "Four walls and a draught.", I.W / 2, Math.round(I.H * 0.08), "#6d7263", 0.8);
-  }
 }
 
 /* ================================================================== *
@@ -974,7 +916,6 @@ export const GLEN_ART: ArtPack = {
     const k = s.anim;
     const p = s.p;
     const L = layoutWorld(g.W, g.H, st, { shepherdAt: s.shepherdAt });
-    const safeTop = s.safeTop ?? 0;
     const night = k === "sleep" ? Math.sin(p * Math.PI) : 0;
 
     setSpriteState({
@@ -997,7 +938,7 @@ export const GLEN_ART: ArtPack = {
     // inside the house: a different room, not a different hill
     if (s.interior) {
       const I = layoutInterior(g.W, g.H);
-      drawInterior(g, I, st, s.time, s.hover ?? null, k === "sleep", !!s.spotlightBed);
+      drawInterior(g, I, st, s.time, k === "sleep", !!s.spotlightBed);
         return;
     }
 
@@ -1015,13 +956,11 @@ export const GLEN_ART: ArtPack = {
 
     if (k === "pub") {
       pubScene(g, L, p, s.time);
-      drawMessages(g, L, s.messages ?? [], safeTop);
-        return;
+          return;
     }
     if (k === "fox") {
       foxRaid(g, L, s);
-      drawMessages(g, L, s.messages ?? [], safeTop);
-        return;
+          return;
     }
 
     drawActors(g, L, s);
@@ -1030,29 +969,5 @@ export const GLEN_ART: ArtPack = {
 
     if (s.active) drawHighlight(g, L, s.active, s.time);
     if (s.spotlight) drawHighlight(g, L, s.spotlight, s.time * 2.2);
-    drawMessages(g, L, s.messages ?? [], safeTop);
-    if (s.hover) {
-      const spot = L.hotspots.find((h) => h.id === s.hover);
-      if (spot) drawHoverLabel(g, L, hoverLabel(spot.id, st));
-    }
   },
 };
-
-function hoverLabel(id: string, st: GameState): string {
-  switch (id) {
-    case "croft":
-      return owns(st, "ring") ? "The croft — finished" : "The croft — build it up";
-    case "cart":
-      return `The cart — wool ${priceOn(st.day)}p a stone`;
-    case "flock":
-      return `The flock — ${st.flock.length} on the hill`;
-    case "shepherd":
-      return "Yourself";
-    case "ground":
-      return `${st.pastures[st.at].name} — grass ${Math.round(st.pastures[st.at].grass)}%`;
-    case "hills":
-      return "The hills — move the flock";
-    default:
-      return "";
-  }
-}

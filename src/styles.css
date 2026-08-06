@@ -279,18 +279,6 @@ body.mode-retro .glen-chrome {
   border-color: #8a6a4a;
 }
 
-/* Zero-size, invisible, and only there to be measured: its height is the
-   top safe-area inset, which the full-bleed canvas needs so the HUD does not
-   end up under a notch or a status bar. */
-#safe-probe {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: env(safe-area-inset-top);
-  pointer-events: none;
-}
-
 /* The top strip. Real text, like everything else that has to be read: the
    canvas bitmap font renders at 7px hardened to 1-bit, which is fine for a
    label on a hillside and useless for the numbers you play the game by. */
@@ -312,23 +300,70 @@ body.mode-retro .glen-chrome {
   z-index: 6;
   pointer-events: none;
 }
-.hud-bar .taps {
-  color: var(--gorse);
-}
-.hud-bar .taps.spent {
-  color: var(--fox);
-}
-.hud-bar #hud-mid {
-  color: #e8ecd6;
-  letter-spacing: 0.2em;
-}
-.hud-bar .moon {
-  color: var(--stone);
-}
+.hud-bar .taps { color: var(--gorse); }
+.hud-bar .taps.spent { color: var(--fox); }
+.hud-bar #hud-mid { color: #e8ecd6; letter-spacing: 0.2em; }
+.hud-bar .moon { color: var(--stone); }
 
-/* Cutscene lines. Same crisp DOM text as the Sound/Settings chips, rather
-   than the canvas bitmap font — at 7px, hardened to 1-bit, those lines were
-   unreadable, and they carry the whole reason the run is happening. */
+/* The word of the glen, drifting over the hill. Text rather than canvas
+   pixels: the bitmap font is for labels on a hillside, not for anything the
+   player has to read. main.ts writes opacity and drift onto these directly. */
+.sky-log {
+  position: absolute;
+  top: calc(58px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  z-index: 5;
+  pointer-events: none;
+}
+.sky-log .line {
+  background: rgba(11, 13, 8, 0.8);
+  border-left: 2px solid var(--stone);
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: 0.06em;
+  color: var(--wool);
+  text-align: center;
+  will-change: opacity, transform;
+}
+.sky-log .line.gold { border-left-color: var(--gorse); color: var(--gorse); }
+.sky-log .line.bad { border-left-color: var(--fox); color: #e2937f; }
+.sky-log .line.cozy { border-left-color: var(--heather); color: #c3a8d0; }
+.sky-log .line.hi { border-left-color: var(--grass); }
+
+/* what the thing under the pointer is */
+.hint {
+  position: absolute;
+  bottom: calc(46px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(11, 13, 8, 0.82);
+  border: 1px solid var(--moss);
+  color: var(--gorse);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 7px 12px;
+  white-space: nowrap;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease-out;
+}
+.hint.on { opacity: 1; }
+
+/* Cutscene lines. Same crisp DOM text as the chips, rather than the canvas
+   bitmap font — at 7px, hardened to 1-bit, those lines were unreadable, and
+   they carry the whole reason the run is happening. */
 .caption {
   position: absolute;
   top: 16%;
@@ -349,9 +384,7 @@ body.mode-retro .glen-chrome {
   transition: opacity 0.35s ease-out;
   pointer-events: none;
 }
-.caption.on {
-  opacity: 1;
-}
+.caption.on { opacity: 1; }
 
 /* the first day's walkthrough. Sits at the top, clear of the sheet at the
    bottom, so a prompt and the thing it is telling you to tap are never
