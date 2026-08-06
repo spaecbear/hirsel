@@ -147,6 +147,43 @@ describe("the night", () => {
     expect(state.money).toBeLessThan(0);
     expect(state.over?.kind).toBe("lose");
   });
+
+  it("does not always take the most recently bought ewe", () => {
+    // player report: replace a stolen sheep and the fox takes the new one
+    // next, every time. Cause: flock.pop() removes the array's last element,
+    // and buyEwe always appends — so the newest purchase was always the
+    // casualty. This runs the real risk roll across many seeds on the
+    // highest-risk ground and checks who actually gets taken.
+    const N = 300;
+    let raids = 0;
+    let takenNewest = 0;
+    let takenOther = 0;
+    for (let seed = 0; seed < N; seed++) {
+      const state = Object.assign(newGame({ seed }), {
+        flock: [sheep(4), sheep(4), sheep(4)],
+        at: 2, // High Corrie: highest fox risk in the game
+        forecast: ["mist", "mist", "mist"] as const, // highest fox weather bias
+      });
+      const game = new Game(state);
+      game.onAnim = (_a, after) => after?.();
+      const before = state.flock.map((s) => s.id);
+      const newestId = before[before.length - 1];
+      game.sleep();
+      if (state.flock.length < before.length) {
+        raids++;
+        const remaining = new Set(state.flock.map((s) => s.id));
+        const takenId = before.find((id) => !remaining.has(id));
+        if (takenId === newestId) takenNewest++;
+        else takenOther++;
+      }
+    }
+    expect(raids, "sanity check: max-risk ground should raid often across 300 seeds").toBeGreaterThan(N * 0.4);
+    // this is the bug, made concrete: it was 0 before the fix, every time
+    expect(takenOther).toBeGreaterThan(0);
+    // three sheep, picked by chance, should land on the newest one meaningfully
+    // less than "always" — not a tight bound, just far from the old 100%
+    expect(takenNewest / raids).toBeLessThan(0.6);
+  });
 });
 
 describe("buying stock", () => {

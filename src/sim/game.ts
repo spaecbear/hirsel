@@ -352,8 +352,13 @@ export class Game {
     // 3. fox check — resolved after the raid animation, never before
     const risk = foxRisk(g);
     if (!wolfCame && this.rng() < risk && g.flock.length > 0) {
+      // any sheep, picked when the raid actually lands — not whichever was
+      // pushed on last. flock.pop() took the most recently bought ewe every
+      // time, since buyEwe always appends: a real bug, reported by a player
+      // who kept replacing a lost sheep only to see the new one taken next.
+      const takenIndex = Math.floor(this.rng() * g.flock.length);
       this.onAnim("fox", () => {
-        const lost = g.flock.pop();
+        const lost = g.flock.splice(takenIndex, 1)[0];
         if (lost) g.stats.foxLosses++;
         this.say(this.lex.raidLine(owns(g, "dog")), "bad");
         if (g.flock.length === 0) this.lose("The last of them gone", "You are a shepherd with no sheep. The croft goes quiet.");

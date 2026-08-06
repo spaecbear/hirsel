@@ -64,6 +64,13 @@ Things that are easy to break by accident:
 - **Three taps is the game.** Tools buy the day back; nothing else should loosen it.
 - **The fox takes its sheep only after the raid animation ends.** Same for the wolf mauling.
   Watching the counter drop before the animal arrives was a real playtest complaint.
+- **Which sheep the fox takes is chance, not position.** It used to be `flock.pop()` — the
+  array's last element, which is always the most recently bought ewe, since `buyEwe` appends.
+  A player reported replacing a stolen sheep only to have the fox take the replacement next,
+  every time; it wasn't bad luck, it was the code. Fixed to a uniform pick via the seeded rng
+  at the moment the raid lands. `flystrikeExposed` staying targeted at the heaviest fleece is
+  correct and unrelated — the spec calls that out by name as the mechanic that stops hoarding
+  fleece; it never said anything of the kind about the fox.
 - **The sword, the wolf and the summon conditions are never explained in the UI.**
   Not in tooltips, not in achievements (those two are hidden), not in cheat codes. The pelt
   is the exception the player earns: once taken, the shepherd wears it in every scene.
