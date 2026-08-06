@@ -83,13 +83,21 @@ export class View {
     stat("Moon", moonName(g.day).replace("Waxing", "Wax.").replace("Waning", "Wan.").replace("crescent", "cres."), isFullMoon(g.day) ? "good" : "");
   }
 
-  /** the last three lines, where the player is actually looking */
+  /**
+   * The last lines of narration, banded under the art so they are on screen
+   * whatever tab you are on. Only rewritten when the log actually changes —
+   * otherwise every state change would replay the flash and re-announce it.
+   */
+  private lastLogKey = "";
   private renderRecent() {
     const g = this.game.state;
-    const rc = $("recent");
     const latest = g.log.slice(0, 3);
-    rc.innerHTML = latest.map((l, i) => `<div class="${l.cls}${i === 0 ? " new" : ""}">${l.t}</div>`).join("");
-    rc.style.display = latest.length ? "block" : "none";
+    const key = latest.map((l) => `${l.day}:${l.t}`).join("|");
+    if (key === this.lastLogKey) return;
+    this.lastLogKey = key;
+    $("recent").innerHTML = latest
+      .map((l, i) => `<div class="${l.cls}${i === 0 ? " new" : ""}">${l.t}</div>`)
+      .join("");
   }
 
   private renderActions() {

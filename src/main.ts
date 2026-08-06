@@ -214,7 +214,7 @@ requestAnimationFrame(frame);
 
 /* ---------- dev handles, for poking at the running game in the console ---------- */
 if (import.meta.env.DEV) {
-  (window as unknown as Record<string, unknown>).hirsel = { get game() { return game; }, audio, score, animator, settings };
+  (window as unknown as Record<string, unknown>).hirsel = { get game() { return game; }, audio, score, sfx, animator, settings };
 }
 
 /* ---------- PWA ---------- */

@@ -166,6 +166,36 @@ export class AudioEngine {
     return g;
   }
 
+  /**
+   * Filtered noise that swells and falls away rather than starting loud and
+   * decaying — breath, wind, a draw on a pipe. `noise` can't do this: its
+   * envelope only ever decays.
+   */
+  noiseSwell(t: number, dur: number, type: BiquadFilterType, f0: number, f1: number, q: number, gain: number) {
+    const ac = this.ac;
+    if (!ac) return;
+    const n = Math.max(1, Math.floor(ac.sampleRate * dur));
+    const b = ac.createBuffer(1, n, ac.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ac.createBufferSource();
+    s.buffer = b;
+    const bp = ac.createBiquadFilter();
+    bp.type = type;
+    bp.frequency.setValueAtTime(f0, t);
+    bp.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+    bp.Q.value = q;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(gain, t + dur * 0.45);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(bp);
+    bp.connect(g);
+    g.connect(this.sfxBus);
+    s.start(t);
+    s.stop(t + dur + 0.02);
+  }
+
   tone1(t: number, f0: number, f1: number, dur: number, type: OscillatorType, gain: number, bus?: AudioNode) {
     const ac = this.ac;
     if (!ac) return null;

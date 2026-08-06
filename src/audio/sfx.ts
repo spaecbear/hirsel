@@ -43,8 +43,12 @@ export class Sfx {
           break;
         }
         case "shears":
-          e.noise(t, 0.05, "bandpass", 4200, 7, 0.3);
-          e.noise(t + 0.12, 0.05, "bandpass", 3600, 7, 0.24);
+          // two cuts. A narrow filter (high Q) passes almost no energy — these
+          // were inaudible at Q 7 however high the gain went.
+          for (const [at, f] of [[0, 4200], [0.13, 3500]] as [number, number][]) {
+            e.noise(t + at, 0.06, "bandpass", f, 2.4, 0.5);
+            e.noise(t + at + 0.01, 0.04, "lowpass", 900, 0.8, 0.15); // the blade's body
+          }
           break;
         case "coins":
           [0, 0.07, 0.15, 0.25].forEach((d, i) => e.tone1(t + d, 1500 + i * 180, 900, 0.22, "triangle", 0.13));
@@ -54,8 +58,8 @@ export class Sfx {
           e.tone1(t + 0.2, 980, 460, 0.13, "sawtooth", 0.16);
           break;
         case "bark":
-          e.tone1(t, 420, 180, 0.13, "square", 0.14);
-          e.noise(t, 0.09, "bandpass", 900, 2, 0.16);
+          e.tone1(t, 420, 180, 0.13, "square", 0.2);
+          e.noise(t, 0.09, "bandpass", 900, 0.9, 0.34);
           break;
         case "wolf": {
           const o = e.tone1(t, 180, 300, 2.6, "sawtooth", 0.22);
@@ -84,18 +88,30 @@ export class Sfx {
           [62, 69, 74, 76, 74, 69].forEach((n, i) => e.tone1(t + 0.15 + i * 0.28, HZ(n), HZ(n), 0.3, "sawtooth", 0.1));
           break;
         case "pipe":
-          e.noise(t, 0.9, "lowpass", 520, 0.7, 0.06);
+          // the stem tapped on the dyke, a long draw, the ember catching,
+          // then the smoke let out. Two seconds, under the animation.
+          e.tone1(t, 240, 120, 0.08, "triangle", 0.09);
+          e.noiseSwell(t + 0.1, 0.62, "bandpass", 560, 900, 0.7, 0.34);
+          e.noise(t + 0.34, 0.03, "highpass", 2600, 1.2, 0.1);
+          e.noise(t + 0.52, 0.025, "highpass", 3100, 1.2, 0.085);
+          e.noiseSwell(t + 0.95, 1.0, "lowpass", 700, 300, 0.6, 0.26);
           break;
         case "pub":
-          e.noise(t, 2.2, "bandpass", 700, 0.8, 0.1);
-          e.tone1(t + 0.9, 760, 700, 0.14, "sine", 0.1);
-          e.tone1(t + 1.05, 640, 600, 0.18, "sine", 0.09);
+          e.noiseSwell(t, 2.2, "bandpass", 700, 520, 0.7, 0.22); // the room
+          e.tone1(t + 0.9, 760, 700, 0.14, "sine", 0.13);
+          e.tone1(t + 1.05, 640, 600, 0.18, "sine", 0.12);
           break;
         case "cart":
-          for (let i = 0; i < 9; i++) e.noise(t + i * 0.16, 0.1, "bandpass", 300 + (i % 2) * 120, 3, 0.1);
+          // cartwheels on a rough track, with the axle complaining
+          for (let i = 0; i < 10; i++) {
+            e.noise(t + i * 0.16, 0.11, "bandpass", 300 + (i % 2) * 130, 1.1, 0.5);
+            if (i % 3 === 0) e.tone1(t + i * 0.16, 190, 150, 0.14, "triangle", 0.05);
+          }
           break;
         case "wind":
-          e.noise(t, 2.2, "lowpass", 320, 0.6, 0.1);
+          // night wind over the hill: it should arrive, not start loud
+          e.noiseSwell(t, 2.3, "lowpass", 420, 220, 0.7, 0.42);
+          e.noiseSwell(t + 0.6, 1.6, "bandpass", 620, 380, 0.9, 0.1);
           break;
         case "buy":
           e.tone1(t, 880, 880, 0.1, "triangle", 0.12);
