@@ -17,6 +17,13 @@
     <!-- ============ the glen: the canvas is the whole game ============ -->
     <div class="glen-root" id="glen-root">
       <div class="glen-stage" id="glen-stage"><!-- the canvas lives here in glen mode --></div>
+      <!-- the HUD is DOM text for the same reason the cutscene lines are:
+           the canvas bitmap font at 7px could not be read -->
+      <div class="hud-bar" id="hud-bar">
+        <span id="hud-left"></span>
+        <span id="hud-mid"></span>
+        <span id="hud-right"></span>
+      </div>
       <div class="sheet" id="sheet" role="dialog" aria-label="What you can do here"></div>
       <div class="tutorial" id="tutorial" aria-live="polite"></div>
       <!-- cutscene lines are real text, not canvas pixels: at 7px the

@@ -291,6 +291,41 @@ body.mode-retro .glen-chrome {
   pointer-events: none;
 }
 
+/* The top strip. Real text, like everything else that has to be read: the
+   canvas bitmap font renders at 7px hardened to 1-bit, which is fine for a
+   label on a hillside and useless for the numbers you play the game by. */
+.hud-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
+  background: rgba(11, 13, 8, 0.78);
+  border-bottom: 1px solid var(--moss);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--wool);
+  z-index: 6;
+  pointer-events: none;
+}
+.hud-bar .taps {
+  color: var(--gorse);
+}
+.hud-bar .taps.spent {
+  color: var(--fox);
+}
+.hud-bar #hud-mid {
+  color: #e8ecd6;
+  letter-spacing: 0.2em;
+}
+.hud-bar .moon {
+  color: var(--stone);
+}
+
 /* Cutscene lines. Same crisp DOM text as the Sound/Settings chips, rather
    than the canvas bitmap font — at 7px, hardened to 1-bit, those lines were
    unreadable, and they carry the whole reason the run is happening. */
@@ -335,6 +370,19 @@ body.mode-retro .glen-chrome {
 }
 .tutorial.on {
   display: block;
+}
+/* a refused tap: pull the eye back to the prompt rather than saying nothing */
+.tutorial.nudge {
+  animation: tut-nudge 0.42s ease-out;
+}
+@keyframes tut-nudge {
+  0% { transform: translateX(-50%); border-color: var(--gorse); }
+  25% { transform: translateX(calc(-50% - 5px)); border-color: var(--wool); }
+  60% { transform: translateX(calc(-50% + 4px)); }
+  100% { transform: translateX(-50%); border-color: var(--gorse); }
+}
+body.no-motion .tutorial.nudge {
+  animation: none;
 }
 .tut-text {
   font-size: 12px;

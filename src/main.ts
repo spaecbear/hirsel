@@ -49,6 +49,9 @@ tutorial.onFinish = () => {
   game.freeTaps = false;
 };
 world.onNote = (what) => tutorial.note(what);
+// the walkthrough locks everything except the thing it is teaching
+world.canInteract = (id) => tutorial.allows(id);
+world.onBlocked = () => tutorial.nudge();
 
 /* ---------- opening ---------- */
 function openingLines(g: Game) {

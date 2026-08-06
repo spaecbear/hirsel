@@ -47,6 +47,10 @@ export class WorldUi {
   private onChange: () => void = () => {};
   /** the tutorial watches for things the game state doesn't record */
   onNote: (what: string) => void = () => {};
+  /** the walkthrough locks everything except the thing it is teaching */
+  canInteract: (id: HotspotId) => boolean = () => true;
+  /** told when a tap was refused, so the prompt can ask for attention */
+  onBlocked: () => void = () => {};
   /** true once the player has stepped inside the croft */
   interior = false;
   /** hold a finger on the pasture and he walks over */
@@ -141,6 +145,8 @@ export class WorldUi {
   /** walk him to a point of open ground; false if that spot isn't walkable */
   private sendHim(clientX: number, clientY: number): boolean {
     if (this.game.state.over || this.busy) return false;
+    // wandering teaches nothing and only muddles the walkthrough
+    if (!this.canInteract("ground")) return false;
     const spot = this.spotAt(clientX, clientY);
     if (!spot || (spot.id !== "ground" && spot.id !== "flock")) return false;
     const { x, y } = this.screen.toLogical(clientX, clientY);
@@ -160,6 +166,11 @@ export class WorldUi {
     const spot = this.spotAt(clientX, clientY);
     if (!spot) {
       this.close();
+      return;
+    }
+    if (!this.canInteract(spot.id)) {
+      this.close();
+      this.onBlocked(); // the walkthrough is on something else just now
       return;
     }
 
@@ -196,7 +207,28 @@ export class WorldUi {
 
   /** rebuild the open sheet in place, so a purchase updates what's on screen */
   refresh() {
+    this.drawHud();
     if (this.active && this.sheet.classList.contains("on")) this.open(this.active);
+  }
+
+  /**
+   * The top strip. Text, not pixels — these are the numbers the game is
+   * played by, and the canvas bitmap font could not be read at the size the
+   * strip allows.
+   */
+  private drawHud() {
+    const g = this.game.state;
+    const taps = this.settings.zen
+      ? `TAPS <span class="taps">&infin;</span>`
+      : g.taps === 0
+        ? `<span class="taps spent">SPENT</span>`
+        : `TAPS <span class="taps">${g.taps}/${tapsPerDay(g)}</span>`;
+    $("hud-left").innerHTML = `DAY ${g.day} &nbsp; ${taps}`;
+    // the weather is falling on the hill in front of you; the moon is not
+    $("hud-mid").innerHTML = isFullMoon(g.day)
+      ? "FULL MOON"
+      : `<span class="moon">${moonName(g.day).toLowerCase()}</span>`;
+    $("hud-right").textContent = `£${g.money}  ·  ${g.wool} st`;
   }
 
   open(id: HotspotId) {

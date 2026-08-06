@@ -44,7 +44,7 @@ import {
   setSpriteState,
   shade,
 } from "../sprites";
-import { isFullMoon, moonPhase, owns, priceOn, tapsPerDay } from "../../sim/rules";
+import { isFullMoon, moonPhase, owns, priceOn } from "../../sim/rules";
 import type { GameState, Sheep } from "../../sim/types";
 import type { ArtPack, Scene, SkyMessage } from "./types";
 
@@ -416,46 +416,6 @@ function drawMessages(g: Painter, L: WorldLayout, messages: SkyMessage[], safeTo
 /* ================================================================== *
  * the HUD
  * ================================================================== */
-
-function drawHud(g: Painter, L: WorldLayout, st: GameState, zen: boolean, safeTop: number) {
-  /*
-   * The canvas runs under the status bar and the notch, so the strip has to
-   * start below whatever the device is covering — plus a couple of rows of
-   * its own, because text hard against the top edge is hard to read even
-   * where nothing is covering it.
-   */
-  const pad = safeTop + 3;
-  const h = 13 + pad;
-  g.a(0, 0, L.W, h, 11, 13, 8, 0.72);
-  g.a(0, h, L.W, 1, 60, 74, 46, 0.8);
-
-  const left = `DAY ${st.day}`;
-  drawText(g, left, 3, pad, "#ddd9c8", 0.95);
-  /*
-   * An actual count, not a row of dots. How many taps are left and how many
-   * the day holds is the single most important number in the game, and dots
-   * made you count pixels to read it.
-   */
-  const taps = zen ? "TAPS ∞" : st.taps === 0 ? "SPENT" : `TAPS ${st.taps}/${tapsPerDay(st)}`;
-  drawText(g, taps, 3 + textWidth(left) + 7, pad, st.taps === 0 && !zen ? "#b4472c" : "#e0a33c", 0.95);
-
-  /*
-   * The weather is not written down: it is falling on the hill in front of
-   * you. That leaves room for the numbers you cannot see by looking, which
-   * is what stops the three groups colliding on a phone.
-   */
-  const right = `£${st.money}  ${st.wool}st`;
-  drawText(g, right, L.W - textWidth(right) - 3, pad, "#ddd9c8", 0.95);
-
-  // the one warning always on screen without being a sentence
-  if (isFullMoon(st.day)) {
-    const t = "FULL MOON";
-    const cx = L.W / 2;
-    if (cx - textWidth(t) / 2 > 3 + textWidth(left) + textWidth(taps) + 10) {
-      drawTextCentred(g, t, cx, pad, "#e8ecd6", 0.95);
-    }
-  }
-}
 
 /** a hint of what the thing under your finger is */
 function drawHoverLabel(g: Painter, L: WorldLayout, label: string) {
@@ -945,13 +905,6 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   for (let i = 0; i < d.w; i += 5) g.px(d.x + i, d.y, 4, d.h, i % 10 ? "#54452c" : "#5b4a30");
   g.px(d.x + d.w - 6, d.y + d.h / 2, 3, 3, "#c9a83c"); // the latch
   g.a(d.x - 3, d.y - 3, d.w + 6, d.h + 4, 200, 214, 190, 0.1);
-  /*
-   * A standing label under the door. Hover only exists on a mouse, so on a
-   * phone the way out of the house was invisible — you had to guess that the
-   * door was tappable.
-   */
-  const outLabel = "OUT";
-  drawTextCentred(g, outLabel, d.x + d.w / 2, d.y + d.h + 4, "#c9c3ae", 0.75);
 
   // the shelf of everything bought
   const sh = I.shelf;
@@ -1045,8 +998,7 @@ export const GLEN_ART: ArtPack = {
     if (s.interior) {
       const I = layoutInterior(g.W, g.H);
       drawInterior(g, I, st, s.time, s.hover ?? null, k === "sleep", !!s.spotlightBed);
-      drawHud(g, L, st, !!s.zen, safeTop);
-      return;
+        return;
     }
 
     // the ones that take the screen off the hill entirely
@@ -1064,14 +1016,12 @@ export const GLEN_ART: ArtPack = {
     if (k === "pub") {
       pubScene(g, L, p, s.time);
       drawMessages(g, L, s.messages ?? [], safeTop);
-      drawHud(g, L, st, !!s.zen, safeTop);
-      return;
+        return;
     }
     if (k === "fox") {
       foxRaid(g, L, s);
       drawMessages(g, L, s.messages ?? [], safeTop);
-      drawHud(g, L, st, !!s.zen, safeTop);
-      return;
+        return;
     }
 
     drawActors(g, L, s);
@@ -1081,7 +1031,6 @@ export const GLEN_ART: ArtPack = {
     if (s.active) drawHighlight(g, L, s.active, s.time);
     if (s.spotlight) drawHighlight(g, L, s.spotlight, s.time * 2.2);
     drawMessages(g, L, s.messages ?? [], safeTop);
-    drawHud(g, L, st, !!s.zen, safeTop);
     if (s.hover) {
       const spot = L.hotspots.find((h) => h.id === s.hover);
       if (spot) drawHoverLabel(g, L, hoverLabel(spot.id, st));

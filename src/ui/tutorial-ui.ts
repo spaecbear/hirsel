@@ -8,7 +8,7 @@
  * a step that stops making sense (nothing worth shearing) is skipped.
  */
 import { $, el } from "./dom";
-import { currentStep, latchDone, type TutorialStep } from "../sim/tutorial";
+import { allowsInteraction, currentStep, latchDone, type TutorialStep } from "../sim/tutorial";
 import type { Game } from "../sim/game";
 import type { HotspotId } from "../render/layout";
 
@@ -68,6 +68,19 @@ export class TutorialUi {
 
   get pointingAtBed() {
     return this.active && this.step?.target === "interior-bed";
+  }
+
+  /** the walkthrough locks everything but the lesson — see allowsInteraction */
+  allows(id: HotspotId): boolean {
+    return !this.active || allowsInteraction(this.step, id);
+  }
+
+  /** a refused tap: draw the eye back to the prompt rather than saying nothing */
+  nudge() {
+    if (!this.active) return;
+    this.banner.classList.remove("nudge");
+    void this.banner.offsetWidth; // restart the animation
+    this.banner.classList.add("nudge");
   }
 
   refresh() {

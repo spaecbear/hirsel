@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TUTORIAL, TUTORIAL_START_FLOCK, TUTORIAL_TARGET_PAY, currentStep, latchDone, tutorialSetup } from "../src/sim/tutorial";
+import { TUTORIAL, TUTORIAL_START_FLOCK, TUTORIAL_TARGET_PAY, allowsInteraction, currentStep, latchDone, tutorialSetup } from "../src/sim/tutorial";
 import { Game, newGame } from "../src/sim/game";
 import { BALANCE, BREEDS, START_MONEY } from "../src/sim/config";
 import { canShear, readyToShear } from "../src/sim/rules";
@@ -147,6 +147,50 @@ describe("the walkthrough", () => {
       // whole words only: "bring it back" is not a mention of the ring
       const re = new RegExp(`\\b${word}\\b`);
       expect(re.test(text), `tutorial must not mention "${word}"`).toBe(false);
+    }
+  });
+});
+
+
+describe("locking the walkthrough to its lesson", () => {
+  const step = (id: string) => TUTORIAL.find((s) => s.id === id)!;
+
+  it("only the thing being taught answers", () => {
+    const shear = step("shear");
+    expect(allowsInteraction(shear, "flock")).toBe(true);
+    // the reported flaw: prompted to shear, you could tap the house and
+    // sleep the day away instead, and the lesson never happened
+    expect(allowsInteraction(shear, "croft")).toBe(false);
+    expect(allowsInteraction(shear, "cart")).toBe(false);
+    expect(allowsInteraction(shear, "hills")).toBe(false);
+    expect(allowsInteraction(shear, "ground")).toBe(false);
+  });
+
+  it("a step you advance by reading is not advanced by poking at the scene", () => {
+    const tools = step("tools");
+    expect(tools.readOnly).toBe(true);
+    expect(allowsInteraction(tools, "cart")).toBe(false);
+    const welcome = step("welcome");
+    for (const id of ["cart", "flock", "croft", "hills", "ground", "shepherd"]) {
+      expect(allowsInteraction(welcome, id), id).toBe(false);
+    }
+  });
+
+  it("never shuts anybody inside the house", () => {
+    for (const s of TUTORIAL) expect(allowsInteraction(s, "door")).toBe(true);
+  });
+
+  it("lets someone who stepped back outside get in again for the bed", () => {
+    const loss = step("loss");
+    expect(loss.target).toBe("interior-bed");
+    expect(allowsInteraction(loss, "bed")).toBe(true);
+    expect(allowsInteraction(loss, "croft")).toBe(true); // back in through the door
+    expect(allowsInteraction(loss, "cart")).toBe(false);
+  });
+
+  it("locks nothing once the walkthrough is over", () => {
+    for (const id of ["cart", "flock", "croft", "hills", "ground", "shepherd", "sky"]) {
+      expect(allowsInteraction(null, id), id).toBe(true);
     }
   });
 });

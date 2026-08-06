@@ -166,6 +166,28 @@ export function latchDone(g: GameState, seen: Set<string>) {
   }
 }
 
+/**
+ * What the player may touch while a step is running.
+ *
+ * Without this the walkthrough could be walked straight past: prompted to
+ * shear, you could tap the house instead, sleep the day away, and the lesson
+ * never happened. Only the thing being taught answers.
+ *
+ * Two things are always allowed. The door, so nobody is ever shut inside the
+ * house; and the house itself when the lesson is about the bed, so someone
+ * who stepped back outside can get in again.
+ */
+export function allowsInteraction(step: TutorialStep | null, id: string): boolean {
+  if (!step) return true;
+  if (id === "door") return true;
+  const target = step.target;
+  if (!target) return false; // nothing to point at: read it and press Go on
+  if (target === "interior-bed") return id === "bed" || id === "croft";
+  // a step you advance by reading is not advanced by poking at the scene
+  if (step.readOnly) return false;
+  return id === target;
+}
+
 /** everything the tutorial wants true at the start of the first day */
 export function tutorialSetup(g: GameState) {
   g.flock.length = Math.min(g.flock.length, TUTORIAL_START_FLOCK);

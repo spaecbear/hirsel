@@ -104,6 +104,14 @@ Two things it must keep doing, both learned the hard way:
 Settings → The game → **Replay the first day** starts a fresh run with the walkthrough on, for
 anyone who skipped it or wants to see it again.
 
+**The walkthrough locks the scene to its lesson.** Prompted to shear, you could tap the house
+instead, sleep the day away, and the lesson never happened — the run carried on with the
+walkthrough still pointing at the flock. `allowsInteraction` now answers for exactly one
+target at a time, a refused tap nudges the prompt rather than saying nothing, and wandering
+is off for the duration. Two things stay open regardless: the door, so nobody is ever shut
+inside the house, and the house itself when the lesson is the bed, so someone who stepped out
+can get back in.
+
 Every step still keeps its skip guard even though day one is rigged: nothing should be able to
 park a new player on a step the weather or an empty hill has made impossible.
 
@@ -178,11 +186,16 @@ it in banks, so there is no silhouette to mistake for a stone.
 Sky messages carry a dark backing plate — over open sky bare text was fine, but over cloud, a
 hillside or the moon it disappeared.
 
-**The two cutscene lines are DOM text, not canvas pixels.** The bitmap font renders at 7px and
+**The HUD and the two cutscene lines are DOM text, not canvas pixels.** The bitmap font renders at 7px and
 is hardened to 1-bit, and no amount of backing plate made those readable; they are the only
 words in the opening and they carry the whole reason the run is happening, so they get the same
-crisp text as the Sound and Settings chips. `updateCaption` in `main.ts` drives them off the
-animation's progress.
+crisp text as the Sound and Settings chips. `updateCaption` in `main.ts` drives the captions
+off the animation's progress; `WorldUi.drawHud` writes the top strip.
+
+The rule that fell out of it: **the bitmap font is for labels on a hillside, not for anything
+the player has to read.** It renders at 7px hardened to 1-bit, which suits a hover hint and
+suits nothing else. Sky messages stay on canvas because they belong to the weather; the
+numbers you play by, and the words that carry the story, are text.
 
 The walkthrough is suspended for the length of the opening, so its first prompt lands when he
 has actually arrived on the hill rather than over the top of the cutscene. Over open sky bare text was fine, but over cloud, a
