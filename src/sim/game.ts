@@ -244,6 +244,30 @@ export class Game {
   }
 
   /* ---------- the last wolf ---------- */
+
+  /**
+   * The cheat path: he comes whether the ground, the moon and the day's work
+   * agree or not. What happens when he arrives is unchanged — that is still
+   * decided by whether the broadsword is on the wall.
+   */
+  forceWolf(): "pelt" | "mauled" | "none" {
+    const g = this.state;
+    if (g.over) return "none";
+    if (owns(g, "pelt")) {
+      this.say("Nothing comes down off the skyline. There was only ever the one, and you have his pelt.", "cozy");
+      this.changed();
+      return "none";
+    }
+    const armed = owns(g, "sword");
+    if (!g.flock.length && !armed) {
+      this.say("Something moves above the corrie and finds nothing worth coming down for.", "bad");
+      this.changed();
+      return "none";
+    }
+    this.wolf();
+    return armed ? "pelt" : "mauled";
+  }
+
   private wolf() {
     const g = this.state;
     if (owns(g, "sword")) {

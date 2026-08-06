@@ -180,6 +180,27 @@ describe("the last wolf", () => {
     expect(state.stats.wolfMaulings).toBe(1);
   });
 
+  it("can be forced by the 1680 code with none of the conditions met", () => {
+    // day 1, the low field, no boots, no crook, no actions spent
+    const { game, state, played } = harness({ flock: [sheep(4), sheep(4), sheep(4)], owned: { sword: true } });
+    expect(game.forceWolf()).toBe("pelt");
+    expect(played).toContain("wolf");
+    expect(state.owned.pelt).toBe(true);
+  });
+
+  it("forced without the sword still costs the flock", () => {
+    const { game, state } = harness({ flock: [sheep(4), sheep(4), sheep(4)] });
+    expect(game.forceWolf()).toBe("mauled");
+    expect(state.flock).toHaveLength(OPEN_QUESTIONS.survivorsAfterWolf);
+  });
+
+  it("will not come a second time once the pelt is taken", () => {
+    const { game, played } = harness({ flock: [sheep(4)], owned: { pelt: true } });
+    expect(game.forceWolf()).toBe("none");
+    expect(played).not.toContain("wolf");
+    expect(played).not.toContain("wolflost");
+  });
+
   it("warns twice, and neither warning says wolf", () => {
     const { game, state } = armed(false);
     for (let i = 0; i < 4; i++) game.doAction("pipe");

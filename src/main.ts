@@ -117,6 +117,7 @@ const settingsUi = buildSettings({
     toggleRetro: () => applySettings({ art: settings.art === "og" ? "hirsel" : "og" }),
     toggleInverse: () => applySettings({ inverse: !settings.inverse }),
     setSpeed: () => {},
+    closeSettings: () => closeSettings(),
   }),
 });
 

@@ -114,7 +114,12 @@ layer rather than replacing the system.
 
 ### Cheat codes
 
-Settings → Cheat codes. `RETRO`, `SILLER`, `TOD`, `HIRSEL`, `LANGDAY`, `HAAR`.
+Settings → Cheat codes. `RETRO`, `SILLER`, `TOD`, `HIRSEL`, `LANGDAY`, `HAAR`, `1680`.
+
+Codes show as `?????` until entered, which is what keeps `1680` from giving the secret away
+to a player who hasn't gone looking for it. It summons the wolf with none of the real
+conditions met — but what happens when he arrives is unchanged, and still decided by whether
+the broadsword is on the wall. The flock is still not cut until the animation has played.
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
 The simulation is untouched — only the words and the sprites swap.
 

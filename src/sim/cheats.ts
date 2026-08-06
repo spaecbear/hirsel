@@ -11,6 +11,8 @@ export interface CheatContext {
   toggleRetro: () => void;
   toggleInverse: () => void;
   setSpeed: (mult: number) => void;
+  /** get out of the way — some codes have something to show you */
+  closeSettings: () => void;
 }
 
 export interface Cheat {
@@ -71,6 +73,23 @@ export const CHEATS: Cheat[] = [
       c.game.say("The light holds longer than it has any right to.", "cozy");
       c.game.changed();
       return "Three taps back.";
+    },
+  },
+  {
+    // the last wolf in Scotland was killed some time in the 1680s
+    code: "1680",
+    name: "1680",
+    blurb: "He comes down off the skyline whether the night agrees or not. What happens after that is between him and whatever is hanging above your fire.",
+    apply: (c) => {
+      c.closeSettings();
+      switch (c.game.forceWolf()) {
+        case "pelt":
+          return "You had the reach of him.";
+        case "mauled":
+          return "You had nothing in your hands but a crook.";
+        default:
+          return "The hill stays quiet.";
+      }
     },
   },
   {
