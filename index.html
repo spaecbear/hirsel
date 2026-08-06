@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+    <meta name="theme-color" content="#14170f" />
+    <meta name="description" content="Hirsel — a cozy 8-bit Scottish sheep farming game. Take on a hill and try to build a life on it." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <title>Hirsel</title>
+  </head>
+  <body>
+    <div class="frame">
+      <header class="top">
+        <h1>Hirsel</h1>
+        <div class="sub">
+          <span id="tagline">a hill, a flock, and a life to build on it</span>
+          <button id="btn-sound" class="chip" type="button" aria-pressed="true">Sound on</button>
+          <button id="btn-settings" class="chip" type="button">Settings</button>
+        </div>
+      </header>
+
+      <div class="scene">
+        <div class="hud" id="hud"></div>
+        <canvas id="scene" aria-label="The glen"></canvas>
+        <nav class="tabs" id="tabs" aria-label="Sections">
+          <button data-go="day" class="on" type="button">Day</button>
+          <button data-go="land" type="button">Land</button>
+          <button data-go="shop" type="button">Steading</button>
+          <button data-go="glen" type="button">Glen</button>
+        </nav>
+      </div>
+
+      <div class="cols">
+        <section class="panel" data-tab="day">
+          <h2>The day</h2>
+          <div class="recent" id="recent"></div>
+          <div class="body" id="actions"></div>
+        </section>
+
+        <section class="panel" data-tab="land">
+          <h2>Pastures — tap to move the flock</h2>
+          <div class="body" id="pastures"></div>
+          <h2 class="sub-h">The flock</h2>
+          <div class="body" id="flock"></div>
+        </section>
+
+        <section class="panel" data-tab="shop">
+          <h2>The steading — buy any time, costs no tap</h2>
+          <div class="body" id="shop"></div>
+        </section>
+
+        <section class="panel" data-tab="glen">
+          <h2>Word of the glen</h2>
+          <div class="body">
+            <div class="fc" id="forecast"></div>
+            <div class="buffs" id="buffs"></div>
+            <div class="log" id="log"></div>
+          </div>
+        </section>
+      </div>
+      <footer class="foot" id="foot"></footer>
+    </div>
+
+    <div class="over" id="over" role="dialog" aria-modal="true">
+      <div class="box">
+        <h3 id="over-title"></h3>
+        <p id="over-body"></p>
+        <button class="act sleep centre" id="over-again" type="button">Start again</button>
+      </div>
+    </div>
+
+    <div class="over" id="settings" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="box wide">
+        <h3>Settings</h3>
+        <div id="settings-body"></div>
+        <button class="act centre" id="settings-close" type="button">Back to the hill</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
