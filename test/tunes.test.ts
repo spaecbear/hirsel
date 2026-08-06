@@ -1,22 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { DORIAN_D, HARP_FIGURES, HIRSEL_AIR, sequence } from "../src/audio/tunes";
+import { DORIAN_D, HARP_FIGURES, HIRSEL_AIR, MIXOLYDIAN_D, TOD_JIG, sequence } from "../src/audio/tunes";
 
-/** a note is in the mode if its pitch class is one of D Dorian's seven */
-const classes = new Set(DORIAN_D.map((n) => n % 12));
+const inMode = (scale: number[]) => new Set(scale.map((n) => n % 12));
 
 describe("the tunes", () => {
-  it("fills every bar exactly — a mistyped duration would put the tune out of time", () => {
-    for (const [name, part] of Object.entries(HIRSEL_AIR.parts)) {
+  it.each([HIRSEL_AIR, TOD_JIG])("$name fills every bar exactly", (tune) => {
+    // a mistyped duration would quietly put the tune out of time
+    for (const [name, part] of Object.entries(tune.parts)) {
       part.bars.forEach((bar, i) => {
         const beats = bar.reduce((a, n) => a + n.d, 0);
-        expect(beats, `${name} bar ${i + 1}`).toBe(HIRSEL_AIR.beatsPerBar);
+        expect(beats, `${name} bar ${i + 1}`).toBe(tune.beatsPerBar);
       });
       expect(part.roots).toHaveLength(part.bars.length);
     }
   });
 
-  it("stays in D Dorian", () => {
-    for (const part of Object.values(HIRSEL_AIR.parts)) {
+  it.each([
+    [HIRSEL_AIR, DORIAN_D],
+    [TOD_JIG, MIXOLYDIAN_D],
+  ])("$0.name stays in its mode", (tune, scale) => {
+    const classes = inMode(scale as number[]);
+    for (const part of Object.values((tune as typeof HIRSEL_AIR).parts)) {
       for (const bar of part.bars) {
         for (const note of bar) {
           if (note.n === null) continue;
@@ -24,6 +28,27 @@ describe("the tunes", () => {
         }
       }
     }
+  });
+
+  it("gives every tune the harp shapes and pulse its own metre needs", () => {
+    for (const tune of [HIRSEL_AIR, TOD_JIG]) {
+      for (const root of new Set(Object.values(tune.parts).flatMap((p) => p.roots))) {
+        expect(tune.harp[root], `${tune.name} root ${root}`).toBeDefined();
+      }
+      expect(tune.pulse.every((b) => b < tune.beatsPerBar)).toBe(true);
+      expect(tune.harpStep).toBeGreaterThan(0);
+    }
+  });
+
+  it("makes The Tod the opposite of The Hirsel: compound time, major third, quicker", () => {
+    expect(TOD_JIG.beatsPerBar).toBe(6);
+    expect(HIRSEL_AIR.beatsPerBar).toBe(4);
+    // F sharp against the air's F natural
+    expect(MIXOLYDIAN_D).toContain(66);
+    expect(DORIAN_D).toContain(65);
+    // a bar of the jig goes by faster than a bar of the air
+    const bar = (t: typeof TOD_JIG) => (60 / t.bpm) * t.beatsPerBar;
+    expect(bar(TOD_JIG)).toBeLessThan(bar(HIRSEL_AIR));
   });
 
   it("moves on the double tonic — D and C, not D and A", () => {

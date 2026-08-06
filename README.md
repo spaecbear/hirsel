@@ -96,7 +96,19 @@ the double tonic, which is the most Scottish thing you can do to a tune. `tunes.
 checks every bar fills exactly and every pitch is in the mode, so a mistyped duration fails
 the suite instead of quietly knocking the tune out of time.
 
-`score.ts` sequences it a bar at a time and picks the arrangement from the game state:
+There is a second tune. With the `TOD` code on — foxes kept, sheep coming off the hill — the
+score switches to **The Tod**, written in the idiom of the old folk song about the fox that
+goes out on a chilly night: a 6/8 lilt, brisk and loping, in D mixolydian with the flat
+seventh doing the work. It is an original tune, not that one: the traditional melody is public
+domain but every recorded arrangement of it belongs to somebody, so this way the tune is ours.
+Everything about it is the opposite of the air — compound time instead of four, a major third
+instead of a minor one, and a bar going by in 1.2s against the air's 3.5s.
+
+Metre-specific things (the harp's chord shapes, its spacing, which beats the drum lands on)
+live on the tune, not in the sequencer, so a tune in 6/8 doesn't get a 4/4 backbeat.
+
+`score.ts` sequences whichever is loaded a bar at a time and picks the arrangement from the
+game state:
 
 | | melody | accompaniment |
 | --- | --- | --- |

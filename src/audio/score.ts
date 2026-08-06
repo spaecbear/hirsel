@@ -15,7 +15,7 @@
  *   rain   harp figures drop out, the whistle softens and shortens
  */
 import type { AudioEngine } from "./engine";
-import { HARP_FIGURES, HIRSEL_AIR, sequence, type Event, type Tune } from "./tunes";
+import { HIRSEL_AIR, sequence, type Event, type Tune } from "./tunes";
 
 const HZ = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 const LOOKAHEAD = 1.4;
@@ -41,6 +41,12 @@ export class Score {
 
   constructor(private engine: AudioEngine) {
     this.load(HIRSEL_AIR);
+  }
+
+  /** swap tunes without restarting the clock — it takes at the next bar line */
+  setTune(tune: Tune) {
+    if (tune === this.tune) return;
+    this.load(tune);
   }
 
   load(tune: Tune) {
@@ -155,16 +161,15 @@ export class Score {
       this.engine.drone(HZ(night ? root - 12 : root), t0, beat * barBeats * bars + 0.4, night ? 0.17 : 0.13, bus);
     }
 
-    // the pulse: two soft thumps a bar, and never after dark
+    // the pulse, where this tune puts it, and never after dark
     if (!night) {
-      this.engine.thump(t0, 0.085, false, bus);
-      this.engine.thump(t0 + beat * 2, 0.05, true, bus);
+      this.tune.pulse.forEach((b, i) => this.engine.thump(t0 + b * beat, i === 0 ? 0.085 : 0.05, i > 0, bus));
     }
 
     // the harp, arpeggiating the chord under the tune
     if (!rain) {
-      const figure = HARP_FIGURES[root] ?? HARP_FIGURES[38];
-      const step = night ? 1 : 0.5;
+      const figure = this.tune.harp[root] ?? this.tune.harp[38];
+      const step = this.tune.harpStep * (night ? 2 : 1);
       for (let b = 0, i = 0; b < barBeats; b += step, i++) {
         // leave the downbeat to the melody on the last beat of the phrase
         if (night && i % 2 === 1) continue;

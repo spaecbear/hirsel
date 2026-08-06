@@ -15,6 +15,7 @@ import type { ArtPack } from "./render/art/types";
 
 import { AudioEngine } from "./audio/engine";
 import { Score } from "./audio/score";
+import { HIRSEL_AIR, TOD_JIG } from "./audio/tunes";
 import { Sfx } from "./audio/sfx";
 
 import { View } from "./ui/view";
@@ -71,6 +72,8 @@ function applySettings(patch: Partial<Settings>) {
   document.body.classList.toggle("no-motion", animator.reduced);
   const pack = packs[settings.art] ?? HIRSEL_ART;
   screen.setPack(pack);
+  // turned-over glen, turned-over tune
+  score.setTune(settings.inverse ? TOD_JIG : HIRSEL_AIR);
   soundBtn.textContent = settings.muted ? "Sound off" : "Sound on";
   soundBtn.setAttribute("aria-pressed", String(!settings.muted));
   view.render();
