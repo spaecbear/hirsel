@@ -9,8 +9,8 @@ import type { GameState } from "./sim/types";
 
 import { Animator } from "./render/animator";
 import { Screen } from "./render/screen";
+import { GLEN_ART } from "./render/art/glen";
 import { HIRSEL_ART } from "./render/art/hirsel";
-import { OG_ART } from "./render/art/og";
 import type { ArtPack } from "./render/art/types";
 
 import { AudioEngine } from "./audio/engine";
@@ -20,22 +20,26 @@ import { HIRSEL_AIR, TOD_JIG } from "./audio/tunes";
 import { Sfx } from "./audio/sfx";
 
 import { View } from "./ui/view";
+import { WorldUi } from "./ui/world-ui";
+import { SkyFeed } from "./ui/sky-feed";
 import { buildSettings } from "./ui/settings-panel";
 import { $, toast } from "./ui/dom";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
-const packs: Record<string, ArtPack> = { hirsel: HIRSEL_ART, og: OG_ART };
+const packs: Record<string, ArtPack> = { glen: GLEN_ART, retro: HIRSEL_ART };
 
 let game = new Game();
 const animator = new Animator();
 const canvas = $<HTMLCanvasElement>("scene");
-const screen = new Screen(canvas, packs[settings.art] ?? HIRSEL_ART);
+const screen = new Screen(canvas, packs[settings.ui] ?? GLEN_ART);
 const audio = new AudioEngine();
 const score = new Score(audio);
 const rain = new Rain(audio);
 const sfx = new Sfx(audio);
+const sky = new SkyFeed();
 const view = new View(game, animator, settings);
+const world = new WorldUi(game, screen, animator, settings);
 
 /* ---------- opening ---------- */
 function openingLines(g: Game) {
@@ -48,51 +52,80 @@ function wire(g: Game) {
   g.onAnim = (anim, after, payload) => {
     sfx.forAnim(anim, owns(g.state, "dog"));
     animator.play(anim, after, payload);
-    view.render();
+    render();
   };
-  g.onAchievement = (a) => toast(`Achievement — ${a.name}`);
+  g.onAchievement = (a) => {
+    toast(`Achievement — ${a.name}`);
+    sky.add(`— ${a.name} —`, "gold", performance.now());
+  };
   g.lex = lexicon(settings.inverse);
-  g.subscribe(() => view.render());
+  g.subscribe(render);
   g.hydrateAchievements();
 }
 
-function startGame(state?: GameState) {
+/** both interfaces redraw from the same signal */
+function render() {
+  if (settings.ui === "retro") view.render();
+  else world.refresh();
+}
+
+function startGame(state?: GameState, opts: { intro?: boolean } = {}) {
   animator.clear();
+  sky.clear();
   game = new Game(state);
   view.setGame(game);
+  world.setGame(game);
   wire(game);
   if (!state) openingLines(game);
   view.goTab("day");
-  view.render();
+  lastDay = game.state.day;
+  // the day you walked out, before the first day on the hill
+  if (opts.intro && settings.ui === "glen" && !prefersReducedMotion(settings)) {
+    animator.play("quit");
+  }
+  render();
 }
 
 /* ---------- settings application ---------- */
 function applySettings(patch: Partial<Settings>) {
+  const wasUi = settings.ui;
   Object.assign(settings, patch);
   saveSettings(settings);
   audio.setLevels({ master: settings.master, music: settings.music, sfx: settings.sfx, muted: settings.muted });
   animator.reduced = prefersReducedMotion(settings);
   document.body.classList.toggle("no-motion", animator.reduced);
-  const pack = packs[settings.art] ?? HIRSEL_ART;
-  screen.setPack(pack);
-  // turned-over glen: turned-over tune, and turned-over words
   score.setTune(settings.inverse ? TOD_JIG : HIRSEL_AIR);
   game.lex = lexicon(settings.inverse);
+
+  if (settings.ui !== wasUi || !canvas.parentElement) applyUiMode();
   soundBtn.textContent = settings.muted ? "Sound off" : "Sound on";
   soundBtn.setAttribute("aria-pressed", String(!settings.muted));
-  view.render();
+  render();
+}
+
+/** move the one canvas between the two shells and re-fit it */
+function applyUiMode() {
+  const glen = settings.ui === "glen";
+  document.body.classList.toggle("mode-glen", glen);
+  document.body.classList.toggle("mode-retro", !glen);
+  const host = $(glen ? "glen-stage" : "retro-stage");
+  if (glen) host.appendChild(canvas);
+  else host.insertBefore(canvas, $("tabs"));
+  world.close();
+  screen.setPack(packs[settings.ui] ?? GLEN_ART);
+  screen.fit();
+  measureScene();
 }
 
 const soundBtn = $<HTMLButtonElement>("btn-sound");
 
 const settingsUi = buildSettings({
   settings,
-  apply: (patch) => {
-    applySettings(patch);
-  },
+  apply: (patch) => applySettings(patch),
   newGame: () => {
-    startGame();
+    startGame(undefined, { intro: true });
     closeSettings();
+    hideTitle();
     toast("A new hill.");
   },
   saveNow: () => toast(saveGame(game.state) ? "Saved." : "Could not save."),
@@ -101,6 +134,7 @@ const settingsUi = buildSettings({
     if (!f) return toast("No save found.");
     startGame(f.state);
     closeSettings();
+    hideTitle();
     toast(`Loaded — day ${f.state.day}.`);
   },
   exportSave: () => exportFile(game.state),
@@ -109,6 +143,7 @@ const settingsUi = buildSettings({
       if (!state) return toast("That file is not a Hirsel save.");
       startGame(state);
       closeSettings();
+      hideTitle();
       toast(`Loaded — day ${state.day}.`);
     });
   },
@@ -121,7 +156,7 @@ const settingsUi = buildSettings({
   cheatContext: () => ({
     game,
     settings,
-    toggleRetro: () => applySettings({ art: settings.art === "og" ? "hirsel" : "og" }),
+    toggleRetro: () => applySettings({ ui: settings.ui === "retro" ? "glen" : "retro" }),
     toggleInverse: () => applySettings({ inverse: !settings.inverse }),
     setSpeed: () => {},
     closeSettings: () => closeSettings(),
@@ -143,10 +178,42 @@ $("settings-close").addEventListener("click", closeSettings);
 soundBtn.addEventListener("click", () => applySettings({ muted: !settings.muted }));
 $("over-again").addEventListener("click", () => {
   $("over").classList.remove("on");
-  startGame();
+  startGame(undefined, { intro: true });
 });
 addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeSettings();
+});
+
+/* ---------- the title ---------- */
+function showTitle() {
+  const save = readSave();
+  const cont = $<HTMLButtonElement>("title-continue");
+  cont.disabled = !save;
+  cont.style.display = save ? "" : "none";
+  $("title-foot").textContent = save ? `a run is waiting — day ${save.state.day}` : "";
+  $("title").classList.add("on");
+}
+function hideTitle() {
+  $("title").classList.remove("on");
+  if (!settings.seenTitle) applySettings({ seenTitle: true });
+}
+$("title-new").addEventListener("click", () => {
+  firstGesture();
+  hideTitle();
+  startGame(undefined, { intro: true });
+});
+$("title-continue").addEventListener("click", () => {
+  firstGesture();
+  const f = readSave();
+  hideTitle();
+  if (f) {
+    startGame(f.state);
+    game.say(`— Picked up where you left off, day ${f.state.day}. —`, "cozy");
+  } else startGame(undefined, { intro: true });
+});
+$("title-settings").addEventListener("click", () => {
+  firstGesture();
+  openSettings();
 });
 
 /* ---------- audio starts on the first gesture ---------- */
@@ -165,13 +232,12 @@ for (const evt of ["pointerdown", "keydown", "touchstart"]) {
 /* ---------- night bookkeeping the UI owns ---------- */
 let lastDay = 1;
 animator.onStart = (anim) => {
-  if (anim === "sleep" && innerWidth <= 760) view.goTab("glen");
-  // the air gets out of the way for these two
+  if (anim === "sleep" && settings.ui === "retro" && innerWidth <= 760) view.goTab("glen");
   if (anim === "wolf" || anim === "wolflost") score.cue("wolf");
   else if (anim === "fox") score.cue("fox");
 };
 animator.onIdle = () => {
-  view.render();
+  render();
   const g = game.state;
   // autosave lands only once the night (and any raid) has fully played out
   if (settings.autosave && g.day !== lastDay && !g.over) {
@@ -194,10 +260,16 @@ function frame(now: number) {
   animator.tick(now);
   const g = game.state;
   const isRaining = g.forecast[0] === "rain";
-  score.mood = { night: animator.current === "sleep" || animator.current === "fox" || animator.current === "wolf", rain: isRaining };
+  score.mood = {
+    night: animator.current === "sleep" || animator.current === "fox" || animator.current === "wolf",
+    rain: isRaining,
+  };
   rain.setActive(isRaining);
+  sky.sync(g.log, now);
+  const shepherdAt = world.walk.tick(now);
+
   screen.painter.cx.save();
-  (packs[settings.art] ?? HIRSEL_ART).draw(screen.painter, {
+  (packs[settings.ui] ?? GLEN_ART).draw(screen.painter, {
     state: g,
     anim: animator.current,
     p: animator.p,
@@ -205,18 +277,22 @@ function frame(now: number) {
     reduced: animator.reduced,
     inverse: settings.inverse,
     payload: animator.payload,
+    messages: settings.ui === "glen" ? sky.list(now) : [],
+    hover: settings.ui === "glen" ? world.hover : null,
+    active: settings.ui === "glen" ? world.active : null,
+    shepherdAt: settings.ui === "glen" ? shepherdAt : null,
+    walking: settings.ui === "glen" && world.walk.walking,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);
 }
 
-/* the day panel's header sticks below the scene, so it needs its live height */
+/* the retro day panel's header sticks below the scene, so it needs its height */
 const sceneEl = document.querySelector<HTMLElement>(".scene");
 function measureScene() {
   if (sceneEl) document.documentElement.style.setProperty("--scene-h", `${sceneEl.offsetHeight}px`);
 }
 if (sceneEl && "ResizeObserver" in window) new ResizeObserver(measureScene).observe(sceneEl);
-measureScene();
 
 addEventListener("resize", () => {
   screen.fit();
@@ -225,22 +301,30 @@ addEventListener("resize", () => {
 matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", () => applySettings({}));
 
 /* ---------- boot ---------- */
+applyUiMode();
 applySettings({});
 const existing = readSave();
-if (existing && settings.autosave) {
-  startGame(existing.state);
-  lastDay = existing.state.day;
-  game.say(`— Picked up where you left off, day ${existing.state.day}. —`, "cozy");
-  view.render();
-} else {
-  startGame();
-}
+startGame(existing && settings.autosave ? existing.state : undefined);
+showTitle();
 screen.fit();
 requestAnimationFrame(frame);
 
 /* ---------- dev handles, for poking at the running game in the console ---------- */
 if (import.meta.env.DEV) {
-  (window as unknown as Record<string, unknown>).hirsel = { get game() { return game; }, audio, score, rain, sfx, animator, settings };
+  (window as unknown as Record<string, unknown>).hirsel = {
+    get game() {
+      return game;
+    },
+    audio,
+    score,
+    rain,
+    sfx,
+    animator,
+    settings,
+    screen,
+    world,
+    sky,
+  };
 }
 
 /* ---------- PWA ---------- */

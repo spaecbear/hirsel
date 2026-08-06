@@ -51,13 +51,70 @@ src/
     cheats.ts   the codes in the settings menu
     glossary.ts what each buff/status does, in Settings — built from BALANCE,
                 not a second hand-written copy of the numbers
-  render/     canvas: integer scaling, animation queue, two art packs
-    art/hirsel.ts  the default scene
-    art/og.ts      the original prototype scene, ported faithfully
-  audio/      Web Audio: generative score, one effect per animation
-  ui/         panels, HUD, settings
+  ui/
+    world-ui.ts    playing by touching the hill: hotspots and sheets
+    walk.ts        hold the pasture and he walks over
+    sky-feed.ts    the log, drifting up the sky and fading
+  render/     canvas: integer scaling, animation queue, two interfaces
+    layout.ts      where everything in the glen sits, for any screen shape,
+                   and the tap targets — art and hit-testing share it
+    sprites.ts     every sprite, shared by both interfaces
+    text.ts        pixel type: rendered at 1x, threshold-hardened, blitted
+    art/glen.ts    the full-screen scene you play in
+    art/hirsel.ts  the older panelled scene (the retro interface)
+  audio/      Web Audio: written tunes, rain, one effect per animation
 test/         Vitest over sim/
 ```
+
+## Starting a run
+
+A title screen, and then the day you walked out: three beats — the desk you are leaving, the
+door, and the hill you are climbing. It is the only time the game shows you anywhere but the
+glen, which is the point. It plays on a new run only, is skipped under reduced motion, and
+never plays when continuing a save.
+
+## Two interfaces
+
+**Glen** (default) is the full-screen scene. The canvas is the whole game: you work the hill
+by touching the things in it, and the narration surfaces in the sky rather than in a panel.
+
+| tap | what opens |
+| --- | --- |
+| a sheep | gather, shear, tend |
+| open grass | the pasture's own work (muck) |
+| yourself | the comforts — pipe, pipes, pint, the ask — and the pocket watch |
+| the croft | the four croft milestones, and sleeping the night |
+| the cart | sell wool, sell a beast, buy stock, buy tools |
+| the hills | which pasture to graze |
+| the sky | the three-day forecast, the moon, what's running in you, recent word |
+
+**Hold** a finger on open ground and he walks there. It costs no tap and touches nothing in
+the sim — a hill you can only look at reads as a menu; one you can wander reads as a place.
+The position deliberately lives in `ui/walk.ts` rather than the game state, so it is never
+something a save has to carry or a player can lose progress over.
+
+**Retro** is the older panelled build — HUD, small scene, tabs, sub-tabs. Kept whole rather
+than deleted: it is the version that was balanced and playtested. Settings → Look → Interface,
+or the `RETRO` code.
+
+### Built for the shape of the screen
+
+The glen has no fixed resolution. `render/screen.ts` picks a whole-number scale first (aiming
+at a narrower logical width in portrait, so a phone is closer to the hill) and the logical size
+falls out of it, which keeps the pixel grid honest at any viewport. `render/layout.ts` then
+composes for the orientation: landscape gets a wide vista with the croft at one end and the
+cart at the other; portrait gets a hillside receding upward with more rows of sheep in depth.
+**The horizon also moves with the pasture** — the Low Field is hemmed in by hills, the High
+Corrie is mostly sky, because standing higher means seeing further.
+
+Two things that were bugs and are now rules:
+
+- **Sky and hills must not overlap as hotspots.** Whichever is listed first swallows every tap
+  meant for the other.
+- **The flock is many small targets, not one box.** As a single bounding box it covered the
+  whole field, so tapping grass between two sheep opened flock work and the pasture's own work
+  was unreachable. Each animal is its own target and the gaps fall through to the ground —
+  measured at 73% of the field reaching the pasture, 9% the sheep.
 
 ### Design invariants
 
@@ -89,24 +146,6 @@ Things that are easy to break by accident:
 - **Autosave writes at the end of a night only** — never mid-day, never mid-animation.
 - **Sleep is pinned above the action lists**, so the day can always be ended without
   scrolling. The ten actions are split into Work / Comforts sub-tabs to keep each list short.
-
-### Art packs
-
-Two looks. The switch in Settings → Look is hidden until the `RETRO` code has been entered;
-before that, the retro scene isn't mentioned in the UI at all.
-
-- **Hirsel** (default): the croft is in the scene and gets built as you buy it — roof, smoke
-  from the hearth, the byre, a lit window at night. Each pasture is its own place. Sheep graze,
-  lift their heads and cast shadows, and fleece changes their silhouette.
-
-  Every tool you buy shows up on the hill: the crook in his hand, tackety boots, blade shears
-  on the belt, the watch chain across his coat, the oilskin as a longer darker coat, the storm
-  lantern lit and burning brighter the darker it gets, the pony and cart parked by the croft on
-  days you don't go to market, and the salt lick out on the turf. The broadsword is the one
-  deliberate exception — anything visible would telegraph it.
-- **Retro (OG)**: the original single-file prototype's scene, ported unchanged.
-
-Adding a third is one file implementing `ArtPack` in `src/render/art/`.
 
 ### Audio
 

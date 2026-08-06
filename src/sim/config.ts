@@ -53,6 +53,13 @@ export const BALANCE = {
   regenRain: 2.2,
   regenSun: 1.2,
 
+  /**
+   * What the cart pays for a beast, as a fraction of what she cost new.
+   * A loss on purpose: selling stock is a way out of a bad week, not a way
+   * to make money by churning it.
+   */
+  sellbackRate: 0.6,
+
   /** salt lick: they eat less of the hill for the same growth */
   saltlickGraze: 0.75,
 
@@ -195,4 +202,5 @@ export const ANIM_MS: Record<string, number> = {
   fox: 2200,
   wolf: 6000,
   wolflost: 5000,
+  quit: 7000,
 };

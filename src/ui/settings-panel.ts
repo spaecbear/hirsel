@@ -37,14 +37,13 @@ export function buildSettings(api: SettingsApi) {
 
     /* ---- look ---- */
     const look = group("Look");
-    // the art toggle stays hidden until RETRO has been found
-    if (s.cheatsFound.includes("RETRO")) {
-      look.appendChild(
-        seg("Art", [["Hirsel", s.art === "hirsel"], ["Retro (OG)", s.art === "og"]], (i) =>
-          api.apply({ art: i === 0 ? "hirsel" : "og" }),
-        ),
-      );
-    }
+    // the interface switch is a real preference now, not a hidden extra:
+    // "retro" is the whole panelled build, which some players will prefer
+    look.appendChild(
+      seg("Interface", [["Glen", s.ui === "glen"], ["Retro", s.ui === "retro"]], (i) =>
+        api.apply({ ui: i === 0 ? "glen" : "retro" }),
+      ),
+    );
     look.appendChild(
       seg(
         "Motion",
@@ -60,9 +59,8 @@ export function buildSettings(api: SettingsApi) {
       el(
         "div",
         { class: "note" },
-        s.cheatsFound.includes("RETRO")
-          ? "Retro is the original prototype scene, kept exactly as it was. Reduced motion collapses every animation to instant."
-          : "Reduced motion collapses every animation to instant.",
+        "Glen is the full-screen hill: tap the things in it to work them. Retro is the older " +
+          "panelled build, kept as it was. Reduced motion collapses every animation to instant.",
       ),
     );
     box.appendChild(look);

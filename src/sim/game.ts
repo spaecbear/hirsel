@@ -105,6 +105,7 @@ export function newGame(opts: GameOptions = {}): GameState {
       foxLosses: 0,
       strikeLosses: 0,
       sheepBought: 0,
+      sheepSold: 0,
       shears: 0,
       daysHungry: 0,
       wolfMaulings: 0,
@@ -252,6 +253,41 @@ export class Game {
       { breed },
     );
     this.changed(); // the money goes now; she arrives in her own time
+  }
+
+  /**
+   * Sell a beast at the cart. Costs no tap, like every other trade.
+   *
+   * You take a loss on her — `sellbackRate` — so this is a way out of a bad
+   * week rather than a way to farm money by churning stock. Selling the
+   * flock down to nothing is allowed and ends the run the same as losing
+   * them: a shepherd with no sheep is a shepherd with no sheep.
+   */
+  sellEwe(id: number) {
+    const g = this.state;
+    if (g.over) return;
+    const i = g.flock.findIndex((s) => s.id === id);
+    if (i < 0) return;
+    const sheep = g.flock[i];
+    const b = BREEDS[sheep.breed];
+    const take = Math.max(1, Math.round(b.cost * BALANCE.sellbackRate));
+    g.flock.splice(i, 1);
+    g.money += take;
+    g.stats.sheepSold++;
+    g.stats.earned += take;
+    this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.unit} at the cart. £${take}.`, "gold");
+    if (g.flock.length === 0) {
+      this.lose("You sold the last of them", "There is no shepherd without a flock. You take the road down.");
+    }
+    this.award();
+    this.changed();
+  }
+
+  /** what the cart would pay for her today */
+  sellPrice(id: number): number {
+    const sheep = this.state.flock.find((s) => s.id === id);
+    if (!sheep) return 0;
+    return Math.max(1, Math.round(BREEDS[sheep.breed].cost * BALANCE.sellbackRate));
   }
 
   /* ---------- the last wolf ---------- */

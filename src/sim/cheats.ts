@@ -37,11 +37,11 @@ export const CHEATS: Cheat[] = [
     code: "RETRO",
     name: "Retro",
     kind: "toggle",
-    isOn: (c) => c.settings.art === "og",
-    blurb: "Switch between the original prototype art and the new scene.",
+    isOn: (c) => c.settings.ui === "retro",
+    blurb: "Play the old panelled build instead of the full-screen glen.",
     apply: (c) => {
       c.toggleRetro();
-      return "The glen shifts. Old paint, new paint.";
+      return "The glen shifts. Old build, new build.";
     },
   },
   {

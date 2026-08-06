@@ -94,7 +94,9 @@ export type AnimId =
   | "buysheep"
   | "fox"
   | "wolf"
-  | "wolflost";
+  | "wolflost"
+  /** the day you walked out, played once at the start of a run */
+  | "quit";
 
 export interface GameState {
   day: number;
@@ -125,6 +127,7 @@ export interface GameState {
     foxLosses: number;
     strikeLosses: number;
     sheepBought: number;
+    sheepSold: number;
     shears: number;
     daysHungry: number;
     wolfMaulings: number;

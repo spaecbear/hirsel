@@ -123,14 +123,190 @@ h1 {
 }
 
 canvas {
-  width: 100%;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   display: block;
-  border: 2px solid var(--moss);
-  border-top: 0;
   background: var(--ink);
 }
+
+/* retro: the canvas is a picture inside the frame */
+body.mode-retro canvas {
+  width: 100%;
+  border: 2px solid var(--moss);
+  border-top: 0;
+}
+
+/* glen: the canvas IS the game — it fills the viewport, and the sheets and
+   chrome float over it. No page scrolling: the hill does not scroll. */
+body.mode-glen {
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+}
+html:has(body.mode-glen) {
+  height: 100%;
+  overflow: hidden;
+}
+body.mode-glen canvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+body.mode-glen #retro-root {
+  display: none;
+}
+body.mode-retro #glen-root {
+  display: none;
+}
+
+.glen-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+}
+.glen-stage {
+  position: absolute;
+  inset: 0;
+}
+/* bottom-right, not top: the canvas HUD owns the top strip, and these
+   collided with the purse and the weather when they shared it */
+.glen-chrome {
+  position: absolute;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  right: calc(6px + env(safe-area-inset-right));
+  display: flex;
+  gap: 6px;
+  z-index: 6;
+}
+.glen-chrome .chip {
+  background: rgba(11, 13, 8, 0.72);
+}
+
+/* the sheet: what you can do at whatever you just touched */
+.sheet {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  width: min(440px, calc(100vw - 16px));
+  max-height: min(62vh, 460px);
+  background: var(--peat-2);
+  border: 2px solid var(--moss);
+  display: none;
+  flex-direction: column;
+  z-index: 8;
+  opacity: 0;
+  transition: opacity 0.14s ease-out, transform 0.14s ease-out;
+}
+.sheet.on {
+  display: flex;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-bottom: 2px solid var(--moss);
+  background: #191e13;
+}
+.sheet-head h3 {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gorse);
+  font-weight: 400;
+}
+.sheet-x {
+  background: none;
+  border: 1px solid var(--moss);
+  color: var(--stone);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.sheet-x:hover {
+  border-color: var(--gorse);
+  color: var(--gorse);
+}
+.sheet-body {
+  padding: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sheet-body .act:last-child {
+  margin-bottom: 0;
+}
+/* things to read rather than choose: full brightness, no button affordance */
+.sheet-info {
+  border-left: 2px solid var(--moss);
+  padding: 6px 9px;
+  margin-bottom: 7px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.sheet-info .n {
+  letter-spacing: 0.06em;
+  color: var(--wool);
+}
+.sheet-info .d {
+  display: block;
+  font-size: 10px;
+  color: var(--stone);
+  margin-top: 3px;
+}
+.act.gold {
+  border-color: var(--gorse);
+  color: var(--gorse);
+}
+.act.stock {
+  border-color: #5a6b4a;
+}
+.act.life {
+  border-color: #8a6a4a;
+}
+
+/* the title */
+.title {
+  background: var(--peat);
+}
+.title-box {
+  text-align: center;
+  padding: 20px;
+  max-width: 420px;
+}
+.title-name {
+  font-size: 26px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gorse);
+  text-indent: 0.5em;
+}
+.title-sub {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--stone);
+  margin: 12px 0 26px;
+}
+.title-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.title-foot {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: #3f4636;
+  text-transform: uppercase;
+  margin-top: 18px;
+}
+
 
 .cols {
   display: grid;
