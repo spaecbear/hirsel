@@ -2,6 +2,7 @@ import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
 import { BALANCE, BREEDS, CROFT, TOOLS } from "../sim/config";
 import {
+  canShear,
   flockValue,
   grade,
   isFullMoon,
@@ -320,7 +321,7 @@ export class View {
     const extra: string[] = [];
     extra.push(`taps ${tapsPerDay(g)}/day`);
     extra.push(`wool ${priceOn(g.day)}p a stone today`);
-    if (readyToShear(g.flock) >= 1 && !WEATHER[g.forecast[0]].shear) extra.push("no shearing in this");
+    if (readyToShear(g.flock) >= 1 && !canShear(g)) extra.push("no shearing in this");
     if (g.flock.some((s) => s.fleece >= BALANCE.flystrikeFleece)) extra.push("fleece running heavy");
     $("buffs").textContent = (buffs.length ? `In you: ${buffs.join(", ")} · ` : "") + extra.join(" · ");
 

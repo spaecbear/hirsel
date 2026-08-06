@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canShear,
   feedCost,
   flystrikeExposed,
   foxRisk,
@@ -97,6 +98,47 @@ describe("grazing", () => {
     const r = grazing(s);
     expect(r.eaten).toBe(10);
     expect(r.fed).toBeLessThan(BALANCE.hungryBelow);
+  });
+});
+
+describe("the salt lick", () => {
+  it("takes a quarter less grass for the same work", () => {
+    const plain = g({ flock: [f(1), f(1), f(1), f(1)] });
+    const licked = g({ flock: [f(1), f(1), f(1), f(1)], owned: { saltlick: true } });
+    expect(grazing(plain).eaten).toBe(16);
+    expect(grazing(licked).eaten).toBe(12);
+    // and they are no worse fed for it
+    expect(grazing(licked).fed).toBe(1);
+    expect(grazing(licked).growth).toBeCloseTo(grazing(plain).growth);
+  });
+
+  it("keeps them fed on ground that would otherwise be thin", () => {
+    const thin = { flock: Array.from({ length: 5 }, () => f(1)) };
+    // five sheep want 20 without the lick and 15 with it, so ten on the
+    // ground is hunger one way and enough the other
+    const plain = g(thin);
+    plain.pastures[0].grass = 10;
+    const licked = g({ ...thin, owned: { saltlick: true } });
+    licked.pastures[0].grass = 10;
+    expect(grazing(plain).fed).toBeLessThan(BALANCE.hungryBelow);
+    expect(grazing(licked).fed).toBeGreaterThan(BALANCE.hungryBelow);
+  });
+});
+
+describe("the oilskin", () => {
+  it("gets you through a haar, but rain is still rain", () => {
+    const haar = (kit = {}) => g({ forecast: ["mist", "sun", "sun"], owned: kit });
+    const wet = (kit = {}) => g({ forecast: ["rain", "sun", "sun"], owned: kit });
+    expect(canShear(haar())).toBe(false);
+    expect(canShear(haar({ oilskin: true }))).toBe(true);
+    expect(canShear(wet({ oilskin: true }))).toBe(false);
+  });
+
+  it("changes nothing on a day you could already shear", () => {
+    for (const wx of ["sun", "overcast"] as const) {
+      expect(canShear(g({ forecast: [wx, "sun", "sun"] }))).toBe(true);
+      expect(canShear(g({ forecast: [wx, "sun", "sun"], owned: { oilskin: true } }))).toBe(true);
+    }
   });
 });
 

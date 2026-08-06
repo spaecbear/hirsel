@@ -53,6 +53,9 @@ export const BALANCE = {
   regenRain: 2.2,
   regenSun: 1.2,
 
+  /** salt lick: they eat less of the hill for the same growth */
+  saltlickGraze: 0.75,
+
   marketBase: 62,
   marketSwing: 32,
 
@@ -151,6 +154,8 @@ export const TOOLS = [
   { id: "boots", name: "Stout boots", cost: 26, what: "One more tap every day." },
   { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night. Foxes think twice." },
   { id: "cart", name: "Pony and cart", cost: 74, what: "Market costs no tap." },
+  { id: "saltlick", name: "Salt lick", cost: 28, what: "Set it on the hill and they take a quarter less grass for the same growth." },
+  { id: "oilskin", name: "Waxed oilskin", cost: 36, what: "You can shear through a haar in this. Rain is still rain." },
   { id: "lamp", name: "Storm lantern", cost: 44, what: "One more tap every day. The evening stretches." },
   // §7: gives nothing away. Do not explain it anywhere in the UI.
   { id: "sword", name: "Highland broadsword", cost: 185, what: "Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind." },

@@ -175,6 +175,37 @@ function drawGround(g: Painter, st: GameState, time: number) {
   }
 }
 
+/** the salt lick: a block set out on the turf for them to work at */
+function drawSaltLick(g: Painter, x: number, y: number) {
+  g.a(x - 1, y + 7, 12, 2, 0, 0, 0, 0.2);
+  g.px(x, y + 2, 10, 5, "#b9b6a4"); // the block
+  g.px(x, y + 2, 10, 1, "#d8d5c4");
+  g.px(x, y + 7, 10, 1, "#8d8a7c");
+  g.px(x - 1, y + 6, 12, 2, "#5b4a30"); // the trough it sits in
+}
+
+/** the pony and cart, standing by the croft on a day you don't go to market */
+function drawParkedCart(g: Painter, x: number, y: number, time: number) {
+  g.px(x, y, 26, 9, C.bark);
+  g.px(x, y, 26, 2, "#6d5a3c");
+  g.px(x + 2, y + 9, 7, 7, "#3f3527"); // wheels
+  g.px(x + 17, y + 9, 7, 7, "#3f3527");
+  g.px(x + 4, y + 12, 3, 1, "#7a6a4a");
+  g.px(x + 19, y + 12, 3, 1, "#7a6a4a");
+  g.px(x + 26, y + 2, 8, 2, C.bark); // shafts
+  // the pony, dozing, with the odd flick of the tail
+  const px0 = x + 34;
+  g.px(px0, y - 2, 20, 9, "#6a4f33");
+  g.px(px0 + 18, y - 8, 8, 7, "#6a4f33");
+  g.px(px0 + 24, y - 4, 4, 3, "#4a3624");
+  g.px(px0 + 18, y - 11, 3, 4, "#6a4f33");
+  g.px(px0 + 23, y - 11, 3, 4, "#6a4f33");
+  g.px(px0 + 2, y + 7, 3, 6, "#4a3624");
+  g.px(px0 + 15, y + 7, 3, 6, "#4a3624");
+  const flick = Math.sin(time / 800) > 0 ? 0 : 1;
+  g.px(px0 - 3, y - 1 + flick, 4, 7, "#4a3624");
+}
+
 function drawDyke(g: Painter, x0: number, y: number, len: number) {
   for (let x = x0; x < x0 + len; x += 5) {
     g.px(x, y, 5, 4, C.rock);
@@ -327,10 +358,24 @@ function drawSheep(g: Painter, x: number, y: number, s: Sheep, o: { shorn?: bool
  * scene, for the rest of the run. It is the one permanent visible reward in
  * the game — the croft is a building, this is on his back.
  */
-let PELT = false;
-
-/** likewise: he has no crook in his hand until he has bought one */
-let HAS_CROOK = false;
+/**
+ * What he owns, refreshed each frame. Every tool that can be seen is drawn:
+ * buying something should change the picture, not just a line in a menu.
+ * The broadsword is the deliberate exception — it stays out of sight.
+ */
+const KIT = {
+  crook: false,
+  boots: false,
+  shears: false,
+  lamp: false,
+  cart: false,
+  watch: false,
+  oilskin: false,
+  saltlick: false,
+  pelt: false,
+};
+/** how dark it is, for the lantern's glow */
+let NIGHT = 0;
 
 /** the wolf skin: hood with the ears still on it, mantle over the shoulders, brush down the back */
 function drawPelt(g: Painter, x: number, y: number) {
@@ -353,17 +398,41 @@ function drawPelt(g: Painter, x: number, y: number) {
 function drawShepherd(g: Painter, x: number, y: number, o: { crook?: boolean; arm?: number; walk?: number; sit?: boolean } = {}) {
   const step = o.walk ? (Math.sin(o.walk * Math.PI * 8) > 0 ? 1 : 0) : 0;
   g.a(x - 1, y + 26, 14, 2, 0, 0, 0, 0.25);
-  // boots
-  g.px(x + 1, y + 22, 4, 4, "#33291f");
-  g.px(x + 7, y + 22 - step, 4, 4, "#33291f");
+  // boots: tackety ones once he has bought a pair, taller and nailed
+  if (KIT.boots) {
+    g.px(x, y + 20, 5, 6, "#2a2118");
+    g.px(x + 6, y + 20 - step, 5, 6, "#2a2118");
+    g.px(x, y + 25, 5, 1, "#6b5a44");
+    g.px(x + 6, y + 25 - step, 5, 1, "#6b5a44");
+  } else {
+    g.px(x + 1, y + 22, 4, 4, "#33291f");
+    g.px(x + 7, y + 22 - step, 4, 4, "#33291f");
+  }
   // breeks
   g.px(x + 1, y + 15, 10, 8, "#4b4632");
-  // coat
-  g.px(x, y + 6, 12, 11, "#4a5540");
-  g.px(x, y + 6, 12, 2, "#5a6650");
-  g.px(x + 5, y + 8, 2, 9, "#3b4433"); // buttoned seam
-  // scarf
-  g.px(x + 1, y + 5, 10, 2, "#8a4a3c");
+  // coat — the waxed oilskin is longer, darker and has a sheen on it
+  if (KIT.oilskin) {
+    g.px(x, y + 6, 12, 15, "#2f3a35");
+    g.px(x, y + 6, 12, 2, "#43524a");
+    g.px(x + 11, y + 8, 1, 11, "#54655c"); // wax catching the light
+    g.px(x + 5, y + 8, 2, 12, "#26302c");
+    g.px(x, y + 5, 12, 2, "#3a4a42"); // collar up
+  } else {
+    g.px(x, y + 6, 12, 11, "#4a5540");
+    g.px(x, y + 6, 12, 2, "#5a6650");
+    g.px(x + 5, y + 8, 2, 9, "#3b4433"); // buttoned seam
+    g.px(x + 1, y + 5, 10, 2, "#8a4a3c"); // scarf
+  }
+  // blade shears on the belt, when they are not in his hands
+  if (KIT.shears && o.arm === undefined) {
+    g.px(x - 2, y + 15, 4, 2, "#b9bcae");
+    g.px(x - 3, y + 16, 2, 3, "#6b5433");
+  }
+  // the watch chain across the coat
+  if (KIT.watch) {
+    g.px(x + 2, y + 11, 5, 1, "#c9a83c");
+    g.px(x + 7, y + 10, 1, 2, "#e0c34c");
+  }
   // head
   g.px(x + 2, y, 8, 6, "#c9a583");
   g.px(x + 3, y + 2, 1, 1, "#26201a");
@@ -371,10 +440,23 @@ function drawShepherd(g: Painter, x: number, y: number, o: { crook?: boolean; ar
   g.px(x + 2, y - 3, 9, 4, "#2f3327"); // bunnet
   g.px(x + 9, y - 2, 3, 2, "#2f3327");
   // the pelt goes on over the coat and the bunnet, under the arm and crook
-  if (PELT) drawPelt(g, x, y);
+  if (KIT.pelt) drawPelt(g, x, y);
   // arm
   if (o.arm !== undefined) g.px(x + 10, y + 8 + o.arm, 4, 3, "#c9a583");
-  if (o.crook && HAS_CROOK) {
+  if (KIT.lamp) {
+    // storm lantern in the free hand, burning brighter the darker it gets
+    const lx = x - 7;
+    const ly = y + 12;
+    const glow = 0.35 + NIGHT * 0.55;
+    // barely a haze by day; it earns its keep after dark
+    g.a(lx - 5, ly - 5, 14, 15, 240, 190, 90, 0.05 + NIGHT * 0.26);
+    g.a(lx - 2, ly - 2, 8, 9, 240, 200, 110, 0.08 + NIGHT * 0.34);
+    g.px(lx + 1, ly - 4, 2, 3, "#6d7263"); // bail
+    g.px(lx, ly - 1, 5, 6, "#8a8f88"); // body
+    g.a(lx + 1, ly, 3, 4, 255, 214, 120, glow); // the flame
+    g.px(lx, ly + 5, 5, 1, "#5a5f58");
+  }
+  if (o.crook && KIT.crook) {
     for (let i = 0; i < 11; i++) g.px(x + 13, y + 1 + i * 2, 2, 2, "#6b5433");
     g.px(x + 11, y - 1, 4, 2, "#6b5433");
   }
@@ -789,9 +871,9 @@ function wolfScene(g: Painter, st: GameState, p: number, armed: boolean) {
   if (stage === 3) {
     const t = (p - 0.62) / 0.38;
     // he puts it on here, and it is the same pelt he wears from now on
-    PELT = true;
+    KIT.pelt = true;
     drawShepherd(g, sx, sy, {});
-    PELT = false;
+    KIT.pelt = false;
     for (let i = 0; i < 12; i++) {
       const q = (t + i / 12) % 1;
       g.a(sx - 16 + i * 7, sy + 4 - q * 34, 3, 3, 138, 106, 156, 0.55 * (1 - q));
@@ -855,8 +937,16 @@ export const HIRSEL_ART: ArtPack = {
     const p = s.p;
     INV = s.inverse;
     // he is not wearing it during the fight — the set piece hands it to him
-    PELT = owns(st, "pelt") && k !== "wolf";
-    HAS_CROOK = owns(st, "crook");
+    KIT.pelt = owns(st, "pelt") && k !== "wolf";
+    KIT.crook = owns(st, "crook");
+    KIT.boots = owns(st, "boots");
+    KIT.shears = owns(st, "shears");
+    KIT.lamp = owns(st, "lamp");
+    KIT.cart = owns(st, "cart");
+    KIT.watch = owns(st, "watch");
+    KIT.oilskin = owns(st, "oilskin");
+    KIT.saltlick = owns(st, "saltlick");
+    NIGHT = k === "sleep" ? Math.sin(p * Math.PI) : 0;
 
     if (k === "pub") {
       // still draw the glen underneath so the fade has something to leave
@@ -910,4 +1000,7 @@ function drawLand(g: Painter, s: Scene, night: number) {
   drawHills(g, st);
   drawGround(g, st, s.time);
   drawCroft(g, st, Math.max(night, 0), s.time);
+  // the cart is parked unless it is out on the road to market
+  if (owns(st, "cart") && s.anim !== "market") drawParkedCart(g, 118, GROUND - 12, s.time);
+  if (owns(st, "saltlick")) drawSaltLick(g, 350, GROUND + 20);
 }

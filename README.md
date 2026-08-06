@@ -82,6 +82,12 @@ before that, the retro scene isn't mentioned in the UI at all.
 - **Hirsel** (default): the croft is in the scene and gets built as you buy it — roof, smoke
   from the hearth, the byre, a lit window at night. Each pasture is its own place. Sheep graze,
   lift their heads and cast shadows, and fleece changes their silhouette.
+
+  Every tool you buy shows up on the hill: the crook in his hand, tackety boots, blade shears
+  on the belt, the watch chain across his coat, the oilskin as a longer darker coat, the storm
+  lantern lit and burning brighter the darker it gets, the pony and cart parked by the croft on
+  days you don't go to market, and the salt lick out on the turf. The broadsword is the one
+  deliberate exception — anything visible would telegraph it.
 - **Retro (OG)**: the original single-file prototype's scene, ported unchanged.
 
 Adding a third is one file implementing `ArtPack` in `src/render/art/`.
@@ -145,6 +151,15 @@ conditions met — but what happens when he arrives is unchanged, and still deci
 the broadsword is on the wall. The flock is still not cut until the animation has played.
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
 The simulation is untouched — only the words and the sprites swap.
+
+### Tools beyond the spec
+
+Two additions, both chosen to add a decision without touching the tap economy:
+
+- **Salt lick** (£28) — the flock takes a quarter less grass for the same growth, which makes
+  thin ground and the High Corrie survivable for longer.
+- **Waxed oilskin** (£36) — lets you shear through a haar. Rain is still rain, so it converts
+  one of the two dead weather types into a working day rather than both.
 
 ### Open questions
 

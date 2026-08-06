@@ -53,7 +53,8 @@ export function feedCost(g: GameState): number {
 /* ---------- night maths ---------- */
 export function grazing(g: GameState) {
   const p = here(g);
-  const want = g.flock.length * BALANCE.grazePerSheep;
+  // the salt lick makes them work the ground less hard for the same fleece
+  const want = g.flock.length * BALANCE.grazePerSheep * (owns(g, "saltlick") ? BALANCE.saltlickGraze : 1);
   const eaten = Math.min(p.grass, want);
   const fed = want === 0 ? 1 : eaten / want;
   const growth =
@@ -80,6 +81,12 @@ export function flystrikeExposed(g: GameState): Sheep | null {
   const heavy = g.flock.filter((s) => s.fleece >= BALANCE.flystrikeFleece);
   if (!heavy.length) return null;
   return heavy.reduce((a, b) => (b.fleece > a.fleece ? b : a));
+}
+
+/** rain is rain, but an oilskin will get you through a haar */
+export function canShear(g: GameState): boolean {
+  const w = weatherOn(g);
+  return w.shear || (w.id === "mist" && owns(g, "oilskin"));
 }
 
 /* ---------- the last wolf ---------- */

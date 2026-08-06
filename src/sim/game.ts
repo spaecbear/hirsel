@@ -16,6 +16,7 @@ import { makeRng, pick, randInt, type Rng } from "./rng";
 import {
   breedOf,
   buffed,
+  canShear,
   feedCost,
   flockValue,
   flystrikeExposed,
@@ -512,13 +513,17 @@ export const ACTIONS: ActionDef[] = [
     anim: "shear",
     cost: one,
     desc: (g) => {
-      if (!weatherOn(g).shear) return "Wet wool cannot be shorn. It would rot in the sack.";
+      if (!canShear(g)) {
+        return weatherOn(g).id === "mist"
+          ? "The haar has soaked the fleeces through. Nothing to be done bare-handed."
+          : "Wet wool cannot be shorn. It would rot in the sack.";
+      }
       const n = readyToShear(g.flock);
       return n === 0
         ? "No fleece worth taking yet."
         : `${n} sheep ready · about ${Math.round(flockValue(g.flock))} stone of wool`;
     },
-    can: (g) => weatherOn(g).shear && readyToShear(g.flock) > 0,
+    can: (g) => canShear(g) && readyToShear(g.flock) > 0,
     run: (game) => {
       const g = game.state;
       let got = 0;

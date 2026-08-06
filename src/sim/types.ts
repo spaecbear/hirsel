@@ -48,7 +48,9 @@ export type ToolId =
   | "dog"
   | "cart"
   | "watch"
-  | "sword";
+  | "sword"
+  | "saltlick"
+  | "oilskin";
 
 export type CroftId = "roof" | "hearth" | "byre" | "ring";
 
