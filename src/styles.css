@@ -168,15 +168,22 @@ body.mode-retro #glen-root {
   position: absolute;
   inset: 0;
 }
-/* bottom-right, not top: the canvas HUD owns the top strip, and these
-   collided with the purse and the weather when they shared it */
+/* Always reachable, in either interface — never nested inside a shell that
+   the other mode hides. In the glen it sits bottom-right, clear of the HUD
+   strip along the top; in retro it sits up by the title. */
 .glen-chrome {
-  position: absolute;
-  bottom: calc(8px + env(safe-area-inset-bottom));
-  right: calc(6px + env(safe-area-inset-right));
+  position: fixed;
   display: flex;
   gap: 6px;
-  z-index: 6;
+  z-index: 20;
+}
+body.mode-glen .glen-chrome {
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  right: calc(6px + env(safe-area-inset-right));
+}
+body.mode-retro .glen-chrome {
+  top: calc(16px + env(safe-area-inset-top));
+  right: calc(16px + env(safe-area-inset-right));
 }
 .glen-chrome .chip {
   background: rgba(11, 13, 8, 0.72);
@@ -270,6 +277,38 @@ body.mode-retro #glen-root {
 }
 .act.life {
   border-color: #8a6a4a;
+}
+
+/* what a finished run hands you: a code for the next one */
+.reward {
+  border: 1px solid var(--gorse);
+  padding: 12px 10px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.reward-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stone);
+}
+.reward-code {
+  font-size: 22px;
+  letter-spacing: 0.4em;
+  color: var(--gorse);
+  margin: 9px 0 7px;
+  text-indent: 0.4em;
+}
+.reward-blurb {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--wool);
+}
+.reward-foot {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--stone);
+  margin-top: 8px;
 }
 
 /* the title */

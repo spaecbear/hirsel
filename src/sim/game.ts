@@ -128,6 +128,12 @@ export class Game {
   busy = false;
   /** what things are called this run — TOD swaps the words, never the numbers */
   lex: Lexicon = NORMAL;
+  /**
+   * ZEN: the day stops running out. Actions still resolve exactly as they
+   * do normally — this only stops the tap being deducted, so nothing about
+   * the night, the wolf's five-action count or any buff changes shape.
+   */
+  zen = false;
 
   constructor(state?: GameState, opts: GameOptions = {}) {
     this.state = state ?? newGame(opts);
@@ -165,7 +171,7 @@ export class Game {
 
   private spend(n: number) {
     const g = this.state;
-    g.taps -= n;
+    if (!this.zen) g.taps -= n;
     g.actsToday++;
     if (wolfWarningDue(g)) {
       this.say("The flock will not settle. Something is watching from above the corrie.", "bad");

@@ -25,6 +25,8 @@ export interface Settings {
   autosave: boolean;
   /** "TOD" — you keep foxes, and the sheep come for them */
   inverse: boolean;
+  /** "ZEN" — the day never runs out of taps. Nothing else changes. */
+  zen: boolean;
   /** codes the player has ever entered, so the cheat list can show what's known */
   cheatsFound: string[];
   /** the title screen is skipped once a run is under way */
@@ -40,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   motion: "auto",
   autosave: true,
   inverse: false,
+  zen: false,
   cheatsFound: [],
   seenTitle: false,
 };

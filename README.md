@@ -88,6 +88,12 @@ by touching the things in it, and the narration surfaces in the sky rather than 
 | the hills | which pasture to graze |
 | the sky | the three-day forecast, the moon, what's running in you, recent word |
 
+Tapping the croft **goes inside it**. Everything bought is on the wall or by the fire — the
+broadsword above the hearth exactly as its description says, the dog stretched out in front of
+it, the ring on the mantel — because a croft you are paying for should be somewhere you stand,
+not a row of ticks in a shop. **You sleep by going to the bed**, which is why the interior
+exists at all.
+
 **Hold** a finger on open ground and he walks there. It costs no tap and touches nothing in
 the sim — a hill you can only look at reads as a menu; one you can wander reads as a place.
 The position deliberately lives in `ui/walk.ts` rather than the game state, so it is never
@@ -96,6 +102,20 @@ something a save has to carry or a player can lose progress over.
 **Retro** is the older panelled build — HUD, small scene, tabs, sub-tabs. Kept whole rather
 than deleted: it is the version that was balanced and playtested. Settings → Look → Interface,
 or the `RETRO` code.
+
+### Three pastures, three places
+
+They used to be one hillside in three tints, which made moving the flock a number change
+rather than a journey. `render/terrain.ts` draws each from somewhere real:
+
+| | drawn from | what you see |
+| --- | --- | --- |
+| Low Field | Rannoch Moor | wet bog, a burn winding through tussocks and rushes, peat pools, cloud sitting down on the tops |
+| Hill Slope | a glen in heather | purple banks, and ridge behind ridge going back into haze |
+| High Corrie | the Quiraing | tawny gold grass over stepped rock terraces, the land dropped away, a great deal of sky |
+
+Atmospheric perspective does the work on the slope: each ridge is mixed further toward the sky
+colour, which is what makes distance read rather than just stacking silhouettes.
 
 ### Built for the shape of the screen
 
@@ -115,6 +135,12 @@ Two things that were bugs and are now rules:
   whole field, so tapping grass between two sheep opened flock work and the pasture's own work
   was unreachable. Each animal is its own target and the gaps fall through to the ground —
   measured at 73% of the field reaching the pasture, 9% the sheep.
+
+### Finishing a run
+
+Marrying reveals a cheat code you did not have, for the next run — one per win, and `1680`
+is held back until every other code is known, since it is the only one that gives the wolf
+away. `revealNextCheat` is tested for exactly that ordering.
 
 ### Design invariants
 
@@ -144,6 +170,14 @@ Things that are easy to break by accident:
   appendix's own test for the pelt reveal — trust the polyfill, not the host's Node build.
 - **The three-day forecast is public.** It is what makes the game plannable.
 - **Autosave writes at the end of a night only** — never mid-day, never mid-animation.
+- **`showEnd` must stay idempotent.** It writes settings (the revealed code), which triggers a
+  render, which is one of the things that raises it — without the guard a single win recursed
+  through the whole cheat list and handed over every code at once.
+- **A run can end with no animation playing** (selling the last beast at the cart). The end
+  screen is raised from the render signal as well as from the animator going idle, or those
+  endings leave the game quietly over with nothing on screen.
+- **Nothing grazes through a wall.** Sheep laid out on top of the croft or the cart looked
+  like they were standing on the roof; the layout nudges them clear.
 - **Sleep is pinned above the action lists**, so the day can always be ended without
   scrolling. The ten actions are split into Work / Comforts sub-tabs to keep each list short.
 

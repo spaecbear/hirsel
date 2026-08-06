@@ -19,7 +19,19 @@ export interface Rect {
   h: number;
 }
 
-export type HotspotId = "croft" | "cart" | "flock" | "shepherd" | "ground" | "hills" | "sky";
+export type HotspotId =
+  | "croft"
+  | "cart"
+  | "flock"
+  | "shepherd"
+  | "ground"
+  | "hills"
+  | "sky"
+  /* inside the house */
+  | "bed"
+  | "hearth"
+  | "door"
+  | "kit";
 
 export interface Hotspot {
   id: HotspotId;
@@ -136,6 +148,25 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
       y: Math.round(groundY + field * spread + (col % 2) * 3),
     });
   }
+  /*
+   * Nothing grazes through a wall. Sheep laid out on top of the croft, the
+   * byre or the cart looked like they were standing in mid-air on the roof,
+   * so anything landing on a building gets nudged clear of it — downhill
+   * first, since that is toward the camera, then sideways if it has to be.
+   */
+  const solid = [croft, byre, cart].filter((r) => r.w > 0);
+  for (const f of flock) {
+    for (const r of solid) {
+      const box = { x: f.x - 2, y: f.y - 6, w: 22, h: 20 };
+      const overlaps =
+        box.x < r.x + r.w + 4 && box.x + box.w > r.x - 4 && box.y < r.y + r.h + 2 && box.y + box.h > r.y - 4;
+      if (!overlaps) continue;
+      const below = r.y + r.h + 6;
+      if (below < H - 16) f.y = below;
+      else f.x = r.x > W / 2 ? Math.max(4, r.x - 26) : Math.min(W - 24, r.x + r.w + 6);
+    }
+  }
+
   const fx = flock.map((f) => f.x);
   const fy = flock.map((f) => f.y);
   const flockBox: Rect = {
@@ -172,7 +203,8 @@ function pad(r: Rect, n: number): Rect {
   return { x: r.x - n, y: r.y - n, w: r.w + n * 2, h: r.h + n * 2 };
 }
 
-export function hitTest(layout: WorldLayout, x: number, y: number): Hotspot | null {
+/** works on any laid-out scene — the hill outside or the room inside */
+export function hitTest(layout: { hotspots: Hotspot[] }, x: number, y: number): Hotspot | null {
   for (const h of layout.hotspots) {
     for (const r of h.rects) {
       if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return h;
@@ -188,4 +220,59 @@ export function boundsOf(h: Hotspot): Rect {
   const x2 = Math.max(...h.rects.map((r) => r.x + r.w));
   const y2 = Math.max(...h.rects.map((r) => r.y + r.h));
   return { x, y, w: x2 - x, h: y2 - y };
+}
+
+
+/* ------------------------------------------------------------------ *
+ * inside the house
+ * ------------------------------------------------------------------ */
+
+export interface InteriorLayout {
+  W: number;
+  H: number;
+  /** where the floor begins */
+  floorY: number;
+  hearth: Rect;
+  bed: Rect;
+  door: Rect;
+  /** the wall where bought kit gets hung up */
+  shelf: Rect;
+  hotspots: Hotspot[];
+}
+
+/**
+ * The inside of the croft. You come in here to sleep, and everything you have
+ * bought is on the walls: the point is that a purchase changes a room you
+ * stand in rather than a line in a list.
+ */
+export function layoutInterior(W: number, H: number): InteriorLayout {
+  // a tall screen gets a lower floor line, or the room is all bare boards
+  const portrait = H > W * 1.15;
+  const floorY = Math.round(H * (portrait ? 0.72 : 0.62));
+  const bedW = Math.min(58, Math.round(W * 0.32));
+  const bed: Rect = { x: Math.round(W * 0.62), y: floorY - 20, w: bedW, h: 30 };
+  const hearth: Rect = { x: Math.round(W * 0.06), y: floorY - 46, w: 48, h: 50 };
+  const door: Rect = { x: Math.round(W * 0.44), y: floorY - 40, w: 24, h: 44 };
+  const shelf: Rect = {
+    x: Math.round(W * 0.2),
+    y: Math.round(H * (portrait ? 0.34 : 0.2)),
+    w: Math.round(W * 0.6),
+    h: 26,
+  };
+
+  return {
+    W,
+    H,
+    floorY,
+    hearth,
+    bed,
+    door,
+    shelf,
+    hotspots: [
+      { id: "bed", rects: [pad(bed, 6)], label: "The bed" },
+      { id: "hearth", rects: [pad(hearth, 4)], label: "The hearth" },
+      { id: "door", rects: [pad(door, 4)], label: "Out to the hill" },
+      { id: "kit", rects: [pad(shelf, 6)], label: "What you have" },
+    ],
+  };
 }

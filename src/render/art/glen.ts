@@ -12,8 +12,20 @@
  */
 import { clamp01, ease, type Painter } from "../painter";
 import { drawMoonDisc, moonPos } from "../moon";
-import { boundsOf, layoutWorld, type WorldLayout } from "../layout";
+import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldLayout } from "../layout";
 import { drawText, drawTextCentred, textWidth } from "../text";
+import {
+  TERRAIN,
+  drawBurn,
+  drawCloudCap,
+  drawMottle,
+  drawPools,
+  drawHeather,
+  drawLayeredRidges,
+  drawScree,
+  drawTerraces,
+  drawTussocks,
+} from "../terrain";
 import {
   C,
   SKY,
@@ -31,7 +43,7 @@ import {
   setSpriteState,
   shade,
 } from "../sprites";
-import { isFullMoon, moonPhase, owns, priceOn } from "../../sim/rules";
+import { isFullMoon, moonPhase, owns, priceOn, tapsPerDay } from "../../sim/rules";
 import type { GameState, Sheep } from "../../sim/types";
 import type { ArtPack, Scene, SkyMessage } from "./types";
 
@@ -73,28 +85,54 @@ function drawSky(g: Painter, L: WorldLayout, st: GameState, night: number, time:
   }
 }
 
-/** the far ben, with snow in the gullies — sits above the near hills */
-function drawBen(g: Painter, L: WorldLayout) {
+/**
+ * The far tops, which are a different distance in each place: the moor is
+ * closed in by cloud-capped hills, the slope opens into ridge behind ridge,
+ * and from the corrie the land has dropped away below you.
+ */
+function drawBen(g: Painter, L: WorldLayout, st: GameState, time: number) {
+  const t = TERRAIN[st.at] ?? TERRAIN[1];
+  const [, skyLow] = SKY[wxOf(st)];
+
+  if (st.at === 1) {
+    // ridge behind ridge, each one further into the haze
+    drawLayeredRidges(g, L.W, L.horizonY, t.far, skyLow, 4);
+    return;
+  }
+
   const base = L.horizonY;
+  const bulk = st.at === 2 ? 8 : 14; // from up high they are lower than you
   for (let x = 0; x < L.W; x += 2) {
-    const y = base - Math.round(Math.sin(x / 61) * 13 + Math.sin(x / 17) * 3 + 12);
-    g.px(x, y, 2, base - y + 2, "#39434a");
-    g.px(x, y, 2, 2, "#4a555c");
+    const y = base - Math.round(Math.sin(x / 61) * (bulk * 0.9) + Math.sin(x / 17) * 3 + bulk);
+    g.px(x, y, 2, base - y + 2, t.far);
+    g.px(x, y, 2, 2, shade(t.far, 16));
     if (hash(x) > 0.86) g.px(x, y + 2, 2, 3, "#8e9aa0");
   }
+
+  // over the moor the cloud sits right down on the tops
+  if (st.at === 0) drawCloudCap(g, L.W, base - bulk - 4, time);
 }
 
-/** the near hills, coloured by the ground you are standing on */
+/** the near band between skyline and field */
 function drawHills(g: Painter, L: WorldLayout, st: GameState) {
   const at = st.at;
-  const base = at === 2 ? "#3d4438" : at === 1 ? "#3a4a30" : "#38492f";
+  const t = TERRAIN[at] ?? TERRAIN[1];
+
+  if (at === 2) {
+    // the corrie is stepped rock, not a grass slope
+    drawTerraces(g, L.W, L.horizonY, L.groundY, t.hill);
+    return;
+  }
+
   for (let x = 0; x < L.W; x += 2) {
     const y = L.horizonY + Math.round(Math.sin(x / 47 + at) * 6 + Math.sin(x / 13) * 2);
-    g.px(x, y, 2, L.groundY - y + 2, base);
-    g.px(x, y, 2, 1, shade(base, 14));
+    g.px(x, y, 2, L.groundY - y + 2, t.hill);
+    g.px(x, y, 2, 1, shade(t.hill, 14));
     const h = hash(x + at * 100);
-    if (h > 0.93) g.px(x, y + 3 + Math.round(h * 8), 2, 2, C.heatherDim);
-    else if (h > 0.88) g.px(x, y + 4 + Math.round(h * 9), 2, 2, "#6a6534");
+    // heather runs right up the slope; the moor is bracken and bog myrtle
+    if (at === 1) {
+      if (h > 0.86) g.px(x, y + 2 + Math.round(h * 10), 2, 2, h > 0.94 ? C.heather : C.heatherDim);
+    } else if (h > 0.93) g.px(x, y + 3 + Math.round(h * 8), 2, 2, "#5d5a34");
   }
 }
 
@@ -104,50 +142,45 @@ function drawHills(g: Painter, L: WorldLayout, st: GameState) {
 
 function drawGround(g: Painter, L: WorldLayout, st: GameState, time: number) {
   const p = st.pastures[st.at];
+  const t = TERRAIN[st.at] ?? TERRAIN[1];
   const lush = p.grass / p.cap;
-  const pal = lush > 0.45 ? C.turf : C.turfDry;
-  const mix = clamp01((lush - 0.15) / 0.7);
+  const pal = lush > 0.45 ? t.grass : t.dry;
+  const mixAmt = clamp01((lush - 0.15) / 0.7);
   const h = L.H - L.groundY;
 
-  g.dither(0, L.groundY, L.W, 6, pal[0], pal[1], mix);
+  g.dither(0, L.groundY, L.W, 6, pal[0], pal[1], mixAmt);
   g.px(0, L.groundY + 6, L.W, h, pal[1]);
-  // tufts, thicker where the grass is
+  g.px(0, L.groundY - 1, L.W, 1, shade(pal[0], -20));
+
+  drawMottle(g, L.W, L.groundY, L.H, pal);
+
+  // the general scatter of the turf, before anything specific to the place
   for (let x = 0; x < L.W; x += 3) {
     const v = hash(x * 1.7 + st.at * 31);
-    if (v < 0.25 + mix * 0.45) {
+    if (v < 0.22 + mixAmt * 0.4) {
       const y = L.groundY + 6 + Math.round(hash(x) * (h - 8));
       g.px(x, y, 2, 2, pal[2]);
       if (v > 0.62) g.px(x, y - 2, 1, 2, shade(pal[2], 12));
     }
   }
-  g.px(0, L.groundY - 1, L.W, 1, C.turfDark);
 
   if (st.at === 0) {
-    // the low field: the loch behind the dyke
-    const wy = L.groundY + Math.round(h * 0.06);
-    g.px(0, wy, Math.round(L.W * 0.42), 9, C.water);
-    for (let x = 0; x < L.W * 0.42; x += 4) {
-      if (Math.sin(x / 9 + time / 900) > 0.3) g.px(x, wy + 2 + ((x / 4) % 3), 3, 1, C.waterLit);
-    }
-    drawDyke(g, 0, wy + 9, L.W);
+    // Rannoch Moor: a burn winding through tussocks and rushes
+    drawBurn(g, L.W, L.groundY, L.H, time);
+    drawTussocks(g, L.W, L.groundY, L.H, pal);
+    drawPools(g, L.W, L.groundY, L.H);
   } else if (st.at === 1) {
-    drawDyke(g, 0, L.groundY + Math.round(h * 0.12), Math.round(L.W * 0.7));
-    for (let i = 0; i < 4; i++) {
-      const x = Math.round(L.W * (0.1 + i * 0.26));
-      const y = L.groundY + Math.round(h * 0.2);
-      g.px(x, y, 13, 7, "#3f5a2e");
-      g.px(x + 2, y - 2, 9, 4, "#4a6a35");
-      for (let j = 0; j < 4; j++) g.px(x + 2 + j * 3, y - 1 + (j % 2) * 3, 2, 2, C.gorse);
-    }
+    // the slope: heather banks, and a dyke running along the contour
+    drawHeather(g, L.W, L.groundY, L.H, 1);
+    drawDyke(g, 0, L.groundY + Math.round(h * 0.18), Math.round(L.W * 0.72));
   } else {
-    // the corrie: scree and boulders
-    for (let i = 0; i < 10; i++) {
-      const x = Math.round(hash(i * 3) * (L.W - 14));
-      const y = L.groundY + Math.round(hash(i * 5) * (h - 8));
-      const w = 5 + Math.round(hash(i * 7) * 6);
-      g.px(x, y, w, 4, C.rock);
-      g.px(x, y, w, 2, C.rockLit);
-      g.px(x, y + 4, w, 1, C.rockDark);
+    // the corrie: gold grass over broken rock, with the crag lip behind
+    drawScree(g, L.W, L.groundY, L.H);
+    for (let i = 0; i < 5; i++) {
+      const x = Math.round(hash(i * 31) * L.W);
+      const y = L.groundY + 4 + Math.round(hash(i * 37) * (h - 10));
+      g.px(x, y, 9, 2, shade(pal[2], 14)); // wind-combed tufts
+      g.px(x + 2, y - 2, 5, 2, pal[2]);
     }
   }
 }
@@ -315,15 +348,20 @@ function drawMessages(g: Painter, L: WorldLayout, messages: SkyMessage[]) {
  * the HUD
  * ================================================================== */
 
-function drawHud(g: Painter, L: WorldLayout, st: GameState) {
+function drawHud(g: Painter, L: WorldLayout, st: GameState, zen: boolean) {
   const h = 13;
   g.a(0, 0, L.W, h, 11, 13, 8, 0.72);
   g.a(0, h, L.W, 1, 60, 74, 46, 0.8);
 
   const left = `DAY ${st.day}`;
-  const taps = `${"·".repeat(Math.max(0, st.taps))}${st.taps === 0 ? "spent" : ""}`;
   drawText(g, left, 3, 3, "#ddd9c8", 0.95);
-  drawText(g, taps, 3 + textWidth(left) + 6, 3, st.taps === 0 ? "#b4472c" : "#e0a33c", 0.95);
+  /*
+   * An actual count, not a row of dots. How many taps are left and how many
+   * the day holds is the single most important number in the game, and dots
+   * made you count pixels to read it.
+   */
+  const taps = zen ? "TAPS ∞" : st.taps === 0 ? "SPENT" : `TAPS ${st.taps}/${tapsPerDay(st)}`;
+  drawText(g, taps, 3 + textWidth(left) + 7, 3, st.taps === 0 && !zen ? "#b4472c" : "#e0a33c", 0.95);
 
   /*
    * The weather is not written down: it is falling on the hill in front of
@@ -750,6 +788,135 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
   drawTextCentred(g, "A hill, and whatever you can make of it.", L.W / 2, Math.round(L.H * 0.18), "#ddd9c8", fade);
 }
 
+
+/* ================================================================== *
+ * inside the croft
+ * ================================================================== */
+
+/**
+ * The room you sleep in. Everything bought is on the wall or by the fire, so
+ * the croft you are paying for is somewhere you actually stand rather than a
+ * row of ticks in a shop. The bed is how the day ends.
+ */
+function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number, hover: string | null, isNight: boolean) {
+  const hearthBuilt = owns(st, "hearth");
+
+  // walls: rough stone, and floorboards below
+  g.px(0, 0, I.W, I.H, "#2b2419");
+  for (let x = 0; x < I.W; x += 9) {
+    for (let y = 0; y < I.floorY; y += 6) {
+      const v = hash(x * 0.7 + y * 3.1);
+      g.px(x + (y / 6) % 2 ? 4 : 0, y, 8, 5, v > 0.5 ? "#3a3226" : "#332c21");
+    }
+  }
+  g.px(0, I.floorY, I.W, I.H - I.floorY, "#4a3a26");
+  for (let y = I.floorY; y < I.H; y += 7) g.a(0, y, I.W, 1, 0, 0, 0, 0.2);
+  g.px(0, I.floorY, I.W, 1, "#5b4a30");
+
+  // the hearth, which is only a hole in the wall until it is built up
+  const hx = I.hearth.x;
+  const hy = I.hearth.y;
+  g.px(hx, hy, I.hearth.w, I.hearth.h, "#241d14");
+  g.px(hx - 2, hy - 3, I.hearth.w + 4, 4, hearthBuilt ? "#6d7263" : "#3a3226");
+  if (hearthBuilt) {
+    // a proper fire, and light thrown across the room
+    const flick = Math.sin(time / 130) * 2;
+    g.px(hx + 8, hy + I.hearth.h - 18, I.hearth.w - 16, 16, "#c07a24");
+    g.px(hx + 12, hy + I.hearth.h - 14 + flick, I.hearth.w - 24, 12, C.fire);
+    g.px(hx + 16, hy + I.hearth.h - 9 + flick, I.hearth.w - 32, 7, "#f0c86a");
+    g.a(hx - 12, hy - 10, I.hearth.w + 40, I.hearth.h + 30, 240, 180, 80, 0.1 + Math.sin(time / 200) * 0.02);
+    // the sword goes above the fire, exactly as its description says
+    if (owns(st, "sword")) {
+      g.px(hx + 2, hy - 12, I.hearth.w - 4, 3, "#cdd3d8");
+      g.px(hx + 2, hy - 12, I.hearth.w - 4, 1, "#f0f4f6");
+      g.px(hx + I.hearth.w / 2 - 3, hy - 14, 6, 3, "#8a6a3c");
+    }
+  } else {
+    g.px(hx + 6, hy + I.hearth.h - 8, I.hearth.w - 12, 6, "#1a1610");
+  }
+
+  // the bed
+  const b = I.bed;
+  g.px(b.x, b.y + 8, b.w, b.h - 8, "#5b4a30");
+  g.px(b.x, b.y + 4, b.w, 7, "#8a8a7a"); // the ticking
+  g.px(b.x, b.y + 4, b.w, 2, "#a2a292");
+  g.px(b.x + b.w - 14, b.y, 14, 8, "#ddd9c8"); // a pillow
+  g.px(b.x - 2, b.y + 2, 3, b.h - 2, "#4a3a26"); // bedposts
+  g.px(b.x + b.w - 1, b.y + 2, 3, b.h - 2, "#4a3a26");
+  // the dog lies in front of the fire, which is where she would be
+  if (owns(st, "dog")) drawDog(g, hx + I.hearth.w + 8, I.floorY - 12, 0);
+
+  // a window on the back wall: daylight, or the dark and a star
+  const win = { x: Math.round(I.W * 0.72), y: Math.round(I.floorY - 78), w: 26, h: 22 };
+  if (win.y > 12) {
+    g.px(win.x - 3, win.y - 3, win.w + 6, win.h + 6, "#3a3226");
+    g.px(win.x, win.y, win.w, win.h, isNight ? "#141a26" : "#87b0b4");
+    if (!isNight) g.a(win.x, win.y, win.w, win.h, 240, 230, 190, 0.2);
+    else g.a(win.x + 6, win.y + 5, 2, 2, 220, 225, 240, 0.8);
+    g.px(win.x + win.w / 2 - 1, win.y, 2, win.h, "#3a3226");
+    g.px(win.x, win.y + win.h / 2 - 1, win.w, 2, "#3a3226");
+    if (!isNight) g.a(win.x - 6, win.y + win.h, win.w + 12, 20, 200, 214, 190, 0.06);
+  }
+
+  // a table and a stool, because a room with only a bed is a cell
+  const tx = Math.round(I.W * 0.36);
+  const ty = I.floorY - 16;
+  g.px(tx, ty, 34, 4, "#6b5433");
+  g.px(tx, ty, 34, 1, "#7c6242");
+  g.px(tx + 2, ty + 4, 3, 12, "#54452c");
+  g.px(tx + 29, ty + 4, 3, 12, "#54452c");
+  g.px(tx + 12, ty - 5, 5, 5, "#9aa3a5"); // a cup on it
+  g.px(tx - 12, ty + 6, 9, 3, "#5b4a30"); // the stool
+  g.px(tx - 11, ty + 9, 2, 7, "#4a3a26");
+  g.px(tx - 5, ty + 9, 2, 7, "#4a3a26");
+
+  // the door back out to the hill, with daylight round it
+  const d = I.door;
+  g.px(d.x - 2, d.y - 2, d.w + 4, d.h + 2, "#2a2318");
+  g.px(d.x, d.y, d.w, d.h, "#5b4a30");
+  for (let i = 0; i < d.w; i += 5) g.px(d.x + i, d.y, 4, d.h, i % 10 ? "#54452c" : "#5b4a30");
+  g.px(d.x + d.w - 6, d.y + d.h / 2, 3, 3, "#c9a83c"); // the latch
+  g.a(d.x - 3, d.y - 3, d.w + 6, d.h + 4, 200, 214, 190, 0.1);
+
+  // the shelf of everything bought
+  const sh = I.shelf;
+  g.px(sh.x - 4, sh.y + sh.h, sh.w + 8, 3, "#5b4a30");
+  let kx = sh.x;
+  const step = Math.max(14, Math.floor(sh.w / 7));
+  const put = (draw: () => void) => {
+    draw();
+    kx += step;
+  };
+  if (owns(st, "crook")) put(() => { for (let i = 0; i < 8; i++) g.px(kx + 4, sh.y + 2 + i * 3, 2, 3, "#6b5433"); g.px(kx + 2, sh.y, 5, 2, "#6b5433"); });
+  if (owns(st, "shears")) put(() => { g.px(kx, sh.y + 12, 10, 3, "#b9bcae"); g.px(kx + 1, sh.y + 16, 8, 2, "#6b5433"); });
+  if (owns(st, "boots")) put(() => { g.px(kx, sh.y + 16, 5, 8, "#2a2118"); g.px(kx + 6, sh.y + 16, 5, 8, "#2a2118"); g.px(kx, sh.y + 23, 11, 2, "#6b5a44"); });
+  if (owns(st, "lamp")) put(() => { g.px(kx + 3, sh.y + 6, 2, 3, "#6d7263"); g.px(kx + 1, sh.y + 9, 7, 8, "#8a8f88"); g.a(kx + 2, sh.y + 11, 5, 5, 255, 214, 120, 0.7); });
+  if (owns(st, "oilskin")) put(() => { g.px(kx, sh.y + 4, 11, 18, "#2f3a35"); g.px(kx, sh.y + 4, 11, 2, "#43524a"); g.px(kx + 10, sh.y + 6, 1, 13, "#54655c"); });
+  if (owns(st, "watch")) put(() => { g.px(kx + 2, sh.y + 10, 7, 7, "#c9a83c"); g.px(kx + 4, sh.y + 8, 3, 2, "#e0c34c"); g.px(kx + 5, sh.y + 12, 1, 3, "#3a3226"); });
+  if (owns(st, "saltlick")) put(() => { g.px(kx, sh.y + 14, 10, 6, "#b9b6a4"); g.px(kx, sh.y + 14, 10, 1, "#d8d5c4"); });
+  if (owns(st, "pelt")) put(() => { g.px(kx - 2, sh.y + 4, 16, 12, "#3a3d47"); g.px(kx - 2, sh.y + 4, 16, 2, "#4a4e5a"); g.px(kx + 2, sh.y + 16, 3, 6, "#8f939c"); });
+  // the ring sits on the mantel, not on a peg with the tools
+  if (owns(st, "ring")) {
+    g.px(hx + I.hearth.w / 2 - 2, hy - 7, 4, 4, "#c9c3ae");
+    g.px(hx + I.hearth.w / 2 - 1, hy - 6, 2, 2, "#2b2419");
+    g.a(hx + I.hearth.w / 2 - 4, hy - 9, 8, 8, 232, 236, 214, 0.2);
+  }
+
+  // labels for whatever is under the finger
+  const spot = I.hotspots.find((s) => s.id === hover);
+  if (spot) {
+    const label = hover === "bed" ? "Sleep the night" : hover === "door" ? "Out to the hill" : spot.label;
+    const w = textWidth(label) + 8;
+    const x = Math.round(I.W / 2 - w / 2);
+    g.a(x, I.H - 16, w, 12, 11, 13, 8, 0.78);
+    drawText(g, label, x + 4, I.H - 13, "#e0a33c", 0.95);
+  }
+
+  if (!hearthBuilt) {
+    drawTextCentred(g, "Four walls and a draught.", I.W / 2, Math.round(I.H * 0.08), "#6d7263", 0.8);
+  }
+}
+
 /* ================================================================== *
  * the pack
  * ================================================================== */
@@ -785,13 +952,21 @@ export const GLEN_ART: ArtPack = {
       },
     });
 
+    // inside the house: a different room, not a different hill
+    if (s.interior) {
+      const I = layoutInterior(g.W, g.H);
+      drawInterior(g, I, st, s.time, s.hover ?? null, k === "sleep");
+      drawHud(g, L, st, !!s.zen);
+      return;
+    }
+
     // the ones that take the screen off the hill entirely
     if (k === "quit") return quitScene(g, L, p, s.time);
     if (k === "wolf") return wolfScene(g, L, s, true);
     if (k === "wolflost") return wolfScene(g, L, s, false);
 
     drawSky(g, L, st, night, s.time);
-    drawBen(g, L);
+    drawBen(g, L, st, s.time);
     drawHills(g, L, st);
     drawGround(g, L, st, s.time);
     drawCroft(g, L, st, night, s.time);
@@ -800,13 +975,13 @@ export const GLEN_ART: ArtPack = {
     if (k === "pub") {
       pubScene(g, L, p, s.time);
       drawMessages(g, L, s.messages ?? []);
-      drawHud(g, L, st);
+      drawHud(g, L, st, !!s.zen);
       return;
     }
     if (k === "fox") {
       foxRaid(g, L, s);
       drawMessages(g, L, s.messages ?? []);
-      drawHud(g, L, st);
+      drawHud(g, L, st, !!s.zen);
       return;
     }
 
@@ -816,7 +991,7 @@ export const GLEN_ART: ArtPack = {
 
     if (s.active) drawHighlight(g, L, s.active, s.time);
     drawMessages(g, L, s.messages ?? []);
-    drawHud(g, L, st);
+    drawHud(g, L, st, !!s.zen);
     if (s.hover) {
       const spot = L.hotspots.find((h) => h.id === s.hover);
       if (spot) drawHoverLabel(g, L, hoverLabel(spot.id, st));

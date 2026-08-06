@@ -12,6 +12,7 @@ export interface CheatContext {
   settings: Settings;
   toggleRetro: () => void;
   toggleInverse: () => void;
+  toggleZen: () => void;
   setSpeed: (mult: number) => void;
   /** get out of the way — some codes have something to show you */
   closeSettings: () => void;
@@ -111,6 +112,17 @@ export const CHEATS: Cheat[] = [
     },
   },
   {
+    code: "ZEN",
+    name: "Zen",
+    kind: "toggle",
+    isOn: (c) => c.settings.zen,
+    blurb: "The day never runs out. Work the hill as long as you like.",
+    apply: (c) => {
+      c.toggleZen();
+      return c.settings.zen ? "The light holds. Take your time." : "The day is a day again.";
+    },
+  },
+  {
     code: "HAAR",
     kind: "action",
     name: "Haar",
@@ -124,6 +136,22 @@ export const CHEATS: Cheat[] = [
     },
   },
 ];
+
+/**
+ * The reward for finishing a run: a code you did not have yet, for the next one.
+ *
+ * `1680` is deliberately last in the queue. It is the only code that gives the
+ * wolf away, so it is only ever handed over once every other code is already
+ * known — by which point the player has finished the game at least six times
+ * and has almost certainly met him.
+ */
+export function revealNextCheat(found: string[]): Cheat | null {
+  const have = new Set(found);
+  const ordinary = CHEATS.filter((c) => c.code !== "1680" && !have.has(c.code));
+  if (ordinary.length) return ordinary[0];
+  const secret = CHEATS.find((c) => c.code === "1680" && !have.has(c.code));
+  return secret ?? null;
+}
 
 export function findCheat(input: string): Cheat | null {
   const code = input.trim().toUpperCase();

@@ -15,7 +15,7 @@ import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
 import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
 import { canShear, here, isFullMoon, moonName, owns, priceOn, readyToShear, tapsPerDay } from "../sim/rules";
-import { hitTest, layoutWorld, type HotspotId } from "../render/layout";
+import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
 import type { Screen } from "../render/screen";
 import type { Animator } from "../render/animator";
@@ -39,6 +39,8 @@ export class WorldUi {
   active: HotspotId | null = null;
   private sheet: HTMLElement;
   private onChange: () => void = () => {};
+  /** true once the player has stepped inside the croft */
+  interior = false;
   /** hold a finger on the pasture and he walks over */
   readonly walk = new Walk();
   private holdTimer = 0;
@@ -105,6 +107,7 @@ export class WorldUi {
   setGame(game: Game) {
     this.game = game;
     this.walk.reset();
+    this.interior = false;
     this.close();
   }
 
@@ -118,6 +121,9 @@ export class WorldUi {
 
   private spotAt(clientX: number, clientY: number) {
     const { x, y } = this.screen.toLogical(clientX, clientY);
+    if (this.interior) {
+      return hitTest(layoutInterior(this.screen.W, this.screen.H), x, y);
+    }
     const L = layoutWorld(this.screen.W, this.screen.H, this.game.state, {
       shepherdAt: this.walk.position,
     });
@@ -146,6 +152,25 @@ export class WorldUi {
     const spot = this.spotAt(clientX, clientY);
     if (!spot) {
       this.close();
+      return;
+    }
+
+    // stepping in and out of the house
+    if (!this.interior && spot.id === "croft") {
+      this.interior = true;
+      this.close();
+      return;
+    }
+    if (this.interior && spot.id === "door") {
+      this.interior = false;
+      this.close();
+      return;
+    }
+    if (this.interior && spot.id === "bed") {
+      // the day ends where you sleep
+      this.close();
+      this.interior = false;
+      this.game.sleep();
       return;
     }
     if (this.active === spot.id && this.sheet.classList.contains("on")) {
@@ -223,6 +248,10 @@ export class WorldUi {
         return "Where to graze them";
       case "sky":
         return "Word of the glen";
+      case "hearth":
+        return "The croft";
+      case "kit":
+        return "What you have";
       default:
         return "";
     }
@@ -246,6 +275,10 @@ export class WorldUi {
         return this.cartRows();
       case "sky":
         return this.skyRows();
+      case "hearth":
+        return this.croftRows();
+      case "kit":
+        return this.kitRows();
       default:
         return [];
     }
@@ -363,12 +396,26 @@ export class WorldUi {
         onPick: () => this.game.buyCroft(m.id as CroftId),
       };
     });
-    rows.push({
-      label: "Sleep the night",
-      detail: g.taps > 0 ? `You still have ${g.taps} tap${g.taps > 1 ? "s" : ""} in you.` : "The day is spent.",
-      tone: "gold",
-      onPick: () => this.game.sleep(),
-    });
+    // no Sleep here any more: you sleep by going to the bed, which is the
+    // whole reason the inside of the house exists
+    return rows;
+  }
+
+  /** everything owned, as a list, for the wall of kit */
+  private kitRows(): Row[] {
+    const g = this.game.state;
+    const rows: Row[] = [];
+    for (const t of TOOLS) {
+      if (!owns(g, t.id)) continue;
+      // the broadsword is never explained, here least of all
+      rows.push({ label: t.name, detail: t.id === "sword" ? "Hangs well above the fire." : t.what, info: true, onPick: () => {} });
+    }
+    if (owns(g, "pelt")) {
+      rows.push({ label: "The last wolf's pelt", detail: "No fox comes near this ground.", info: true, onPick: () => {} });
+    }
+    if (!rows.length) {
+      rows.push({ label: "Bare walls", detail: "Nothing bought yet. The cart is out on the hill.", info: true, onPick: () => {} });
+    }
     return rows;
   }
 

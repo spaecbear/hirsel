@@ -65,7 +65,11 @@ export class Screen {
        * aim and stays a whole number, so the pixel grid never breaks.
        */
       const portrait = cssH > cssW;
-      const aim = portrait ? 168 : 250;
+      // landscape aims wider than it used to: at 250 the near ground was only
+      // ~50 logical rows once the croft was standing in it, which read as
+      // cramped on a desktop. More logical pixels means more hill, not
+      // bigger sprites.
+      const aim = portrait ? 168 : 320;
       const scale = Math.max(2, Math.min(6, Math.round(cssW / aim)));
       const W = Math.max(120, Math.floor(cssW / scale));
       const H = Math.max(120, Math.floor(cssH / scale));

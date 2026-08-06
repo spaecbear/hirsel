@@ -5,6 +5,7 @@ import { owns } from "./sim/rules";
 import { loadSettings, prefersReducedMotion, saveSettings, type Settings } from "./sim/settings";
 import { clearSave, exportFile, hasSave, importFile, readSave, saveGame } from "./sim/save";
 import { lexicon } from "./sim/lexicon";
+import { revealNextCheat } from "./sim/cheats";
 import type { GameState } from "./sim/types";
 
 import { Animator } from "./render/animator";
@@ -59,6 +60,7 @@ function wire(g: Game) {
     sky.add(`— ${a.name} —`, "gold", performance.now());
   };
   g.lex = lexicon(settings.inverse);
+  g.zen = settings.zen;
   g.subscribe(render);
   g.hydrateAchievements();
 }
@@ -67,9 +69,19 @@ function wire(g: Game) {
 function render() {
   if (settings.ui === "retro") view.render();
   else world.refresh();
+  /*
+   * A run can end without an animation playing — selling the last beast at
+   * the cart, for one. The end screen used to be raised only from the
+   * animator going idle, so those endings left the game quietly over with
+   * nothing on screen. Anything that finishes a run raises it now; the
+   * animator check keeps it from cutting in front of a fox raid or a
+   * mauling that is still playing out.
+   */
+  if (game.state.over && !animator.busy) showEnd();
 }
 
 function startGame(state?: GameState, opts: { intro?: boolean } = {}) {
+  endShown = false;
   animator.clear();
   sky.clear();
   game = new Game(state);
@@ -96,6 +108,7 @@ function applySettings(patch: Partial<Settings>) {
   document.body.classList.toggle("no-motion", animator.reduced);
   score.setTune(settings.inverse ? TOD_JIG : HIRSEL_AIR);
   game.lex = lexicon(settings.inverse);
+  game.zen = settings.zen;
 
   if (settings.ui !== wasUi || !canvas.parentElement) applyUiMode();
   soundBtn.textContent = settings.muted ? "Sound off" : "Sound on";
@@ -158,6 +171,7 @@ const settingsUi = buildSettings({
     settings,
     toggleRetro: () => applySettings({ ui: settings.ui === "retro" ? "glen" : "retro" }),
     toggleInverse: () => applySettings({ inverse: !settings.inverse }),
+    toggleZen: () => applySettings({ zen: !settings.zen }),
     setSpeed: () => {},
     closeSettings: () => closeSettings(),
   }),
@@ -247,11 +261,39 @@ animator.onIdle = () => {
   if (g.over) showEnd();
 };
 
+/*
+ * Raised once per ending. It has to be idempotent because it writes settings
+ * (the revealed code), which triggers a render, which is one of the things
+ * that raises it — without this guard a single win recursed through the whole
+ * cheat list and handed over every code at once.
+ */
+let endShown = false;
 function showEnd() {
   const o = game.state.over;
-  if (!o) return;
+  if (!o || endShown) return;
+  endShown = true;
   $("over-title").textContent = o.title;
   $("over-body").textContent = o.body;
+
+  const box = $("over-reward");
+  box.innerHTML = "";
+  box.style.display = "none";
+  if (o.kind === "win") {
+    // finishing a run hands over a code you did not have, for the next one
+    const prize = revealNextCheat(settings.cheatsFound);
+    if (prize) {
+      applySettings({ cheatsFound: [...settings.cheatsFound, prize.code] });
+      box.style.display = "";
+      box.innerHTML =
+        `<div class="reward-label">For the next hill, a word you did not have</div>` +
+        `<div class="reward-code">${prize.code}</div>` +
+        `<div class="reward-blurb">${prize.blurb}</div>` +
+        `<div class="reward-foot">It is in Settings → Cheat codes from now on.</div>`;
+    } else {
+      box.style.display = "";
+      box.innerHTML = `<div class="reward-label">You have them all now. There is nothing left to tell you.</div>`;
+    }
+  }
   $("over").classList.add("on");
 }
 
@@ -282,6 +324,8 @@ function frame(now: number) {
     active: settings.ui === "glen" ? world.active : null,
     shepherdAt: settings.ui === "glen" ? shepherdAt : null,
     walking: settings.ui === "glen" && world.walk.walking,
+    zen: settings.zen,
+    interior: settings.ui === "glen" && world.interior,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);

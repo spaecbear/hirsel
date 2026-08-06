@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { buffGlossary, statusGlossary } from "../src/sim/glossary";
 import { saveEarned, clearEarned } from "../src/sim/achievements";
 import { BALANCE } from "../src/sim/config";
+import { CHEATS, revealNextCheat } from "../src/sim/cheats";
 
 /**
  * These pin the glossary's wording to the live BALANCE numbers, not to a
@@ -80,5 +81,41 @@ describe("the status glossary", () => {
     expect(text).not.toContain("five action");
     expect(text).not.toContain("sword");
     expect(text).not.toContain("summon");
+  });
+});
+
+
+describe("the reward for finishing a run", () => {
+  const codes = CHEATS.map((c) => c.code);
+
+  it("hands over a code the player does not have yet", () => {
+    const prize = revealNextCheat([]);
+    expect(prize).not.toBeNull();
+    expect(codes).toContain(prize!.code);
+  });
+
+  it("never hands over one they already found", () => {
+    let found: string[] = [];
+    for (let i = 0; i < codes.length; i++) {
+      const prize = revealNextCheat(found);
+      expect(prize, `run ${i + 1} should still have something to give`).not.toBeNull();
+      expect(found).not.toContain(prize!.code);
+      found = [...found, prize!.code];
+    }
+    // everything handed out, and nothing left to give
+    expect(new Set(found)).toEqual(new Set(codes));
+    expect(revealNextCheat(found)).toBeNull();
+  });
+
+  it("saves 1680 for last, so a first win cannot give the wolf away", () => {
+    // it is the one code whose description explains him
+    const order: string[] = [];
+    let found: string[] = [];
+    for (let i = 0; i < codes.length; i++) {
+      const prize = revealNextCheat(found)!;
+      order.push(prize.code);
+      found = [...found, prize.code];
+    }
+    expect(order[order.length - 1]).toBe("1680");
   });
 });
