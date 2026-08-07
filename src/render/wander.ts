@@ -60,3 +60,44 @@ export function driftFor(seed: number, time: number, toward?: { dx: number; dy: 
   }
   return { dx, dy, flip: (toward ? toward.dx : Math.sin(slow + a)) < 0, moving };
 }
+
+
+/* ------------------------------------------------------------------ *
+ * what he does with his hands when there is nothing in them
+ * ------------------------------------------------------------------ */
+
+export type TickKind = "brow" | "stretch" | "look";
+
+/**
+ * How often one happens, and how long it lasts.
+ *
+ * At 13s apart he was doing something a quarter of every idle minute, which
+ * starts to read as fidgeting rather than a man waiting on his sheep. About
+ * one minute in six is enough to keep him alive without drawing the eye off
+ * whatever the player is actually doing.
+ */
+const TICK_EVERY = 17000;
+const TICK_FOR = 3000;
+
+/**
+ * An idle gesture, or nothing.
+ *
+ * Derived from the clock like everything else in this file, so it holds no
+ * state and cannot drift. `look` turns him to face out over the hill, which
+ * is why it hands back a facing as well — a man looking at a view is not
+ * looking at the camera.
+ */
+export function idleTick(time: number): { kind: TickKind; t: number; facing: 1 | -1 } | null {
+  const slot = Math.floor(time / TICK_EVERY);
+  const into = time % TICK_EVERY;
+  if (into > TICK_FOR) return null;
+
+  const roll = hash(slot * 7.3);
+  // looking out over the hill is the commonest, and the quietest
+  const kind: TickKind = roll < 0.45 ? "look" : roll < 0.75 ? "brow" : "stretch";
+  return {
+    kind,
+    t: into / TICK_FOR,
+    facing: hash(slot * 3.1) > 0.5 ? 1 : -1,
+  };
+}

@@ -203,6 +203,14 @@ export interface ShepherdOpts {
   /** seen from behind — for walking away from the camera */
   back?: boolean;
   /**
+   * An idle gesture, if he is in the middle of one. `t` runs 0 → 1.
+   *
+   * A man who stands perfectly still between chores reads as a game piece.
+   * These are the small things a person does with their hands when there is
+   * nothing in them.
+   */
+  tick?: { kind: "brow" | "stretch" | "look"; t: number };
+  /**
    * Which way he is turned: 1 right, -1 left, 0 square to the camera.
    *
    * He used to be square-on always, two eyes to the viewer, which read as
@@ -220,8 +228,21 @@ export const SHEPHERD_H = 26;
 /** how wide he is, crook and all, for mirroring him about his own middle */
 const SHEPHERD_SPAN = 15;
 
+/** the bunnet: a soft crown, a stubby peak, and the button on top */
+function drawBunnet(px: (dx: number, dy: number, w: number, h: number, c: string) => void, dx: number, dy: number) {
+  px(dx, dy + 1, 9, 3, "#2f3327");
+  px(dx + 1, dy, 7, 1, "#3a3f31"); // the crown, lit along the top
+  px(dx + 4, dy - 1, 2, 1, "#3a3f31"); // its button
+  px(dx + 7, dy + 2, 4, 2, "#272b20"); // the peak, out over his eyes
+}
+
+const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+
 export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts = {}) {
   const step = o.walk ? (Math.sin(o.walk * Math.PI * 8) > 0 ? 1 : 0) : 0;
+  const tick = o.tick;
+  // the bunnet is off his head for the middle of a brow-wipe
+  const hatOff = tick?.kind === "brow" && tick.t > 0.18 && tick.t < 0.82;
   const profile = (o.facing ?? 0) !== 0;
   const flip = o.facing === -1;
 
@@ -294,12 +315,52 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
     px(2, 0, 8, 6, "#c9a583"); // head
     px(3, 2, 1, 1, "#26201a");
     px(7, 2, 1, 1, "#26201a");
-    px(2, -3, 9, 4, "#2f3327"); // bunnet
-    px(9, -2, 3, 2, "#2f3327");
+    if (!hatOff) drawBunnet(px, 2, -3);
+    else px(3, -1, 7, 2, "#8a6b4c"); // his hair, flattened where it sat
   }
 
   if (KIT.pelt) drawPelt(g, flip ? x + SHEPHERD_SPAN - 12 : x, y);
   if (o.arm !== undefined) px(10, 8 + o.arm, 4, 3, "#c9a583");
+
+  /* ---- the idle gestures ---- */
+  if (tick) {
+    const t = tick.t;
+    if (tick.kind === "brow") {
+      // bunnet off, back of the wrist across his forehead, bunnet back on
+      const armUp = hatOff ? 1 : 0;
+      px(10, 3 + (1 - armUp) * 6, 4, 3, "#c9a583"); // the hand that took it off
+      if (hatOff) {
+        drawBunnet(px, 11, 6); // held down at his side
+        px(1, 0, 5, 2, "#c9a583"); // and the other wrist up at his brow
+        px(0, 1, 2, 3, "#c9a583");
+      }
+    } else if (tick.kind === "stretch") {
+      /*
+       * Both arms up and out, and down again. Two segments a side rather
+       * than one nub: at this size a single 4x3 block beside the coat is
+       * lost against it and reads as standing still.
+       */
+      const lift = Math.sin(clamp(t, 0, 1) * Math.PI);
+      const rise = Math.round(lift * 6);
+      // the arm is a chain from the shoulder: upper, forearm, hand, each
+      // starting where the last one ended. Drawn as separate pieces at their
+      // own heights they hung in the air beside him with a gap at the elbow.
+      const upY = 7 - Math.round(rise * 0.5);
+      px(11, upY, 3, 4, "#c9a583"); // upper arm, out from the shoulder
+      px(-2, upY, 3, 4, "#c9a583");
+      px(13, upY - 3, 3, 4, "#c9a583"); // forearm, straight up off the elbow
+      px(-4, upY - 3, 3, 4, "#c9a583");
+      if (lift > 0.5) {
+        px(14, upY - 5, 2, 3, "#c9a583"); // and the hands at the top of it
+        px(-5, upY - 5, 2, 3, "#c9a583");
+        px(1, 4, 10, 2, "#3b4433"); // his chest opens out with it
+      }
+    } else if (tick.kind === "look") {
+      // a hand up to shade his eyes, looking out over the hill
+      px(10, 1, 5, 2, "#c9a583");
+      px(14, 2, 2, 2, "#c9a583");
+    }
+  }
 
   if (KIT.lamp) {
     // storm lantern in the free hand, burning brighter the darker it gets

@@ -13,7 +13,7 @@
 import { clamp01, ease, type Painter } from "../painter";
 import { drawMoonDisc, moonPos } from "../moon";
 import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldLayout } from "../layout";
-import { driftFor } from "../wander";
+import { driftFor, idleTick } from "../wander";
 import {
   TERRAIN,
   mix,
@@ -613,10 +613,21 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     case "sleep":
       drawShepherd(g, sx, sy, {});
       break;
-    default:
+    default: {
       // walking to a spot he was sent to, or standing at his mark
-      if (s.walking) drawShepherd(g, sx, sy, { crook: true, walk: s.time / 90, facing: s.facing ?? 1 });
-      else drawShepherd(g, sx, sy + (Math.sin(s.time / 1600) > 0 ? 0 : 1), { crook: true });
+      if (s.walking) {
+        drawShepherd(g, sx, sy, { crook: true, walk: s.time / 90, facing: s.facing ?? 1 });
+        break;
+      }
+      // and between chores, the small things a person does with their hands
+      const tick = idleTick(s.time);
+      drawShepherd(g, sx, sy + (Math.sin(s.time / 1600) > 0 ? 0 : 1), {
+        crook: true,
+        tick: tick ? { kind: tick.kind, t: tick.t } : undefined,
+        facing: tick?.kind === "look" ? tick.facing : 0,
+      });
+      break;
+    }
   }
 }
 

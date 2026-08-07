@@ -241,6 +241,10 @@ when he is near — each on its own rhythm, from a hash of its id, so the flock 
 unison. It is computed from the clock and needs no state, so it survives a reload and cannot
 desync from the simulation, which never sees it.
 
+The shepherd has idle ticks from the same file: he takes his bunnet off and wipes his brow,
+stretches, or turns and looks out over the hill — about one minute in six, and only when he is
+genuinely idle, never mid-animation or walking. At 13 seconds apart it read as fidgeting.
+
 **Nothing here touches the sim.** If a future change wants animals to actually move between
 pastures, that belongs in `sim/`, not in this file.
 
