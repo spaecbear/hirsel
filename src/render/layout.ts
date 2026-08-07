@@ -64,7 +64,7 @@ export interface WorldLayout {
   shepherd: { x: number; y: number };
   dog: { x: number; y: number };
   /** where she is on her circuit this frame, and which way she is looking */
-  dogAt: { x: number; y: number; facing: 1 | -1; running: boolean };
+  dogAt: { x: number; y: number; facing: 1 | -1; running: boolean; wagging: boolean };
   saltlick: { x: number; y: number };
   flock: { x: number; y: number }[];
   flockBox: Rect;
@@ -213,7 +213,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
           // off the bottom of the frame
           const ry = Math.max(6, Math.min(flockBox.h * 0.34 + 4, cy - (groundY + 2), H - 14 - cy));
     const c = herdCircuit(opts.time, cx, cy, rx, ry);
-    return { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, running: c.running };
+    return { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, running: c.running, wagging: c.wagging };
   })();
 
   /*

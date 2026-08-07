@@ -78,6 +78,8 @@ export interface Circuit {
   y: number;
   facing: 1 | -1;
   running: boolean;
+  /** she is stopped, settled, and pleased with herself */
+  wagging: boolean;
 }
 
 /**
@@ -97,17 +99,29 @@ export interface Circuit {
  */
 const LAP_MS = 14000;
 const HOLD_MS = 6000;
+/** she settles for a moment before the wag starts, and again before she goes */
+const WAG_AFTER = 1400;
+const WAG_BEFORE = 1600;
 
 export function herdCircuit(time: number, cx: number, cy: number, rx: number, ry: number): Circuit {
   const cycle = time % (LAP_MS + HOLD_MS);
   const running = cycle < LAP_MS;
   // during the hold she sits at the top of the lap, where it began
   const th = (running ? cycle / LAP_MS : 0) * Math.PI * 2;
+  /*
+   * A working dog does not wag while she is working — she is watching the
+   * flock, and a tail going the whole way round the circuit read as a toy
+   * being pulled along on a string. The wag belongs to the stop: she comes
+   * in, stands a moment, wags, stands again, and goes back out.
+   */
+  const held = cycle - LAP_MS;
+  const wagging = !running && held > WAG_AFTER && held < HOLD_MS - WAG_BEFORE;
   return {
     x: cx + Math.cos(th) * rx,
     y: cy + Math.sin(th) * ry,
     facing: -Math.sin(th) < 0 ? -1 : 1,
     running,
+    wagging,
   };
 }
 

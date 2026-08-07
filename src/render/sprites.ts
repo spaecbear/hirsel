@@ -459,11 +459,16 @@ export function drawDogCurled(g: Painter, x: number, y: number, time: number, fa
   px(17, 9, 4, 2, coat.white);
 }
 
-export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0, facing: 1 | -1 = 1) {
+export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0, facing: 1 | -1 = 1, wag = false) {
   const leg = run ? (Math.sin(run * Math.PI * 12) > 0 ? 0 : 2) : 0;
-  // a quicker, shorter wag: the old one swept far enough to read as a
-  // metronome rather than a dog pleased with itself
-  const tail = run ? Math.sin(run * Math.PI * 14) * 2 : Math.sin(Date.now() / 280) * 1;
+  /*
+   * The tail is told when to wag rather than deciding for itself. It used to
+   * go whenever she was on the move, so she wagged all the way round a
+   * herding circuit — and a working dog does not. Quick and short when it
+   * does go: the old sweep read as a metronome rather than a dog pleased
+   * with itself.
+   */
+  const tail = wag ? Math.sin(Date.now() / 190) * 2 : 0;
   g.a(x - 2, y + 11, 18, 2, 0, 0, 0, 0.22);
 
   const coat = KIT.collie ? DOG_COATS.collie : DOG_COATS.sheltie;

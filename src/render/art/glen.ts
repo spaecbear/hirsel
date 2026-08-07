@@ -504,7 +504,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       // drawn — and only a sheltie turns, and only when you tap her.
       // no turn out here: she has no tap target on the hill, so there is
       // never one to play — she is working
-      drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing);
+      drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging);
     }
   }
 
@@ -1305,7 +1305,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
        * and stood still where they did. Only the sheltie turns.
        */
       const spin = owns(st, "collie") ? 0 : spinNow(time);
-      drawDog(g, dogHome.x, dogHome.y, spin ? time / 200 : 0, spin, 1);
+      drawDog(g, dogHome.x, dogHome.y, spin ? time / 200 : 0, spin, 1, !spin);
     }
   }
 

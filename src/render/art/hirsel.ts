@@ -302,7 +302,7 @@ function setSheep(g: Painter, st: GameState, s: Scene, shepDrawn: { dog: boolean
     if (k === "tend") graze = false;
     drawSheep(g, x, y, sh, { shorn, graze, run, flip: i % 4 === 0 });
   });
-  if (shepDrawn.dog) drawDog(g, SHEP_X - 34, GROUND + 6 + (Math.sin(s.time / 700) > 0 ? 0 : 1), 0);
+  if (shepDrawn.dog) drawDog(g, SHEP_X - 34, GROUND + 6 + (Math.sin(s.time / 700) > 0 ? 0 : 1), 0, 0, 1, true);
 }
 
 function shearScene(g: Painter, p: number) {
@@ -648,7 +648,7 @@ export const HIRSEL_ART: ArtPack = {
     } else if (k === "sleep" || k === "dawn") {
       drawShepherd(g, SHEP_X, sy, {});
       // she stays visible through the night
-      if (hasDog(st)) drawDog(g, SHEP_X - 32, GROUND + 6, 0);
+      if (hasDog(st)) drawDog(g, SHEP_X - 32, GROUND + 6, 0, 0, 1, true);
     } else {
       drawShepherd(g, SHEP_X, sy + (Math.sin(s.time / 1600) > 0 ? 0 : 1), { crook: true });
     }
