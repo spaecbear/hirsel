@@ -502,8 +502,9 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       // off the clock: she works the outside of the flock, laps and holds.
       // The layout works out where she is, so she can be tapped where she is
       // drawn — and only a sheltie turns, and only when you tap her.
-      const spin = owns(st, "collie") ? 0 : spinNow(s.time);
-      drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running && !spin ? s.time / 200 : 0, spin, L.dogAt.facing);
+      // no turn out here: she has no tap target on the hill, so there is
+      // never one to play — she is working
+      drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing);
     }
   }
 
@@ -1297,7 +1298,14 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
         drawDogCurled(g, fireSpot.x, fireSpot.y, time, 1);
       }
     } else {
-      drawDog(g, dogHome.x, dogHome.y, 0, 0, 1);
+      /*
+       * The turn happens here, where she can be asked for it. It was wired
+       * into the hill scene instead — the one place she has no tap target —
+       * and hard-coded to 0 in the room, so she spun where nobody could ask
+       * and stood still where they did. Only the sheltie turns.
+       */
+      const spin = owns(st, "collie") ? 0 : spinNow(time);
+      drawDog(g, dogHome.x, dogHome.y, spin ? time / 200 : 0, spin, 1);
     }
   }
 
