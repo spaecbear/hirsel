@@ -177,7 +177,9 @@ describe("the night", () => {
     let takenOther = 0;
     for (let seed = 0; seed < N; seed++) {
       const state = Object.assign(newGame({ seed }), {
-        flock: [sheep(4), sheep(4), sheep(4)],
+        // twelve, the pivot: fox risk scales with flock size now, and a flock
+        // of three sits near the floor where raids are too rare to sample
+        flock: Array.from({ length: 12 }, () => sheep(4)),
         at: 2, // High Corrie: highest fox risk in the game
         forecast: ["mist", "mist", "mist"] as const, // highest fox weather bias
       });
@@ -197,9 +199,9 @@ describe("the night", () => {
     expect(raids, "sanity check: max-risk ground should raid often across 300 seeds").toBeGreaterThan(N * 0.4);
     // this is the bug, made concrete: it was 0 before the fix, every time
     expect(takenOther).toBeGreaterThan(0);
-    // three sheep, picked by chance, should land on the newest one meaningfully
-    // less than "always" — not a tight bound, just far from the old 100%
-    expect(takenNewest / raids).toBeLessThan(0.6);
+    // picked by chance out of twelve, the newest should come up about 1 in 12 —
+    // not a tight bound, just far from the old 100%
+    expect(takenNewest / raids).toBeLessThan(0.4);
   });
 });
 
@@ -557,7 +559,9 @@ describe("the dog and the instrument are slots, not a shopping list", () => {
     let raids = 0;
     for (let seed = 0; seed < 120; seed++) {
       const state = Object.assign(newGame({ seed }), {
-        flock: [sheep(4), sheep(4), sheep(4)],
+        // twelve, the pivot: fox risk scales with flock size now, and a flock
+        // of three sits near the floor where raids are too rare to sample
+        flock: Array.from({ length: 12 }, () => sheep(4)),
         at: 2,
         owned: { dog: true },
         forecast: ["mist", "sun", "sun"] as const,

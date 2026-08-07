@@ -28,8 +28,14 @@ describe("the first day's setup", () => {
       game.doAction("shear");
       game.doAction("market");
       const paid = g.money - before;
-      // exactly enough for the ewe, with no change nobody earned
-      expect(paid, `seed ${seed} paid ${paid}`).toBe(BREEDS.blackface.cost);
+      /*
+       * Enough for the ewe, and not a windfall. It cannot be exact at every
+       * price: five sheep all left shearable clip at least 20 stone, which is
+       * worth more than a ewe when wool is dear, so a few pounds of change is
+       * the floor rather than slack.
+       */
+      expect(paid, `seed ${seed} paid ${paid}`).toBeGreaterThanOrEqual(BREEDS.blackface.cost);
+      expect(paid, `seed ${seed} paid ${paid}`).toBeLessThan(BREEDS.blackface.cost + 6);
     }
   });
 

@@ -1,4 +1,5 @@
 /** Player preferences. Separate from the save file — they outlive any one run. */
+import type { Difficulty } from "./types";
 
 /**
  * Which whole interface you play in.
@@ -31,6 +32,10 @@ export interface Settings {
   swift: boolean;
   /** codes the player has ever entered, so the cheat list can show what's known */
   cheatsFound: string[];
+  /** the scale the title screen offers first — the last one chosen */
+  difficulty: Difficulty;
+  /** hard has been beaten, which is what unlocks the cheat codes */
+  beatHard: boolean;
   /** the title screen is skipped once a run is under way */
   seenTitle: boolean;
   /** the first day's walkthrough has been done, and won't run again */
@@ -48,6 +53,8 @@ export const DEFAULT_SETTINGS: Settings = {
   inverse: false,
   zen: false,
   swift: false,
+  difficulty: "steady",
+  beatHard: false,
   cheatsFound: [],
   seenTitle: false,
   tutorialSeen: false,

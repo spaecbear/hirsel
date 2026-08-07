@@ -2,7 +2,7 @@
  * Pure rules. No state mutation, no DOM, no randomness.
  * Everything here is directly testable and is what the Vitest suite pins down.
  */
-import { BALANCE, BREEDS, FULL_MOON_PHASE, MOON_CYCLE, MOON_NAMES, WEATHER } from "./config";
+import { BALANCE, DIFFICULTY, BREEDS, FULL_MOON_PHASE, MOON_CYCLE, MOON_NAMES, WEATHER } from "./config";
 import type { GameState, Sheep, WeatherId } from "./types";
 
 /* ---------- moon ---------- */
@@ -30,9 +30,13 @@ export const readyToShear = (flock: Sheep[]) =>
 
 /* ---------- market ---------- */
 /** stable within a day, so holding wool is a real choice */
-export function priceOn(day: number): number {
-  return Math.round(BALANCE.marketBase + Math.sin(day * 1.7) * Math.cos(day * 0.6) * BALANCE.marketSwing);
+export function priceOn(day: number, mult = 1): number {
+  const base = BALANCE.marketBase + Math.sin(day * 1.7) * Math.cos(day * 0.6) * BALANCE.marketSwing;
+  return Math.round(base * mult);
 }
+
+/** what a stone fetches today, on the scale this run is being played at */
+export const woolPrice = (g: GameState) => priceOn(g.day, DIFFICULTY[g.difficulty].price);
 
 /* ---------- state readers ---------- */
 export const owns = (g: GameState, id: string) => !!g.owned[id as keyof typeof g.owned];
@@ -47,7 +51,7 @@ export function tapsPerDay(g: GameState): number {
 }
 
 export function feedCost(g: GameState): number {
-  return Math.ceil(g.flock.length / 2);
+  return Math.ceil(g.flock.length / BALANCE.sheepPerPound);
 }
 
 /* ---------- what the work costs ---------- */
@@ -101,6 +105,10 @@ export const dogFoxBias = (g: GameState) =>
 export function foxRisk(g: GameState): number {
   if (owns(g, "pelt")) return BALANCE.peltFoxRisk;
   let risk = here(g).risk * weatherOn(g).foxBias;
+  // more beasts than one man can keep an eye on, or few enough to watch
+  const scale = g.flock.length / BALANCE.foxFlockPivot;
+  risk *= Math.max(BALANCE.foxFlockMin, Math.min(BALANCE.foxFlockMax, scale));
+  risk *= DIFFICULTY[g.difficulty].fox;
   if (g.gatheredToday) risk *= BALANCE.gatheredFoxBias;
   risk *= dogFoxBias(g);
   if (buffed(g, "settled flock")) risk *= BALANCE.settledFoxBias;

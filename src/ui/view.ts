@@ -8,7 +8,7 @@ import {
   isFullMoon,
   moonName,
   owns,
-  priceOn,
+  woolPrice,
   readyToShear,
   tapsPerDay,
 } from "../sim/rules";
@@ -302,7 +302,7 @@ export class View {
     const buffs = Object.entries(g.buffs).map(([k, v]) => `${k} (${v}d)`);
     const extra: string[] = [];
     extra.push(`taps ${tapsPerDay(g)}/day`);
-    extra.push(`wool ${priceOn(g.day)}p a stone today`);
+    extra.push(`wool ${woolPrice(g)}p a stone today`);
     if (readyToShear(g.flock) >= 1 && !canShear(g)) extra.push("no shearing in this");
     if (g.flock.some((s) => s.fleece >= BALANCE.flystrikeFleece)) extra.push("fleece running heavy");
     $("buffs").textContent = (buffs.length ? `In you: ${buffs.join(", ")} · ` : "") + extra.join(" · ");

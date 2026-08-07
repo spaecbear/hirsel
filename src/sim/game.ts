@@ -30,7 +30,7 @@ import {
   here,
   isFullMoon,
   owns,
-  priceOn,
+  woolPrice,
   readyToShear,
   tapsPerDay,
   weatherOn,
@@ -45,6 +45,7 @@ import type {
   BreedId,
   BuffId,
   CroftId,
+  Difficulty,
   GameState,
   LogClass,
   RoutineEntry,
@@ -55,6 +56,8 @@ import type {
 
 export interface GameOptions {
   seed?: number;
+  /** the scale to play at; a run keeps whichever it was started on */
+  difficulty?: Difficulty;
 }
 
 export interface ActionDef {
@@ -90,6 +93,7 @@ export function newGame(opts: GameOptions = {}): GameState {
     wool: 0,
     flock,
     nextSheepId: BALANCE.startFlock + 1,
+    difficulty: opts.difficulty ?? "steady",
     at: 0,
     pastures: PASTURES.map((p) => ({ ...p })),
     owned: {},
@@ -723,11 +727,11 @@ export const ACTIONS: ActionDef[] = [
     desc: (g) =>
       g.wool === 0
         ? "Nothing in the sack to sell."
-        : `${g.wool} stone · ${priceOn(g.day)}p a stone · about £${Math.round((g.wool * priceOn(g.day)) / 100)}`,
+        : `${g.wool} stone · ${woolPrice(g)}p a stone · about £${Math.round((g.wool * woolPrice(g)) / 100)}`,
     can: (g) => g.wool > 0,
     run: (game) => {
       const g = game.state;
-      const p = priceOn(g.day);
+      const p = woolPrice(g);
       const take = Math.round((g.wool * p) / 100);
       g.money += take;
       g.stats.woolSold += g.wool;

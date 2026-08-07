@@ -207,8 +207,13 @@ export function tutorialSetup(g: GameState) {
    * number. Every beast is left shearable so none of it is left behind.
    */
   const price = priceOn(g.day);
-  // the smallest clip that still clears the price of a ewe — rounding up a
-  // whole stone overshot and handed out change nobody had earned
+  /*
+   * The smallest clip that still clears the price of a ewe. It cannot always
+   * be exact: every beast has to be left shearable, the minimum shearable
+   * fleece is 4, so five sheep cannot clip less than 20 stone — worth rather
+   * more than a ewe at a good price. A pound or two of change is the floor,
+   * not slack in the rig.
+   */
   let stone = Math.max(1, Math.round((TUTORIAL_TARGET_PAY * 100) / price));
   while (Math.round((stone * price) / 100) < TUTORIAL_TARGET_PAY) stone++;
   const each = Math.floor(stone / g.flock.length);

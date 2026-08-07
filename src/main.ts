@@ -8,7 +8,8 @@ import { lexicon } from "./sim/lexicon";
 import { CHEATS, revealNextCheat } from "./sim/cheats";
 import { ACHIEVEMENTS, loadEarned } from "./sim/achievements";
 import { tutorialSetup } from "./sim/tutorial";
-import type { GameState } from "./sim/types";
+import type { Difficulty, GameState } from "./sim/types";
+import { DIFFICULTY } from "./sim/config";
 
 import { Animator } from "./render/animator";
 import { Screen } from "./render/screen";
@@ -98,7 +99,7 @@ function startGame(state?: GameState, opts: { intro?: boolean } = {}) {
   animator.clear();
   sky.clear();
   tutorial.stop();
-  game = new Game(state);
+  game = new Game(state, { difficulty: settings.difficulty });
   view.setGame(game);
   world.setGame(game);
   tutorial.setGame(game);
@@ -299,7 +300,32 @@ function closeCredits() {
 $("credits-close").addEventListener("click", closeCredits);
 
 /* ---------- the title ---------- */
+/*
+ * The scale is chosen before the run, not during it: it is fixed into the
+ * save, so a hard run cannot be quietly softened once it turns awkward. That
+ * is the whole basis of hard being worth beating.
+ */
+function drawScalePick() {
+  const box = $("title-scale");
+  box.innerHTML = "";
+  for (const id of ["gentle", "steady", "hard"] as Difficulty[]) {
+    const d = DIFFICULTY[id];
+    const on = settings.difficulty === id;
+    const b = el(
+      "button",
+      { type: "button", class: `scale${on ? " on" : ""}`, "aria-pressed": String(on) },
+      `<b>${d.name}</b><span>${d.blurb}</span>`,
+    ) as HTMLButtonElement;
+    b.addEventListener("click", () => {
+      applySettings({ difficulty: id });
+      drawScalePick();
+    });
+    box.appendChild(b);
+  }
+}
+
 function showTitle() {
+  drawScalePick();
   const save = readSave();
   const cont = $<HTMLButtonElement>("title-continue");
   cont.disabled = !save;
@@ -382,8 +408,24 @@ function showEnd() {
   const box = $("over-reward");
   box.innerHTML = "";
   box.style.display = "none";
-  if (o.kind === "win") {
-    // finishing a run hands over a code you did not have, for the next one
+  /*
+   * The codes are hard's to give. Winning on Gentle or Steady is still a win
+   * — the ring, the wedding, the credits — but the glen only tells you
+   * something it was keeping if you took it at its worst. Without that, the
+   * three scales would be a difficulty menu with no reason to climb it.
+   */
+  const wonHard = o.kind === "win" && game.state.difficulty === "hard";
+  if (wonHard && !settings.beatHard) applySettings({ beatHard: true });
+
+  if (o.kind === "win" && !wonHard) {
+    box.style.display = "";
+    box.innerHTML =
+      `<div class="reward-label">The glen keeps its own counsel</div>` +
+      `<div class="reward-blurb">Take the hill on Hard and it will tell you something it knows.</div>`;
+  }
+
+  if (wonHard) {
+    // finishing a hard run hands over a code you did not have, for the next one
     const prize = revealNextCheat(settings.cheatsFound);
     if (prize) {
       applySettings({ cheatsFound: [...settings.cheatsFound, prize.code] });
@@ -401,7 +443,7 @@ function showEnd() {
   $("over").classList.add("on");
 
   // and for a run that finished with nothing left to find
-  if (o.kind === "win" && everythingFound()) {
+  if (wonHard && everythingFound()) {
     setTimeout(() => {
       $("over").classList.remove("on");
       showCredits();

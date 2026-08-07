@@ -1,3 +1,6 @@
+/** the scale a run is played at; see DIFFICULTY in config.ts */
+export type Difficulty = "gentle" | "steady" | "hard";
+
 export type BreedId = "blackface" | "cheviot" | "hebridean" | "shetland";
 
 export interface Breed {
@@ -113,6 +116,8 @@ export interface GameState {
   wool: number;
   flock: Sheep[];
   nextSheepId: number;
+  /** the scale this run is being played at; fixed when the run starts */
+  difficulty: Difficulty;
   at: number;
   pastures: Pasture[];
   owned: Partial<Record<OwnedId, boolean>>;

@@ -592,6 +592,48 @@ body.no-motion .credits-scroll {
   color: var(--stone);
   margin: 12px 0 26px;
 }
+/* the scale chosen before a run starts, and fixed into it */
+.scale-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0 0 14px;
+}
+.scale-pick .scale {
+  background: var(--peat);
+  border: 1px solid var(--moss);
+  color: var(--stone);
+  font: inherit;
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.scale-pick .scale b {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--wool);
+}
+.scale-pick .scale span {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  color: var(--stone);
+}
+.scale-pick .scale.on {
+  background: var(--moss);
+  border-color: var(--gorse);
+}
+.scale-pick .scale.on b {
+  color: var(--gorse);
+}
+.scale-pick .scale.on span {
+  color: var(--wool);
+}
+
 .title-btns {
   display: flex;
   flex-direction: column;

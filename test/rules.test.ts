@@ -14,6 +14,7 @@ import {
   tapsPerDay,
   wolfSummoned,
   wolfWarningDue,
+  woolPrice,
 } from "../src/sim/rules";
 import { newGame } from "../src/sim/game";
 import { BALANCE } from "../src/sim/config";
@@ -77,10 +78,11 @@ describe("taps", () => {
 });
 
 describe("feed", () => {
-  it("costs a pound for every two sheep, rounded up", () => {
+  it("costs a pound for every three sheep, rounded up", () => {
     expect(feedCost(g({ flock: [] }))).toBe(0);
     expect(feedCost(g({ flock: [f(1)] }))).toBe(1);
-    expect(feedCost(g({ flock: [f(1), f(1), f(1)] }))).toBe(2);
+    expect(feedCost(g({ flock: [f(1), f(1), f(1)] }))).toBe(1);
+    expect(feedCost(g({ flock: [f(1), f(1), f(1), f(1)] }))).toBe(2);
   });
 });
 
@@ -144,8 +146,11 @@ describe("the oilskin", () => {
 });
 
 describe("fox risk", () => {
-  it("multiplies pasture, weather, gathering, dog and the settled buff", () => {
-    const s = g({ at: 2, forecast: ["mist", "sun", "sun"] });
+  it("multiplies pasture, weather, flock size, gathering, dog and the settled buff", () => {
+    // twelve is the pivot, so a flock of twelve carries no size factor at all
+    // hard carries no scale factor of its own, so the arithmetic here is the
+    // raw rule rather than the rule times a difficulty dial
+    const s = g({ difficulty: "hard", at: 2, forecast: ["mist", "sun", "sun"], flock: Array.from({ length: 12 }, () => f(4)) });
     expect(foxRisk(s)).toBeCloseTo(0.34 * 1.7);
     s.gatheredToday = true;
     expect(foxRisk(s)).toBeCloseTo(0.34 * 1.7 * 0.35);
@@ -153,6 +158,36 @@ describe("fox risk", () => {
     expect(foxRisk(s)).toBeCloseTo(0.34 * 1.7 * 0.35 * 0.6);
     s.buffs["settled flock"] = 2;
     expect(foxRisk(s)).toBeCloseTo(0.34 * 1.7 * 0.35 * 0.6 * 0.85);
+  });
+
+  it("scales with how many there are to watch, between a floor and a ceiling", () => {
+    const at = (n: number) =>
+      foxRisk(g({ difficulty: "hard", at: 2, forecast: ["mist", "sun", "sun"], flock: Array.from({ length: n }, () => f(4)) }));
+    const base = 0.34 * 1.7;
+    expect(at(6)).toBeCloseTo(base * 0.5); // half the pivot, half the risk
+    expect(at(12)).toBeCloseTo(base);
+    expect(at(18)).toBeCloseTo(base * 1.5); // the ceiling, past which it stops
+    expect(at(30)).toBeCloseTo(base * 1.5);
+    expect(at(2)).toBeCloseTo(base * 0.45); // the floor: a tiny flock is not free
+  });
+
+  it("is dialled by the scale the run is played at, and nothing else is", () => {
+    const on = (d: "gentle" | "steady" | "hard") =>
+      foxRisk(g({ difficulty: d, at: 2, forecast: ["mist", "sun", "sun"], flock: Array.from({ length: 12 }, () => f(4)) }));
+    expect(on("hard")).toBeCloseTo(0.34 * 1.7);
+    expect(on("steady")).toBeCloseTo(0.34 * 1.7 * 0.8);
+    expect(on("gentle")).toBeCloseTo(0.34 * 1.7 * 0.6);
+    // the mechanics are identical at every scale: only the two dials move
+    expect(on("gentle")).toBeLessThan(on("steady"));
+    expect(on("steady")).toBeLessThan(on("hard"));
+  });
+
+  it("prices wool by the scale too, so the dial has two ends", () => {
+    const day = 5;
+    const at = (d: "gentle" | "steady" | "hard") => woolPrice(g({ difficulty: d, day }));
+    expect(at("hard")).toBe(priceOn(day));
+    expect(at("gentle")).toBeGreaterThan(at("steady"));
+    expect(at("steady")).toBeGreaterThan(at("hard"));
   });
 
   it("is a flat one percent with the pelt, whatever else is true", () => {

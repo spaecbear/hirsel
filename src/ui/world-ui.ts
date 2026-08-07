@@ -14,7 +14,7 @@
 import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
 import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
-import { canShear, here, isFullMoon, moonName, owns, priceOn, readyToShear, tapsPerDay } from "../sim/rules";
+import { canShear, here, isFullMoon, moonName, owns, woolPrice, readyToShear, tapsPerDay } from "../sim/rules";
 import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
 import type { Screen } from "../render/screen";
@@ -292,7 +292,7 @@ export class WorldUi {
       case "croft":
         return "The croft";
       case "cart":
-        return `The cart · ${this.game.lex.wool} ${priceOn(g.day)}p a stone`;
+        return `The cart · ${this.game.lex.wool} ${woolPrice(g)}p a stone`;
       case "flock":
         return `${this.game.lex.flockCap} · ${g.flock.length} on the hill`;
       case "shepherd":
@@ -364,7 +364,7 @@ export class WorldUi {
 
     const buffs = Object.entries(g.buffs).map(([k, v]) => `${k} (${v}d)`);
     rows.push({
-      label: `${tapsPerDay(g)} taps a day · ${this.game.lex.wool} ${priceOn(g.day)}p a stone`,
+      label: `${tapsPerDay(g)} taps a day · ${this.game.lex.wool} ${woolPrice(g)}p a stone`,
       detail: buffs.length ? `In you: ${buffs.join(", ")}` : "Nothing running in you just now.",
       info: true,
       onPick: () => {},
@@ -637,7 +637,7 @@ export class WorldUi {
       case "croft":
         return owns(g, "ring") ? "The croft — finished" : "The croft — go in";
       case "cart":
-        return `The cart — ${this.lexicon.wool} ${priceOn(g.day)}p a stone`;
+        return `The cart — ${this.lexicon.wool} ${woolPrice(g)}p a stone`;
       case "flock":
         return `${this.lexicon.flockCap} — ${g.flock.length} on the hill`;
       case "shepherd":

@@ -5,7 +5,7 @@
  * here, set to the prototype's shipped behaviour, with a note saying what the
  * question actually is. Change the flag, don't hunt for a magic number.
  */
-import type { Breed, BreedId, Weather, WeatherId } from "./types";
+import type { Breed, BreedId, Difficulty, Weather, WeatherId } from "./types";
 
 /**
  * Starting money. The £1000 test purse of §13 is gone — testing is done with
@@ -31,7 +31,12 @@ export const BALANCE = {
   pintCost: 8,
   pubsToAsk: 6,
 
-  feedPerTwoSheep: 1,
+  /**
+   * The nightly feed bill is `ceil(flock / sheepPerPound)`. It was hard-coded
+   * to 2 in rules.ts while this number sat unused, which made the single most
+   * important figure in the economy invisible to tuning.
+   */
+  sheepPerPound: 3,
 
   /*
    * Work scales with the flock.
@@ -64,6 +69,22 @@ export const BALANCE = {
   haleDays: 3,
 
   gatheredFoxBias: 0.35,
+  /*
+   * A fox takes one sheep a night whatever the size of the flock, so the
+   * risk was flat while its cost was not: losing one of six is ruinous and
+   * losing one of twenty is a Tuesday. Measured, a six-sheep flock bled
+   * value faster than it earned it — about £180 of losses against £114 of
+   * wool over ninety days — so a run could never climb out of its start,
+   * and every measured run decayed to two or three beasts.
+   *
+   * Risk now scales with how many there are to watch, pivoting on the size
+   * the hirsel is meant to settle at. A small flock is defensible while you
+   * build it up; a large one strains what one shepherd and one dog can see,
+   * which puts the ceiling in the same place the work does.
+   */
+  foxFlockPivot: 12,
+  foxFlockMin: 0.45,
+  foxFlockMax: 1.5,
   /*
    * The two dogs, and the two instruments, are sidegrades at one price —
    * different shapes, not different amounts. The sheltie is the safe pick and
@@ -104,17 +125,34 @@ export const BALANCE = {
   saltlickGraze: 0.75,
 
   /**
-   * The spec's original 62±32 (30–95p) leaves almost no margin over feed.
-   * Simulating a modest, non-tool-buying policy across 40 seeded 30-day runs
-   * at 62±32 gave a median final purse of £40 — flat against the £40 start —
-   * with a worst case of £2, i.e. one bad weather streak from starving.
-   * Raised to 80±34 (46–114p) on player report ("can't survive a run of
-   * rain"): same test gives median £63 and a worst case of £21, zero busts.
-   * Rain and haar together are ~43% of days (2+1 of 7 in WEATHER_BAG), so a
-   * multi-day dead streak is common, not a tail case — the margin has to
-   * survive it, not just the average day.
+   * Wool price, and the feed bill above it, are the two numbers that decide
+   * whether a flock compounds or bleeds. They were set so it bled.
+   *
+   * Measured across 25 seeded 90-day runs on one competent policy — shear at
+   * prime rather than at the legal minimum, work the better ground, buy the
+   * dog first — a six-sheep flock at 80p and £1-per-2 feed took about £180 of
+   * fox losses against £114 of wool. Every run decayed towards two or three
+   * beasts and 22 of 25 died with an empty purse. A player could not climb
+   * out of the flock they started with, so the whole middle of the game was
+   * unreachable.
+   *
+   * Swept together, holding the target at "a flock of twelve should be a
+   * comfortable place to live":
+   *
+   *   feed   price   alive 90d   reached 12   median flock   purse
+   *   1/2     80p       5/25        0/25            3          £21
+   *   1/2    110p       5/25        2/25            7          £32
+   *   1/3     95p      15/25        8/25           10          £35
+   *   1/3    105p      16/25       12/25           12         £164
+   *   1/3    110p      18/25       17/25           12         £230
+   *
+   * 1/3 and 105p is the chosen point: the median run settles at exactly the
+   * intended twelve, and £164 by day ninety against £1,510 of croft is a long
+   * way from generous. Feed is the stronger lever of the two — at £1 per 2 no
+   * wool price rescued the run, because the bill scaled with the flock as
+   * fast as the fleece did.
    */
-  marketBase: 80,
+  marketBase: 105,
   marketSwing: 34,
 
   wolfActionsNeeded: 5,
@@ -124,6 +162,44 @@ export const BALANCE = {
 /**
  * §14 open questions. All left at prototype behaviour. Flip and playtest.
  */
+/**
+ * The scale you choose to play on.
+ *
+ * The mechanics are identical at every setting — the same actions, the same
+ * fox, the same croft — so a player who learns the game on Gentle has learned
+ * the game. Only two numbers move: how often a fox comes, and what wool
+ * fetches. Those are the two the simulation showed decide whether a flock
+ * compounds or bleeds, so they are the honest place to put the dial.
+ *
+ * Hard is the tuning the balance work landed on: measured at roughly a 64%
+ * survival rate over ninety days on a competent policy. That is a fine
+ * summit and a poor lobby, which is why it is no longer the only option —
+ * and why it is the one that pays out.
+ */
+export const DIFFICULTY: Record<
+  Difficulty,
+  { name: string; blurb: string; fox: number; price: number }
+> = {
+  gentle: {
+    name: "Gentle",
+    blurb: "A kinder glen. Foxes come seldom and wool sells well.",
+    fox: 0.6,
+    price: 1.2,
+  },
+  steady: {
+    name: "Steady",
+    blurb: "The hill as it is. Room to make a mistake and still eat.",
+    fox: 0.8,
+    price: 1.1,
+  },
+  hard: {
+    name: "Hard",
+    blurb: "A thin living. Beat it and the glen gives up a secret.",
+    fox: 1,
+    price: 1,
+  },
+};
+
 export const OPEN_QUESTIONS = {
   /** (1) opening difficulty — raise starting money, never taps, if the crook takes >15 days */
   startMoney: START_MONEY,
