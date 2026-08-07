@@ -2,44 +2,55 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { QUICK_MS, SPIN_MS, resetSpin, spinNow, startSpin } from "../src/render/dog-spin";
 
 /*
- * Arrow's two turns. This has been wrong twice — first because a tap landing
- * mid-turn was dropped, so mashing her did nothing, and then because the bark
- * the tap sets off made the world busy for longer than the window the second
- * turn had to land in. The logic is small and pure, so it gets pinned here.
+ * Arrow spun in circles when she was pleased to see you, so the trick is
+ * two turns back to back — and the game has to be forgiving about how you
+ * ask for them, because mashing the dog twice is what anyone will do.
  */
 describe("the sheltie's spin", () => {
   beforeEach(() => resetSpin());
 
-  it("turns once for one tap, and says it is not a pair", () => {
-    expect(startSpin(1000)).toBe(false);
+  it("turns for exactly one turn and then stops", () => {
+    startSpin(1000);
     expect(spinNow(1000)).toBeGreaterThan(0);
-    expect(spinNow(1000 + SPIN_MS / 2)).toBeCloseTo(0.5, 1);
+    expect(spinNow(1000 + SPIN_MS / 2)).toBeCloseTo(0.5);
+    expect(spinNow(1000 + SPIN_MS - 1)).toBeLessThan(1);
     expect(spinNow(1000 + SPIN_MS)).toBe(0);
   });
 
+  it("is never reported as zero while she is actually turning", () => {
+    // the painter reads 0 as "not spinning", so the first frame must not be 0
+    startSpin(1000);
+    expect(spinNow(1000)).toBeGreaterThan(0);
+  });
+
+  it("counts a second tap after the first turn as the pair", () => {
+    expect(startSpin(1000)).toBe(false); // nothing to pair with
+    expect(startSpin(1000 + SPIN_MS + 200)).toBe(true);
+  });
+
   it("queues a tap that lands while she is still turning", () => {
+    // the natural double-tap: both land inside the first turn
     startSpin(1000);
-    // the obvious way anyone tries this: two taps in quick succession
     expect(startSpin(1200)).toBe(true);
-    // and the second turn runs on from the first rather than restarting it
-    expect(spinNow(1000 + SPIN_MS + 10)).toBeGreaterThan(0);
-    expect(spinNow(1000 + SPIN_MS * 2)).toBe(0);
+    // and the queued turn really does run on past where one turn would end
+    expect(spinNow(1000 + SPIN_MS + 100)).toBeGreaterThan(0);
   });
 
-  it("counts a second turn taken just after the first as a pair", () => {
+  it("will not let her be held into a spinning top", () => {
     startSpin(1000);
-    expect(startSpin(1000 + SPIN_MS + 100)).toBe(true);
-  });
-
-  it("will not be wound up into a spinning top", () => {
-    startSpin(1000);
-    expect(startSpin(1100)).toBe(true);
-    expect(startSpin(1200)).toBe(false);
+    expect(startSpin(1200)).toBe(true);
     expect(startSpin(1300)).toBe(false);
+    expect(startSpin(1400)).toBe(false);
   });
 
-  it("is not a pair once she has had time to settle", () => {
+  it("does not count two turns far apart", () => {
     startSpin(1000);
-    expect(startSpin(1000 + QUICK_MS + 1)).toBe(false);
+    expect(startSpin(1000 + QUICK_MS + 500)).toBe(false);
+  });
+
+  it("stops after the queued second turn rather than running on", () => {
+    startSpin(1000);
+    startSpin(1200);
+    expect(spinNow(1000 + SPIN_MS * 2)).toBe(0);
   });
 });
