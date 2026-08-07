@@ -17,6 +17,7 @@ import {
   woolPrice,
 } from "../src/sim/rules";
 import { ACTIONS, newGame } from "../src/sim/game";
+import { ACHIEVEMENTS } from "../src/sim/achievements";
 import { BALANCE, TOOLS } from "../src/sim/config";
 import type { GameState } from "../src/sim/types";
 import { INVERSE, actionName, toolWhat } from "../src/sim/lexicon";
@@ -278,5 +279,26 @@ describe("inverse mode says nothing about sheep", () => {
     for (const t of TOOLS) {
       expect(toolWhat(INVERSE, t.id, t.what), `tool ${t.id}`).not.toMatch(SHEEP_WORDS);
     }
+  });
+});
+
+describe("the two dogs of the house", () => {
+  it("gives Tippy to a collie with a fire to lie at, and to nobody else", () => {
+    const tippy = ACHIEVEMENTS.find((a) => a.id === "tippy")!;
+    expect(tippy.secret).toBe(true);
+    expect(tippy.won(g({ owned: { collie: true, hearth: true } }))).toBe(true);
+    expect(tippy.won(g({ owned: { collie: true } }))).toBe(false);
+    expect(tippy.won(g({ owned: { hearth: true } }))).toBe(false);
+    // the sheltie is not Tippy, however warm the room is
+    expect(tippy.won(g({ owned: { dog: true, hearth: true } }))).toBe(false);
+  });
+
+  it("gives Arrow for the two turns and nothing else", () => {
+    const arrow = ACHIEVEMENTS.find((a) => a.id === "arrow")!;
+    expect(arrow.secret).toBe(true);
+    const s = g({ owned: { dog: true } });
+    expect(arrow.won(s)).toBe(false);
+    s.stats.spunTwice = true;
+    expect(arrow.won(s)).toBe(true);
   });
 });

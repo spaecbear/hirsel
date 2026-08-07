@@ -414,9 +414,11 @@ const DOG_COATS = {
   collie: { dark: "#22201f", tan: "#3a3634", white: "#f6f4ec", shade: "#dcd9cf", soft: "#e8e5db" },
 };
 
-export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0) {
+export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0, facing: 1 | -1 = 1) {
   const leg = run ? (Math.sin(run * Math.PI * 12) > 0 ? 0 : 2) : 0;
-  const tail = run ? Math.sin(run * Math.PI * 8) * 3 : Math.sin(Date.now() / 500) * 1;
+  // a quicker, shorter wag: the old one swept far enough to read as a
+  // metronome rather than a dog pleased with itself
+  const tail = run ? Math.sin(run * Math.PI * 14) * 2 : Math.sin(Date.now() / 280) * 1;
   g.a(x - 2, y + 11, 18, 2, 0, 0, 0, 0.22);
 
   const coat = KIT.collie ? DOG_COATS.collie : DOG_COATS.sheltie;
@@ -463,7 +465,7 @@ export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0)
     return;
   }
 
-  drawDogSide(g, x, y, run, 1, tail, leg, 1, coat);
+  drawDogSide(g, x, y, run, facing, tail, leg, 1, coat);
 }
 
 /** her side view, facing right by default and mirrored about her own length */

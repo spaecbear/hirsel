@@ -28,6 +28,27 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "clean", name: "No fox got in", hint: "Reach day 20 without losing a sheep to a fox.", won: (g) => g.day >= 20 && g.stats.foxLosses === 0 },
   { id: "aye", name: "She said aye", hint: "Finish the croft and ask her.", won: (g) => g.over?.kind === "win" },
   // hidden: the hint is only ever read by someone who has already been there
+  /*
+   * Two dogs I knew. Tippy was a border collie who lay in front of the fire
+   * every time it was lit; Arrow was a sheltie who spun in circles whenever
+   * she was pleased to see you. Both are in the game now, and both of these
+   * are found the way you would find them in life — by having the dog, and
+   * noticing what she does.
+   */
+  {
+    id: "tippy",
+    name: "Tippy",
+    hint: "The collie found the warmest spot in the house before you did.",
+    secret: true,
+    won: (g) => owns(g, "collie") && owns(g, "hearth"),
+  },
+  {
+    id: "arrow",
+    name: "Arrow",
+    hint: "Twice round, because you came back.",
+    secret: true,
+    won: (g) => g.stats.spunTwice,
+  },
   {
     id: "pelt",
     name: "The last wolf in Scotland",

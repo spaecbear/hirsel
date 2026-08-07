@@ -160,6 +160,8 @@ export interface GameState {
     shears: number;
     daysHungry: number;
     wolfMaulings: number;
+    /** the sheltie was tapped into two turns hard on each other — Arrow */
+    spunTwice: boolean;
   };
   achievements: string[];
   seed: number;

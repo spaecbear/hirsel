@@ -15,6 +15,7 @@ import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
 import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
 import { actionName, toolWhat } from "../sim/lexicon";
+import { startSpin } from "../render/dog-spin";
 import { canShear, here, isFullMoon, moonName, owns, woolPrice, readyToShear, tapsPerDay } from "../sim/rules";
 import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
@@ -141,6 +142,7 @@ export class WorldUi {
     }
     const L = layoutWorld(this.screen.W, this.screen.H, this.game.state, {
       shepherdAt: this.walk.position,
+      time: performance.now(),
     });
     return hitTest(L, x, y);
   }
@@ -185,6 +187,24 @@ export class WorldUi {
      * running a recorded day.
      */
     if (this.busy) return;
+
+    /*
+     * The dog answers a tap herself rather than opening a sheet. A sheltie
+     * turns a circle because she is pleased to see you; a collie does not,
+     * she just looks up. Two turns in quick succession is the Arrow.
+     */
+    if (spot.id === "dog") {
+      const g = this.game.state;
+      if (owns(g, "collie")) {
+        this.game.bark();
+      } else {
+        const quick = startSpin(performance.now());
+        this.game.bark();
+        if (quick) this.game.markSpun();
+      }
+      this.close();
+      return;
+    }
 
     // stepping in and out of the house
     if (!this.interior && spot.id === "croft") {

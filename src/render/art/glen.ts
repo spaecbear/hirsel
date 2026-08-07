@@ -14,6 +14,7 @@ import { clamp01, ease, type Painter } from "../painter";
 import { drawMoonDisc, moonPos } from "../moon";
 import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldLayout } from "../layout";
 import { driftFor, idleTick } from "../wander";
+import { spinNow } from "../dog-spin";
 import {
   TERRAIN,
   mix,
@@ -431,17 +432,25 @@ function drawFlock(g: Painter, L: WorldLayout, s: Scene) {
     let graze = !drift.moving && Math.sin(s.time / 1400 + i * 2) > 0;
     let flip = drift.flip;
 
+    /*
+     * In a set piece they face the way the piece moves them. This used to be
+     * `flip = i % 4 === 0` for every animation, so a flock being driven in
+     * had a quarter of its number walking backwards.
+     */
     if (k === "gather") {
       const e = ease(clamp01(p * 1.3));
-      x = home.x + (L.shepherd.x - 20 + (i % 5) * 9 - home.x) * e;
+      const target = L.shepherd.x - 20 + (i % 5) * 9;
+      x = home.x + (target - home.x) * e;
       y = home.y + (L.shepherd.y + 14 - home.y) * e;
       run = p;
       graze = false;
+      flip = target < home.x; // in towards him, from whichever side they were
     }
     if (k === "move") {
       x = home.x - (1 - ease(p)) * (L.W * 0.9);
       run = p;
       graze = false;
+      flip = false; // driven up the hill, left to right
     }
     if (k === "shear") {
       const turn = i / Math.max(1, st.flock.length);
@@ -454,7 +463,9 @@ function drawFlock(g: Painter, L: WorldLayout, s: Scene) {
       graze = false;
     }
     if (k === "tend") graze = false;
-    if (k !== null) flip = i % 4 === 0; // set pieces stage them their own way
+    // standing still in a set piece: stagger which way they look so the flock
+    // does not read as a row of identical cut-outs
+    if (k !== null && k !== "gather" && k !== "move") flip = i % 4 === 0;
     drawSheep(g, x, y, sh, { shorn, graze, run, flip });
   });
 }
@@ -472,15 +483,25 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
 
   // the dog works the ground when there is work on
   if (hasDog(st)) {
-    if (k === "gather") drawDog(g, sx - 50 + ease(p) * 56, sy + 16, p);
-    else if (k === "move") drawDog(g, sx - 30 + Math.sin(p * Math.PI * 4) * 8, sy + 16, p);
-    else {
-      // she keeps station near him and mooches about while she waits, and
-      // every so often turns a full circle for the pleasure of it
-      const d = driftFor(999, s.time, { dx: L.shepherd.x - 22 - L.dog.x, dy: L.shepherd.y + 14 - L.dog.y });
-      const cycle = (s.time % 19000) / 19000;
-      const spin = cycle < 0.042 ? cycle / 0.042 : 0; // ~800ms, brisk enough to read as one turn
-      drawDog(g, L.dog.x + d.dx, L.dog.y + d.dy, d.moving && !spin ? s.time / 260 : 0, spin);
+    if (k === "gather") {
+      // she goes out and round them, well ahead of him
+      const dp = ease(clamp01(p * 1.35));
+      drawDog(g, sx - 50 + dp * 74, sy + 16 + Math.sin(p * Math.PI * 2) * 4, p * 1.6, 0, 1);
+    } else if (k === "move") {
+      /*
+       * She covers the ground twice over while he walks it once: out ahead,
+       * back to chivvy the stragglers, out again. She was moving at exactly
+       * his pace before, which made her look tied to his heel rather than
+       * working.
+       */
+      const swing = Math.sin(p * Math.PI * 6);
+      drawDog(g, sx - 30 + swing * 26, sy + 16, p * 2, 0, Math.cos(p * Math.PI * 6) < 0 ? -1 : 1);
+    } else {
+      // off the clock: she works the outside of the flock, laps and holds.
+      // The layout works out where she is, so she can be tapped where she is
+      // drawn — and only a sheltie turns, and only when you tap her.
+      const spin = owns(st, "collie") ? 0 : spinNow(s.time);
+      drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running && !spin ? s.time / 200 : 0, spin, L.dogAt.facing);
     }
   }
 
@@ -1153,12 +1174,30 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   g.px(b.x + b.w - 14, b.y, 14, 8, "#ddd9c8"); // a pillow
   g.px(b.x - 2, b.y + 2, 3, b.h - 2, "#4a3a26"); // bedposts
   g.px(b.x + b.w - 1, b.y + 2, 3, b.h - 2, "#4a3a26");
-  // the dog lies in front of the fire, which is where she would be
-  if (hasDog(st)) drawDog(g, hx + I.hearth.w + 8, I.floorY - 12, 0);
+  /*
+   * Where the dog lies.
+   *
+   * A border collie, once there is a fire to lie in front of, lies in front
+   * of the fire — right in front of it, every time it is lit, and she will
+   * not be moved. The sheltie keeps her own place further into the room.
+   */
+  if (hasDog(st)) {
+    const collieAtFire = owns(st, "collie") && hearthBuilt;
+    if (collieAtFire) {
+      /*
+       * On the floorboards hard up against the hearth, nose to the fire.
+       * Centred on the hearth she was inside the firebox, lying on the
+       * flames and hiding them.
+       */
+      drawDog(g, hx + I.hearth.w + 1, I.floorY - 11, 0, 0, -1);
+    } else {
+      drawDog(g, hx + I.hearth.w + 8, I.floorY - 12, 0, 0, 1);
+    }
+  }
 
 
   // a window on the back wall: daylight, or the dark and a star
-  const win = { x: Math.round(I.W * 0.72), y: Math.round(I.floorY - 78), w: 26, h: 22 };
+  const win = { x: Math.round(I.W * 0.3), y: Math.round(I.floorY - 78), w: 26, h: 22 };
   if (win.y > 12) {
     g.px(win.x - 3, win.y - 3, win.w + 6, win.h + 6, "#3a3226");
     g.px(win.x, win.y, win.w, win.h, isNight ? "#141a26" : "#87b0b4");
@@ -1170,7 +1209,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   }
 
   // a table and a stool, because a room with only a bed is a cell
-  const tx = Math.round(I.W * 0.36);
+  const tx = Math.round(I.W * 0.26);
   const ty = I.floorY - 16;
   g.px(tx, ty, 34, 4, "#6b5433");
   g.px(tx, ty, 34, 1, "#7c6242");
@@ -1334,10 +1373,10 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
    * And the man himself, drawn last so nothing in the room paints over him —
    * he stood behind the door at first. The room read as empty without him:
    * you walked into the place you live and there was nobody in it. He stands
-   * on the floor between the table and the bed, turned towards the fire, and
-   * keeps his idle ticks so the room is never quite still.
+   * in the middle of his own floor, turned towards the fire, and keeps his
+   * idle ticks so the room is never quite still.
    */
-  drawShepherd(g, Math.round(I.W * 0.56), I.floorY - SHEPHERD_H, {
+  drawShepherd(g, Math.round(I.W / 2) - 8, I.floorY - SHEPHERD_H, {
     facing: -1, // looking across at the hearth
     tick: idleTick(time) ?? undefined,
   });

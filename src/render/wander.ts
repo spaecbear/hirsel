@@ -45,7 +45,14 @@ export function driftFor(seed: number, time: number, toward?: { dx: number; dy: 
 
   let dx = Math.sin(slow + a) * ROAM_X;
   let dy = Math.cos(slower + b) * ROAM_Y;
-  const moving = Math.abs(Math.cos(slow + a)) > 0.55;
+  /*
+   * Which way it is *going*, not where it happens to be. dx is a sine, so the
+   * direction of travel is the sign of its derivative — the cosine. Facing was
+   * read off the position before, which is why a whole flock could be walking
+   * left while every animal faced right.
+   */
+  const vx = Math.cos(slow + a);
+  const moving = Math.abs(vx) > 0.55;
 
   if (toward) {
     // ease off with distance: they notice him nearby, not across the glen
@@ -58,9 +65,47 @@ export function driftFor(seed: number, time: number, toward?: { dx: number; dy: 
       dy += toward.dy * share;
     }
   }
-  return { dx, dy, flip: (toward ? toward.dx : Math.sin(slow + a)) < 0, moving };
+  return { dx, dy, flip: vx < 0, moving };
 }
 
+
+/* ------------------------------------------------------------------ *
+ * the dog working
+ * ------------------------------------------------------------------ */
+
+export interface Circuit {
+  x: number;
+  y: number;
+  facing: 1 | -1;
+  running: boolean;
+}
+
+/**
+ * A dog does not stand about near her shepherd — she works the outside of the
+ * flock, which is the whole picture of a hirsel. She runs a lap round them,
+ * then holds at the edge and watches, then goes again.
+ *
+ * The ellipse is flattened because the hill is drawn in something close to
+ * three-quarter view: a circle would read as her rising up into the sky at the
+ * back of it. Her facing is the sign of the derivative of x, so she is always
+ * looking the way she is running, and the lap starts and finishes at the same
+ * point so the hold never teleports her.
+ */
+const LAP_MS = 9000;
+const HOLD_MS = 6000;
+
+export function herdCircuit(time: number, cx: number, cy: number, rx: number, ry: number): Circuit {
+  const cycle = time % (LAP_MS + HOLD_MS);
+  const running = cycle < LAP_MS;
+  // during the hold she sits at the top of the lap, where it began
+  const th = (running ? cycle / LAP_MS : 0) * Math.PI * 2;
+  return {
+    x: cx + Math.cos(th) * rx,
+    y: cy + Math.sin(th) * ry,
+    facing: -Math.sin(th) < 0 ? -1 : 1,
+    running,
+  };
+}
 
 /* ------------------------------------------------------------------ *
  * what he does with his hands when there is nothing in them

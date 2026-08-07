@@ -11,6 +11,7 @@
  * UI hit-tests against it. They cannot disagree about where the house is.
  */
 import type { GameState } from "../sim/types";
+import { herdCircuit } from "./wander";
 
 export interface Rect {
   x: number;
@@ -31,7 +32,8 @@ export type HotspotId =
   | "bed"
   | "hearth"
   | "door"
-  | "kit";
+  | "kit"
+  | "dog";
 
 export interface Hotspot {
   id: HotspotId;
@@ -61,6 +63,8 @@ export interface WorldLayout {
   cart: Rect;
   shepherd: { x: number; y: number };
   dog: { x: number; y: number };
+  /** where she is on her circuit this frame, and which way she is looking */
+  dogAt: { x: number; y: number; facing: 1 | -1; running: boolean };
   saltlick: { x: number; y: number };
   flock: { x: number; y: number }[];
   flockBox: Rect;
@@ -78,6 +82,13 @@ const HORIZON_BY_PASTURE = [0.5, 0.4, 0.29];
 export interface LayoutOpts {
   /** where the shepherd has walked to, if he has been sent somewhere */
   shepherdAt?: { x: number; y: number } | null;
+  /*
+   * The clock, so the dog's place on her circuit is part of the layout rather
+   * than something the painter works out on its own. She moves, so a fixed
+   * hotspot would not be on her — and this file is the single source for both
+   * where a thing is drawn and where it can be tapped.
+   */
+  time?: number;
 }
 
 export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpts = {}): WorldLayout {
@@ -177,6 +188,32 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
   };
 
   /*
+   * Where she actually is this frame, so she can be drawn and tapped in the
+   * same place. Without a clock we fall back to her old fixed mark.
+   */
+  const dogAt =
+    opts.time === undefined
+      ? { ...dog, facing: 1 as 1 | -1, running: false }
+      : (() => {
+          /*
+           * The circuit has to fit the canvas, not just the flock. Sized off
+           * the flock box alone she ran clean off the left edge on a wide
+           * screen, so each radius is trimmed to whatever actually fits
+           * between the centre and the margin.
+           */
+          const MARGIN = 10;
+          const DOG_W = 22;
+          const cx = Math.max(MARGIN + DOG_W, Math.min(W - MARGIN - DOG_W, flockBox.x + flockBox.w / 2));
+          const cy = Math.min(H - 20, flockBox.y + flockBox.h * 0.72);
+          const rx = Math.max(12, Math.min(flockBox.w * 0.6 + 10, cx - MARGIN, W - MARGIN - DOG_W - cx));
+          // and she stays on the near ground: never up into the hills, never
+          // off the bottom of the frame
+          const ry = Math.max(6, Math.min(flockBox.h * 0.34 + 4, cy - (groundY + 2), H - 14 - cy));
+          const c = herdCircuit(opts.time, cx, cy, rx, ry);
+          return { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, running: c.running };
+        })();
+
+  /*
    * Hit-test order matters: this list is searched front to back, so the
    * small deliberate things (house, cart, the man) win over the big
    * background bands they sit inside.
@@ -185,6 +222,10 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "croft", rects: [pad(croft, 4)], label: "The croft" },
     { id: "cart", rects: [pad(cart, 6)], label: "The cart" },
     { id: "shepherd", rects: [{ x: shepherd.x - 10, y: shepherd.y - 8, w: 34, h: 40 }], label: "Yourself" },
+    // she is listed above the flock so a tap on her is hers, not theirs
+    ...(st.owned.dog || st.owned.collie
+      ? [{ id: "dog" as const, rects: [{ x: dogAt.x - 4, y: dogAt.y - 6, w: 28, h: 24 }], label: "The dog" }]
+      : []),
     { id: "flock", rects: flock.map((f) => ({ x: f.x - 4, y: f.y - 8, w: 24, h: 24 })), label: "The flock" },
     // the hills are the band between the skyline and the near ground; the sky
     // is everything above it. They must not overlap or the one listed first
@@ -194,7 +235,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "sky", rects: [{ x: 0, y: 0, w: W, h: Math.max(10, horizonY - 8) }], label: "The sky" },
   ];
 
-  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, saltlick, flock, flockBox, hotspots };
+  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, dogAt, saltlick, flock, flockBox, hotspots };
 }
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
@@ -250,9 +291,15 @@ export function layoutInterior(W: number, H: number): InteriorLayout {
   const portrait = H > W * 1.15;
   const floorY = Math.round(H * (portrait ? 0.72 : 0.62));
   const bedW = Math.min(58, Math.round(W * 0.32));
-  const bed: Rect = { x: Math.round(W * 0.62), y: floorY - 20, w: bedW, h: 30 };
+  const bed: Rect = { x: Math.round(W * 0.56), y: floorY - 20, w: bedW, h: 30 };
   const hearth: Rect = { x: Math.round(W * 0.06), y: floorY - 46, w: 48, h: 50 };
-  const door: Rect = { x: Math.round(W * 0.44), y: floorY - 40, w: 24, h: 44 };
+  /*
+   * The door is at the end of the room, not the middle of it. It was dead
+   * centre, which is exactly where a man standing in his own house should be
+   * — he ended up framed in his own doorway. Fire at one end, bed and door at
+   * the other, and the floor between them is his.
+   */
+  const door: Rect = { x: Math.min(W - 30, Math.round(W * 0.84)), y: floorY - 40, w: 24, h: 44 };
   const shelf: Rect = {
     x: Math.round(W * 0.2),
     y: Math.round(H * (portrait ? 0.34 : 0.2)),

@@ -121,6 +121,7 @@ export function newGame(opts: GameOptions = {}): GameState {
       shears: 0,
       daysHungry: 0,
       wolfMaulings: 0,
+      spunTwice: false,
     },
     achievements: [],
     seed,
@@ -287,6 +288,19 @@ export class Game {
   }
 
   /** one day's work on whatever is being built */
+  /** she was tapped: she answers, and that is all it is */
+  bark() {
+    if (this.state.over) return;
+    this.onAnim("bark");
+  }
+
+  /** two turns in quick succession — Arrow's whole trick */
+  markSpun() {
+    if (this.state.stats.spunTwice) return;
+    this.state.stats.spunTwice = true;
+    this.award();
+  }
+
   buildOnce() {
     const g = this.state;
     if (!g.building) return;
