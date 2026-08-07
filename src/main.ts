@@ -14,6 +14,7 @@ import { DIFFICULTY } from "./sim/config";
 import { Animator } from "./render/animator";
 import { Screen } from "./render/screen";
 import { GLEN_ART } from "./render/art/glen";
+import { drawCredits } from "./render/art/credits";
 import { HIRSEL_ART } from "./render/art/hirsel";
 import type { ArtPack } from "./render/art/types";
 
@@ -307,12 +308,14 @@ function showCredits() {
         "Wolves were hunted out of Scotland some time in the 1680s.<br>Thank you for keeping the last one company.",
     ),
   );
+  box.appendChild(el("div", { class: "curtain" }, "Thanks for playing"));
   // restart the roll from the bottom every time it is opened
   const scroll = box as HTMLElement;
   scroll.style.animation = "none";
   void scroll.offsetWidth;
   scroll.style.animation = "";
   world.close(); // nothing else on screen while it rolls
+  rolling = true;
   document.body.classList.add("rolling");
   $("credits").classList.add("on");
   // when the roll runs out, go back to the menu rather than dropping the
@@ -322,6 +325,7 @@ function showCredits() {
 
 /** the credits end at the menu, not back on a finished hill */
 function closeCredits() {
+  rolling = false;
   $("credits").classList.remove("on");
   document.body.classList.remove("rolling");
   $("over").classList.remove("on");
@@ -428,6 +432,8 @@ animator.onIdle = () => {
  * cheat list and handed over every code at once.
  */
 let endShown = false;
+/** the credits are rolling, and the canvas is showing the last picture */
+let rolling = false;
 function showEnd() {
   const o = game.state.over;
   if (!o || endShown) return;
@@ -568,6 +574,13 @@ function frame(now: number) {
   const shepherdAt = world.walk.tick(now);
 
   screen.painter.cx.save();
+  if (rolling) {
+    // the last picture, behind the roll: the glen has nothing left to say
+    drawCredits(screen.painter, screen.W, screen.H, now);
+    screen.painter.cx.restore();
+    requestAnimationFrame(frame);
+    return;
+  }
   (packs[settings.ui] ?? GLEN_ART).draw(screen.painter, {
     state: g,
     anim: animator.current,
@@ -628,6 +641,8 @@ if (import.meta.env.DEV) {
     world,
     sky,
     tutorial,
+    showCredits,
+    closeCredits,
   };
 }
 

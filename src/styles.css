@@ -499,9 +499,31 @@ body.no-motion .tutorial.nudge {
 }
 
 /* the credits: earned by finishing with nothing left to find */
-.credits {
-  background: rgba(11, 13, 8, 0.97);
+/*
+ * The credits roll over the last picture rather than over a black plate, so
+ * the overlay itself is clear and only carries enough of a scrim to keep the
+ * text off the bright part of the sunset.
+ */
+/* .over is declared further down with a near-opaque backdrop and the same
+ * specificity, so it won over this and buried the picture. */
+.over.credits {
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 13, 8, 0.62) 0%,
+    rgba(11, 13, 8, 0.34) 40%,
+    rgba(11, 13, 8, 0.46) 72%,
+    rgba(11, 13, 8, 0.72) 100%
+  );
   overflow: hidden;
+}
+/* and each line carries its own shadow, so it stays readable over cloud */
+.credits-scroll h2,
+.credits-scroll .role,
+.credits-scroll .name,
+.credits-scroll .note {
+  text-shadow:
+    0 1px 0 #0b0d08,
+    0 0 6px rgba(11, 13, 8, 0.9);
 }
 /* nothing else on screen while it rolls */
 body.rolling .hud-bar,
@@ -535,6 +557,13 @@ body.no-motion .credits-scroll {
   max-height: 100vh;
   overflow-y: auto;
   padding: 24px 0;
+}
+.credits-scroll .curtain {
+  margin: 34px 0 60px;
+  font-size: 13px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gorse);
 }
 .credits h2 {
   font-size: 20px;
