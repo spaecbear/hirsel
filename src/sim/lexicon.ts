@@ -102,6 +102,9 @@ export const NORMAL: Lexicon = {
     fiddle: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a fox off.",
     crook: "Takes a tap off gathering — and off a big flock, which costs two.",
     oilskin: "You can shear through a haar in this. Rain is still rain.",
+    // §7: gives nothing away, in either vocabulary or either state
+    sword: "Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind.",
+    swordLocked: "Bonny thing. If only you had somewhere to hang it over...",
   },
 };
 
@@ -171,6 +174,7 @@ export const INVERSE: Lexicon = {
     crook: "Takes a tap off gathering — and off a big skulk, which costs two.",
     oilskin: "You can comb through a haar in this. Rain is still rain.",
     sword: "Hangs well above the fire. Bonny thing. Not much use for keeping rams off, mind.",
+    swordLocked: "Bonny thing. If only you had somewhere to hang it over...",
   },
 };
 

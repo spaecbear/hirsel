@@ -34,6 +34,7 @@ import {
   C,
   SKY,
   drawDog,
+  DOG_FEET,
   drawDogCurled,
   drawDyke,
   drawFox,
@@ -483,6 +484,11 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
 
   drawFlock(g, L, s);
 
+  /** her idle lap, hoisted so it can be painted on either side of him */
+  const paintDog = () =>
+    drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging);
+  let dogAfter = false;
+
   // the dog works the ground when there is work on
   if (hasDog(st)) {
     if (k === "gather") {
@@ -499,12 +505,19 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       const swing = Math.sin(p * Math.PI * 6);
       drawDog(g, sx - 30 + swing * 26, sy + 16, p * 2, 0, Math.cos(p * Math.PI * 6) < 0 ? -1 : 1);
     } else {
-      // off the clock: she works the outside of the flock, laps and holds.
-      // The layout works out where she is, so she can be tapped where she is
-      // drawn — and only a sheltie turns, and only when you tap her.
-      // no turn out here: she has no tap target on the hill, so there is
-      // never one to play — she is working
-      drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging);
+      /*
+       * Off the clock she works the outside of the flock, and her circuit
+       * takes her both behind him and across the front of him. Drawn before
+       * him either way she walked through his legs on the near pass, so she
+       * is depth-sorted against him: whoever's feet are lower on the screen
+       * is nearer the camera and goes last. It has to be worked out rather
+       * than fixed, because he does not stay put — you can send him anywhere
+       * on the ground.
+       */
+      const dogFeet = L.dogAt.y + DOG_FEET;
+      const hisFeet = sy + SHEPHERD_H;
+      if (dogFeet <= hisFeet) paintDog();
+      else dogAfter = true;
     }
   }
 
@@ -677,6 +690,9 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       break;
     }
   }
+
+  // she was in front of him: she goes on top
+  if (dogAfter) paintDog();
 }
 
 /* ================================================================== *
@@ -1073,11 +1089,35 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
     apron: "#c9c3ae",
     sway,
   });
-  // she is facing him, so she gets a face and hair down past her shoulders
+  /*
+   * She is facing him, so she gets a face — and proper hair.
+   *
+   * It was a cap two pixels deep with a single pixel down either side, which
+   * read as a headband rather than as hair. Hair has bulk: it stands off the
+   * crown, it is wider than the head at the jaw, and it falls well past the
+   * shoulder. Drawn as a mass first, then the face cut out of the front of
+   * it, which is the only way it reads at this size.
+   */
+  const hair = "#7a3a24";
+  const hairLit = "#9c4e2f";
+  const hairDark = "#5c2a19";
+  const fall = Math.round(gm.headH * 1.5); // how far down her back it goes
+  // the mass: off the crown, out past the jaw, and down her back
+  g.px(gm.headX - 2, gTop - 1, gm.headW + 4, gm.headH + 2, hair);
+  g.px(gm.headX - 2, gTop + gm.headH - 1, 3, fall, hair);
+  g.px(gm.headX + gm.headW - 1, gTop + gm.headH - 1, 3, fall, hair);
+  // it widens as it falls, and the ends are not a ruled line
+  g.px(gm.headX - 3, gTop + gm.headH + 1, 2, fall - 3, hair);
+  g.px(gm.headX + gm.headW + 1, gTop + gm.headH + 1, 2, fall - 3, hair);
+  g.px(gm.headX - 2, gTop + gm.headH + fall - 1, 3, 1, hairDark);
+  g.px(gm.headX + gm.headW - 1, gTop + gm.headH + fall - 2, 3, 1, hairDark);
+  // the light on the crown and down one side, so it is not a flat shape
+  g.px(gm.headX - 1, gTop - 1, gm.headW + 2, 1, hairLit);
+  g.px(gm.headX + gm.headW, gTop + gm.headH, 1, Math.round(fall * 0.7), hairLit);
+  g.px(gm.headX - 2, gTop + 1, 1, Math.round(fall * 0.5), hairDark);
+  // and her face, out of the front of it
   g.px(gm.headX, gTop + 1, gm.headW, gm.headH - 1, "#c9a583");
-  g.px(gm.headX, gTop, gm.headW, 2, "#7a3a24");
-  g.px(gm.headX - 1, gTop + 1, 1, gm.headH + 2, "#7a3a24");
-  g.px(gm.headX + gm.headW, gTop + 1, 1, gm.headH + 2, "#7a3a24");
+  g.px(gm.headX, gTop + 1, 1, gm.headH - 1, "#b8926f"); // the shaded side of it
   const ge = Math.max(1, Math.round(gm.headH * 0.22));
   g.px(gm.headX + 1, gTop + Math.round(gm.headH * 0.35), ge, ge, "#26201a");
   g.px(gm.headX + gm.headW - 1 - ge, gTop + Math.round(gm.headH * 0.35), ge, ge, "#26201a");

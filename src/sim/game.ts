@@ -258,6 +258,8 @@ export class Game {
     const g = this.state;
     const t = TOOLS.find((x) => x.id === id);
     if (!t || owns(g, id) || g.money < t.cost || this.slotTaken(id)) return;
+    // some things want somewhere to go before they can be bought at all
+    if ("needs" in t && t.needs && !owns(g, t.needs)) return;
     g.money -= t.cost;
     g.owned[id] = true;
     this.say(`Bought the ${t.name.toLowerCase()} for £${t.cost}.`, "gold");
@@ -544,37 +546,51 @@ export class Game {
       x.grass = Math.min(x.cap, x.grass + r);
     }
 
-    // the sky comes back up last, after the wolf and the fox have had the dark
-    this.onAnim("dawn");
+    /*
+     * The sky comes back up last, and the new day comes up with it.
+     *
+     * All of this used to run the moment you pressed sleep, while the dusk
+     * animation was still playing — so the weather turned over before
+     * nightfall and you watched tomorrow's sky darken instead of today's.
+     * It belongs to the dawn: today's weather holds through the dusk and the
+     * dark, and the glen is a different place when the sun comes up.
+     *
+     * Everything the night itself decided — grazing, the fox, flystrike,
+     * feed, regrowth — has already happened above, off the weather that
+     * actually was. Only the turn of the day waits.
+     */
+    this.onAnim("dawn", () => {
+      g.forecast.shift();
+      g.forecast.push(pick(this.rng, WEATHER_BAG));
+      for (const k of Object.keys(g.buffs) as BuffId[]) {
+        const v = (g.buffs[k] ?? 0) - 1;
+        if (v <= 0) delete g.buffs[k];
+        else g.buffs[k] = v;
+      }
 
-    // 7. weather, moon, buffs
-    g.forecast.shift();
-    g.forecast.push(pick(this.rng, WEATHER_BAG));
-    for (const k of Object.keys(g.buffs) as BuffId[]) {
-      const v = (g.buffs[k] ?? 0) - 1;
-      if (v <= 0) delete g.buffs[k];
-      else g.buffs[k] = v;
-    }
+      g.day++;
+      this.freeTaps = false; // the free day is over the moment it ends
+      g.gatheredToday = false;
+      g.pubToday = false;
+      g.didToday = {};
+      g.muckedToday = [];
+      g.actsToday = 0;
+      g.taps = tapsPerDay(g);
+      this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
+      if (isFullMoon(g.day) && !owns(g, "pelt")) {
+        this.say("Full moon tonight. The high ground is no place to be caught out late.", "bad");
+      }
 
-    g.day++;
-    this.freeTaps = false; // the free day is over the moment it ends
-    g.gatheredToday = false;
-    g.pubToday = false;
-    g.didToday = {};
-    g.muckedToday = [];
-    g.actsToday = 0;
-    g.taps = tapsPerDay(g);
-    this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
-    if (isFullMoon(g.day) && !owns(g, "pelt")) {
-      this.say("Full moon tonight. The high ground is no place to be caught out late.", "bad");
-    }
+      // 8. fail state
+      if (g.flock.length === 0) {
+        this.lose(this.lex.lastGone.title, this.lex.lastGone.body);
+      } else if (g.money < 0) {
+        this.lose("The purse is empty", "You cannot feed them and you cannot feed yourself. You go back to the job you left.");
+      }
 
-    // 8. fail state
-    if (g.flock.length === 0) {
-      this.lose(this.lex.lastGone.title, this.lex.lastGone.body);
-    } else if (g.money < 0) {
-      this.lose("The purse is empty", "You cannot feed them and you cannot feed yourself. You go back to the job you left.");
-    }
+      this.award();
+      this.changed();
+    });
 
     this.award();
     this.changed();

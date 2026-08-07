@@ -411,6 +411,32 @@ function farRidge(
   }
 }
 
+
+/*
+ * His pipe.
+ *
+ * A long slow cycle: it rests on his knee with the ember breathing, he brings
+ * it up, draws on it — the ember goes bright — and takes it down again, and
+ * the smoke comes away in whorls and drifts off on the evening. The draw is
+ * the short part of it; a man sitting with a pipe is mostly not smoking it.
+ */
+const PIPE_CYCLE = 15000;
+const PIPE_UP = 5200;
+const PIPE_DRAW = 6600;
+const PIPE_DOWN = 9000;
+
+function pipeBeat(time: number) {
+  const t = time % PIPE_CYCLE;
+  const ramp = (a: number, b: number) => Math.max(0, Math.min(1, (t - a) / (b - a)));
+  // 0 on his knee, 1 at his mouth
+  const raised = t < PIPE_UP ? 0 : t < PIPE_DRAW ? ramp(PIPE_UP, PIPE_DRAW) : t < PIPE_DOWN ? 1 - ramp(PIPE_DRAW, PIPE_DOWN) : 0;
+  const drawing = t >= PIPE_DRAW && t < PIPE_DRAW + 900;
+  // the puff hangs about long after the draw that made it
+  const since = t - PIPE_DRAW;
+  const puff = since >= 0 && since < 5000 ? since / 5000 : -1;
+  return { raised, drawing, puff };
+}
+
 /** a filled disc, for heads — blocks read as masonry, not people */
 function disc(g: Painter, cx: number, cy: number, r: number, c: string) {
   for (let dy = -r; dy <= r; dy++) {
@@ -495,33 +521,94 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
     const headR = Math.max(3, Math.round(hh * 0.15));
     const headCy = shoulderY - headR;
     disc(g, manX, headCy, headR, "#8a6b4c");
+
+    /*
+     * The pipe, and the whole point of him being sat here. It rests on his
+     * knee with the ember alive in it, comes up to his mouth every so often,
+     * and the smoke goes off over the glen.
+     */
+    const pipe = pipeBeat(time);
+    const kneeX = manX + Math.round(hipW * 0.42);
+    const kneeY = hipsY - 1;
+    const mouthX = manX + headR - 1;
+    const mouthY = headCy + Math.round(headR * 0.5);
+    const px1 = Math.round(kneeX + (mouthX - kneeX) * pipe.raised);
+    const py1 = Math.round(kneeY + (mouthY - kneeY) * pipe.raised);
+    /*
+     * His arm to it: upper arm down from the shoulder, forearm across to
+     * whatever the pipe is. Drawn as one tall column before, it was a pale
+     * pole standing beside him rather than a sleeve.
+     */
+    const elbowY = shoulderY + Math.round(hh * 0.24);
+    const armX = manX + Math.round(shoulderW * 0.34);
+    g.px(armX, shoulderY + 2, 3, Math.max(2, elbowY - shoulderY), "#4a5540"); // upper arm
+    g.px(armX, shoulderY + 2, 1, Math.max(2, elbowY - shoulderY), "#5a6650"); // lit down its edge
+    const reach = Math.max(2, Math.abs(py1 - elbowY));
+    g.px(armX, Math.min(elbowY, py1), 2, reach, "#4a5540"); // forearm, up to the pipe
+    g.px(px1 - 1, py1 - 1, 2, 3, "#c9a583"); // his hand round it
+    g.px(px1, py1, 4, 2, "#4a3524"); // the stem
+    g.px(px1 + 3, py1 - 2, 3, 3, "#3a2a1c"); // the bowl
+    // the ember: always alive, and bright while he is drawing on it
+    const glow = pipe.drawing ? 1 : 0.45 + Math.sin(time / 700) * 0.15;
+    g.a(px1 + 4, py1 - 1, 2, 2, 255, 150, 60, glow);
+    if (pipe.drawing) g.a(px1 + 3, py1 - 2, 3, 1, 255, 210, 130, 0.8);
+
+    /*
+     * The smoke: whorls rather than a straight line, because still evening
+     * air turns pipe smoke over on itself. Each puff climbs, spreads and
+     * fades, and drifts downwind as it goes.
+     */
+    if (pipe.puff >= 0) {
+      for (let i = 0; i < 7; i++) {
+        const t = pipe.puff - i * 0.055;
+        if (t <= 0 || t >= 1) continue;
+        const rise = t * hh * 1.5;
+        const curl = Math.sin(t * 7 + i * 1.5) * (2 + t * 5);
+        const sz = 1 + Math.round(t * 3);
+        g.a(
+          Math.round(px1 + 4 + curl + t * 6),
+          Math.round(py1 - 2 - rise),
+          sz,
+          sz,
+          226,
+          222,
+          214,
+          0.42 * (1 - t) * (1 - i / 9),
+        );
+      }
+    }
     g.px(manX - headR, headCy - headR, headR * 2, Math.max(2, Math.round(headR * 0.9)), "#2f3327"); // bunnet
 
     /*
-     * The wolf's head, worn as a hood — which is how the game describes the
-     * pelt and the only way the ears mean anything. Sat on his shoulder it
-     * read as a wolf looking over it rather than something he was wearing.
-     * It comes down over the crown of his own head, the ears stand up clear
-     * of his outline, and the muzzle lies forward above his brow.
+     * The wolf's head, with the hood down — hanging at his shoulder rather
+     * than pulled up over his own.
+     *
+     * Worn up it covered his head completely: no bunnet, no hair, nothing of
+     * him left, so the one figure the whole game is about became a grey shape
+     * with ears. Down at his shoulder both read at once — his bunnet on top,
+     * the wolf's head beside it, and the ears clear of both against the
+     * ground behind.
      */
-    const hoodW = headR * 2 + 3;
-    const hoodX = manX - Math.round(hoodW / 2);
-    const hoodY = headCy - headR - 2;
-    const hoodH = headR + 2;
+    const hoodW = headR * 2;
+    const hoodX = manX - Math.round(shoulderW * 0.62) - 1;
+    const hoodY = shoulderY - headR;
+    const hoodH = headR + 1;
     g.px(hoodX, hoodY, hoodW, hoodH, "#5e646f");
-    g.px(hoodX + 1, hoodY, hoodW - 2, 1, "#9aa2b0"); // the sun over the crown
-    g.px(hoodX, hoodY + hoodH - 1, hoodW, 1, "#4a505c"); // where it sits on his brow
-    g.px(hoodX + hoodW - 2, hoodY + 2, 3, Math.max(2, hoodH - 2), "#5e646f"); // the muzzle, forward
-    g.px(hoodX + hoodW, hoodY + 3, 1, 1, "#22252f"); // its nose
-    // the ears, standing clear above him
-    for (const ex of [hoodX + 1, hoodX + hoodW - 4]) {
-      g.px(ex, hoodY - 4, 3, 5, "#4a505c");
-      g.px(ex + 1, hoodY - 3, 1, 3, "#22252f"); // the dark inside them
+    g.px(hoodX + 1, hoodY, hoodW - 2, 1, "#9aa2b0"); // the sun over its crown
+    g.px(hoodX - 2, hoodY + 2, 3, Math.max(2, hoodH - 2), "#5e646f"); // the muzzle, hanging down
+    g.px(hoodX - 2, hoodY + 3, 1, 1, "#22252f"); // its nose
+    g.px(hoodX + 1, hoodY + 2, 1, 1, "#22252f"); // and the dark socket of an eye
+    // the ears, standing clear of everything
+    for (const ex of [hoodX + 1, hoodX + hoodW - 3]) {
+      g.px(ex, hoodY - 4, 2, 5, "#4a505c");
+      g.px(ex, hoodY - 3, 1, 3, "#22252f"); // the dark inside them
       g.px(ex, hoodY - 4, 2, 1, "#b6bec9"); // and the sun on the tips
     }
 
-    g.px(manX + headR - 1, headCy - headR + 2, 1, headR * 2 - 2, rim); // sun down his right
-    g.px(manX + Math.round(shoulderW / 2) - 1, shoulderY + 2, 1, torsoH - 2, rim);
+    // the sun down the side of him. Full-length and full-strength it was a
+    // bright pole standing against him rather than light on a shoulder
+    g.px(manX + headR - 1, headCy - headR + 2, 1, headR * 2 - 2, rim);
+    g.px(manX + Math.round(shoulderW / 2) - 1, shoulderY + 2, 1, Math.round(torsoH * 0.5), "#c9903f");
   }
 
   /* ---- her: leaning in, in the blouse and skirt from the inn ---- */

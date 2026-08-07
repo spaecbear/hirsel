@@ -294,7 +294,12 @@ export const TOOLS = [
   { id: "oilskin", name: "Waxed oilskin", cost: 36, what: "You can shear through a haar in this. Rain is still rain." },
   { id: "lamp", name: "Storm lantern", cost: 44, what: "One more tap every day. The evening stretches." },
   // §7: gives nothing away. Do not explain it anywhere in the UI.
-  { id: "sword", name: "Highland broadsword", cost: 185, what: "Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind." },
+  /*
+   * §7: gives nothing away, and now cannot be bought before there is a fire
+   * to hang it over. The line about a hearth reads as the smith's patter
+   * rather than a hint — it says why you cannot have it, not what it is for.
+   */
+  { id: "sword", name: "Highland broadsword", cost: 185, needs: "hearth", what: "Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind." },
   { id: "watch", name: "Brass pocket watch", cost: 165, what: "Set a day's work to it once and it will keep that day for you after." },
 ] as const;
 

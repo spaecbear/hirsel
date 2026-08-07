@@ -5,6 +5,7 @@ import {
   flystrikeExposed,
   foxRisk,
   grade,
+  owns,
   grazing,
   isFullMoon,
   moonName,
@@ -20,7 +21,7 @@ import { ACTIONS, Game, newGame } from "../src/sim/game";
 import { ACHIEVEMENTS } from "../src/sim/achievements";
 import { BALANCE, TOOLS } from "../src/sim/config";
 import type { GameState } from "../src/sim/types";
-import { INVERSE, actionName, toolWhat } from "../src/sim/lexicon";
+import { INVERSE, NORMAL, actionName, toolWhat } from "../src/sim/lexicon";
 
 const g = (patch: Partial<GameState> = {}): GameState => Object.assign(newGame({ seed: 1 }), patch);
 
@@ -319,5 +320,32 @@ describe("the two dogs of the house", () => {
     expect(arrow.won(s)).toBe(false);
     s.stats.spunTwice = true;
     expect(arrow.won(s)).toBe(true);
+  });
+});
+
+describe("the broadsword wants a wall to hang on", () => {
+  /*
+   * §7 is that the sword never explains itself. Requiring the hearth first
+   * keeps that: the locked line says why you cannot buy it, not what it is
+   * for, and a player without a fire simply cannot spend £185 on it.
+   */
+  it("cannot be bought before the hearth is built", () => {
+    const game = new Game(newGame({ seed: 8 }));
+    game.onAnim = (_a, after) => after?.();
+    game.state.money = 500;
+    game.buyTool("sword");
+    expect(owns(game.state, "sword")).toBe(false);
+    expect(game.state.money).toBe(500); // and it does not quietly take the money
+
+    game.state.owned.hearth = true;
+    game.buyTool("sword");
+    expect(owns(game.state, "sword")).toBe(true);
+  });
+
+  it("says why it cannot be had, and nothing about what it does", () => {
+    const locked = toolWhat(NORMAL, "swordLocked", "");
+    expect(locked).toContain("hang it over");
+    expect(locked.toLowerCase()).not.toContain("wolf");
+    expect(locked.toLowerCase()).not.toContain("fox");
   });
 });

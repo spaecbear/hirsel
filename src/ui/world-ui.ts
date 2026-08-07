@@ -657,10 +657,19 @@ export class WorldUi {
         });
         continue;
       }
+      /*
+       * Some things want somewhere to go before they can be had at all. The
+       * locked line is the smith's patter rather than a hint — it says why
+       * you cannot have it, and still nothing about what it is for.
+       */
+      const needs = "needs" in t ? (t.needs as string | undefined) : undefined;
+      const wanting = needs && !owns(g, needs);
       rows.push({
         label: `${t.name} · £${t.cost}`,
-        detail: toolWhat(this.lexicon, t.id, t.what),
-        disabled: g.money < t.cost,
+        detail: wanting
+          ? toolWhat(this.lexicon, `${t.id}Locked`, "Not yet.")
+          : toolWhat(this.lexicon, t.id, t.what),
+        disabled: !!wanting || g.money < t.cost,
         onPick: () => this.game.buyTool(t.id as ToolId),
       });
     }

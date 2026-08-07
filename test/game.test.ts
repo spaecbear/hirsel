@@ -480,13 +480,42 @@ describe("the pocket watch, interrupted", () => {
 
     game.sleep(); // the reported interruption
     expect(game.busy, "the day must not stay frozen").toBe(false);
-    expect(state.day).toBe(2);
+    // the day turns with the dawn now, not the moment he lies down — the
+    // weather has to hold through the dusk it is being watched in
+    expect(state.day, "still today until the sun comes up").toBe(1);
 
-    // the abandoned callbacks must not stagger on into the new day
+    // let the night play out: dusk, the dark, and then the sun
+    const night = [...pending];
+    pending.length = 0;
+    for (const resume of night) resume();
+    expect(state.day).toBe(2);
+    expect(game.busy).toBe(false);
+
+    // and the abandoned playback callbacks must not stagger on into it
     const tapsAfterSleep = state.taps;
     for (const resume of pending) resume();
     expect(game.busy).toBe(false);
     expect(state.taps).toBe(tapsAfterSleep);
+  });
+
+  it("holds today's weather through the night and turns it at dawn", () => {
+    /*
+     * Player report: the weather changed before nightfall. The whole night
+     * resolved the instant you pressed sleep, forecast and all, so the dusk
+     * animation was already darkening tomorrow's sky. What the night decides
+     * still has to be decided off the weather that actually was.
+     */
+    const { game, state, pending } = watchHarness();
+    const tonight = state.forecast[0];
+    const tomorrow = state.forecast[1];
+
+    game.sleep();
+    expect(state.forecast[0], "still tonight's sky while it gets dark").toBe(tonight);
+    expect(state.day).toBe(1);
+
+    for (const resume of [...pending]) resume();
+    expect(state.forecast[0], "and tomorrow's when the sun comes up").toBe(tomorrow);
+    expect(state.day).toBe(2);
   });
 
   it("a later run is not confused by the abandoned one", () => {

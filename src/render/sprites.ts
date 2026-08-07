@@ -229,6 +229,9 @@ export interface ShepherdOpts {
 export const SHEPHERD_W = 12;
 export const SHEPHERD_H = 26;
 
+/** how far below her draw origin the dog's feet land, for depth sorting */
+export const DOG_FEET = 11;
+
 /** how wide he is, crook and all, for mirroring him about his own middle */
 const SHEPHERD_SPAN = 15;
 
