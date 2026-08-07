@@ -269,6 +269,34 @@ half its height wide it reads as furniture, not a person. And the two at the nea
 drawn taller than the landlord: at the same height their heads sat against the dark bar front
 where nothing could be made out.
 
+### The dog and the instrument are slots
+
+One dog, ever, and one instrument. A hirsel *is* the ground one shepherd and one dog can work
+— the game is named after the constraint — and letting both be owned would compound the
+deterrents to ×0.51 and quietly delete the fox, while owning both instruments would turn a
+choice of playing style into a shopping list. `Game.slotTaken` refuses the second, and the
+cart shows the closed option with the reason rather than hiding it.
+
+They are **sidegrades at one price**, not upgrades. Measured over 60 seeded 30-day runs on one
+fixed policy:
+
+| | median purse | sheep lost / run |
+| --- | --- | --- |
+| no dog | £64 | 1.25 |
+| Shetland sheepdog | £66 | 0.73 |
+| Border collie | £71 | 0.93 |
+| pipes (free) | £77 | 0.97 |
+| fiddle | £89 | 1.25 |
+
+A sheep costs £24 and up, so in both pairs the productive pick's extra income is roughly paid
+for by the extra animal it fails to save. The choice is flock safety against income, not a
+better and a worse option — `collieFoxBias` was 0.75 first, which left the collie ahead on
+both counts, and 0.9 made her not worth having.
+
+**The bark is the dog's receipt.** Her whole worth is the raids that never happen, which meant
+£58 bought something the player could never once see. When the night's roll would have got in
+without her and misses with her, she gets the credit out loud.
+
 ### Design invariants
 
 Things that are easy to break by accident:

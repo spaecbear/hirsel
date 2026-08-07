@@ -30,7 +30,7 @@ import {
   setSpriteState,
   shade,
 } from "../sprites";
-import { isFullMoon, moonPhase, owns } from "../../sim/rules";
+import { hasDog, isFullMoon, moonPhase, owns } from "../../sim/rules";
 import type { GameState, Sheep } from "../../sim/types";
 import type { ArtPack, Scene } from "./types";
 
@@ -421,12 +421,12 @@ function buySheepScene(g: Painter, st: GameState, p: number, breed?: string) {
 
 function gatherScene(g: Painter, st: GameState, p: number) {
   drawShepherd(g, SHEP_X, GROUND - 26 + (Math.sin(p * Math.PI * 4) > 0 ? 0 : 1), { crook: true, walk: p });
-  if (owns(st, "dog")) drawDog(g, SHEP_X - 70 + ease(p) * 80, GROUND + 10, p);
+  if (hasDog(st)) drawDog(g, SHEP_X - 70 + ease(p) * 80, GROUND + 10, p);
 }
 
 function foxRaidScene(g: Painter, st: GameState, p: number, time: number) {
   drawNight(g, st, 0.95, time);
-  const dog = owns(st, "dog");
+  const dog = hasDog(st);
   const outbound = p < 0.55;
   const fx = outbound ? -34 + (p / 0.55) * (W * 0.55) : W * 0.55 - ((p - 0.55) / 0.45) * (W * 0.8);
   const fy = GROUND + 4 + Math.sin(p * Math.PI * 6) * 2;
@@ -604,6 +604,7 @@ export const HIRSEL_ART: ArtPack = {
         shears: owns(st, "shears"),
         lamp: owns(st, "lamp"),
         cart: owns(st, "cart"),
+        collie: owns(st, "collie"),
         watch: owns(st, "watch"),
         oilskin: owns(st, "oilskin"),
         saltlick: owns(st, "saltlick"),
@@ -628,7 +629,7 @@ export const HIRSEL_ART: ArtPack = {
     const night = k === "sleep" ? ease(clamp01(p)) : k === "dawn" ? 1 - ease(clamp01(p)) : 0;
     drawLand(g, s, night);
 
-    setSheep(g, st, s, { dog: owns(st, "dog") && k !== "sleep" && k !== "gather" && k !== "move" });
+    setSheep(g, st, s, { dog: hasDog(st) && k !== "sleep" && k !== "gather" && k !== "move" });
 
     const sy = GROUND - 26;
     if (k === "shear") shearScene(g, p);
@@ -641,11 +642,11 @@ export const HIRSEL_ART: ArtPack = {
     else if (k === "gather") gatherScene(g, st, p);
     else if (k === "move") {
       drawShepherd(g, SHEP_X, sy, { crook: true, walk: p });
-      if (owns(st, "dog")) drawDog(g, SHEP_X - 36 + Math.sin(p * Math.PI * 4) * 8, GROUND + 8, p);
+      if (hasDog(st)) drawDog(g, SHEP_X - 36 + Math.sin(p * Math.PI * 4) * 8, GROUND + 8, p);
     } else if (k === "sleep" || k === "dawn") {
       drawShepherd(g, SHEP_X, sy, {});
       // she stays visible through the night
-      if (owns(st, "dog")) drawDog(g, SHEP_X - 32, GROUND + 6, 0);
+      if (hasDog(st)) drawDog(g, SHEP_X - 32, GROUND + 6, 0);
     } else {
       drawShepherd(g, SHEP_X, sy + (Math.sin(s.time / 1600) > 0 ? 0 : 1), { crook: true });
     }

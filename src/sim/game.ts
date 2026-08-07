@@ -17,6 +17,8 @@ import {
   breedOf,
   buffed,
   canShear,
+  dogFoxBias,
+  hasDog,
   feedCost,
   flockValue,
   flystrikeExposed,
@@ -222,10 +224,26 @@ export class Game {
   }
 
   /* ---------- the steading ---------- */
+  /**
+   * One dog and one instrument, ever.
+   *
+   * A hirsel is the ground one shepherd and one dog can work — the game is
+   * named after the constraint. Letting a player own both dogs would stack
+   * the deterrents to ×0.45 and quietly delete the fox, and owning both
+   * instruments would turn a choice of playing style into a shopping list.
+   */
+  private slotTaken(id: ToolId): boolean {
+    const g = this.state;
+    if (id === "dog") return owns(g, "collie");
+    if (id === "collie") return owns(g, "dog");
+    if (id === "fiddle") return false; // the pipes are not owned, they are his
+    return false;
+  }
+
   buyTool(id: ToolId) {
     const g = this.state;
     const t = TOOLS.find((x) => x.id === id);
-    if (!t || owns(g, id) || g.money < t.cost) return;
+    if (!t || owns(g, id) || g.money < t.cost || this.slotTaken(id)) return;
     g.money -= t.cost;
     g.owned[id] = true;
     this.say(`Bought the ${t.name.toLowerCase()} for £${t.cost}.`, "gold");
@@ -405,14 +423,30 @@ export class Game {
     }
 
     // 2. the dog brings them in
-    if (owns(g, "dog") && !g.gatheredToday) {
+    if (hasDog(g) && !g.gatheredToday) {
       g.gatheredToday = true;
-      this.say("She brought them in herself while you were seeing to other things.", "cozy");
+      this.say(
+        owns(g, "collie")
+          ? "She had them in and settled before you thought to look for her."
+          : "She brought them in herself while you were seeing to other things.",
+        "cozy",
+      );
     }
 
     // 3. fox check — resolved after the raid animation, never before
     const risk = foxRisk(g);
-    if (!wolfCame && this.rng() < risk && g.flock.length > 0) {
+    /*
+     * The night she earned her keep. A dog's whole worth is the raids that
+     * never happen, which meant her £58 bought something the player could
+     * never once see. If the roll would have hit without her and missed with
+     * her, she gets the credit out loud.
+     */
+    const roll = this.rng();
+    if (!wolfCame && hasDog(g) && roll >= risk && roll < risk / dogFoxBias(g) && g.flock.length > 0) {
+      this.say("Barking, away down the hill, and then quiet. Nothing got in.", "cozy");
+      this.onAnim("bark");
+    }
+    if (!wolfCame && roll < risk && g.flock.length > 0) {
       // any sheep, picked when the raid actually lands — not whichever was
       // pushed on last. flock.pop() took the most recently bought ewe every
       // time, since buyEwe always appends: a real bug, reported by a player
@@ -421,7 +455,7 @@ export class Game {
       this.onAnim("fox", () => {
         const lost = g.flock.splice(takenIndex, 1)[0];
         if (lost) g.stats.foxLosses++;
-        this.say(this.lex.raidLine(owns(g, "dog")), "bad");
+        this.say(this.lex.raidLine(hasDog(g)), "bad");
         if (g.flock.length === 0) this.lose(this.lex.lastGone.title, this.lex.lastGone.body);
         this.changed();
       });
@@ -726,11 +760,20 @@ export const ACTIONS: ActionDef[] = [
     cozy: true,
     anim: "music",
     cost: one,
-    desc: () => "Free. The flock settles. Foxes are a shade warier for a night or two.",
+    desc: (g) =>
+      owns(g, "fiddle")
+        ? `Free. ${BALANCE.fiddleDays} days of it: they put on more fleece. It will not keep a fox off.`
+        : "Free. The flock settles. Foxes are a shade warier for a night or two.",
     can: () => true,
     run: (game) => {
-      game.buff("settled flock", BALANCE.cozyBuffDays);
-      game.say("The drone carries down the glen. The sheep stop fidgeting.", "cozy");
+      const g = game.state;
+      if (owns(g, "fiddle")) {
+        game.buff("fiddled", BALANCE.fiddleDays);
+        game.say("A reel, out over the hill. They graze the better for it.", "cozy");
+      } else {
+        game.buff("settled flock", BALANCE.cozyBuffDays);
+        game.say("The drone carries down the glen. The sheep stop fidgeting.", "cozy");
+      }
     },
   },
   {

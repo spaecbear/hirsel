@@ -45,7 +45,7 @@ import {
   setSpriteState,
   shade,
 } from "../sprites";
-import { isFullMoon, moonPhase, owns } from "../../sim/rules";
+import { hasDog, isFullMoon, moonPhase, owns } from "../../sim/rules";
 import type { GameState, Sheep } from "../../sim/types";
 import type { ArtPack, Scene } from "./types";
 
@@ -470,7 +470,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   drawFlock(g, L, s);
 
   // the dog works the ground when there is work on
-  if (owns(st, "dog")) {
+  if (hasDog(st)) {
     if (k === "gather") drawDog(g, sx - 50 + ease(p) * 56, sy + 16, p);
     else if (k === "move") drawDog(g, sx - 30 + Math.sin(p * Math.PI * 4) * 8, sy + 16, p);
     else {
@@ -536,11 +536,23 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     }
     case "music": {
       drawShepherd(g, sx, sy, { arm: 0 });
-      g.px(sx + 10, sy + 8, 10, 9, "#7d4a4a");
-      g.px(sx + 12, sy - 4, 2, 13, "#6b5433");
-      g.px(sx + 16, sy - 8, 2, 17, "#6b5433");
-      g.px(sx + 12, sy - 6, 2, 2, "#c9c3ae");
-      g.px(sx + 16, sy - 10, 2, 2, "#c9c3ae");
+      if (owns(st, "fiddle")) {
+        // under his chin, and the bow going
+        const bow = Math.sin(p * Math.PI * 9) * 4;
+        g.px(sx + 11, sy + 2, 9, 4, "#7a4a2c"); // the body of it
+        g.px(sx + 11, sy + 2, 9, 1, "#94603c");
+        g.px(sx + 19, sy + 3, 5, 2, "#6b4326"); // the neck
+        g.px(sx + 23, sy + 2, 2, 3, "#4a2f1c"); // the scroll
+        g.px(sx + 12, sy + 3, 7, 1, "#c9c3ae"); // strings
+        g.px(sx + 10 + bow, sy, 14, 1, "#d8d3c2"); // the bow, sawing
+        g.px(sx + 10 + bow, sy + 1, 14, 1, "#8a7a5c");
+      } else {
+        g.px(sx + 10, sy + 8, 10, 9, "#7d4a4a");
+        g.px(sx + 12, sy - 4, 2, 13, "#6b5433");
+        g.px(sx + 16, sy - 8, 2, 17, "#6b5433");
+        g.px(sx + 12, sy - 6, 2, 2, "#c9c3ae");
+        g.px(sx + 16, sy - 10, 2, 2, "#c9c3ae");
+      }
       for (let i = 0; i < 6; i++) {
         const t = (p * 1.4 + i / 6) % 1;
         const r = t * (L.W * 0.5);
@@ -631,7 +643,7 @@ function foxRaid(g: Painter, L: WorldLayout, s: Scene) {
   else drawFox(g, fx, fy, p, outbound ? 1 : -1);
   if (!outbound) g.px(fx + 1, fy + 1, 8, 5, isInverse() ? "#b4472c" : "#cfcab8");
 
-  if (owns(st, "dog")) {
+  if (hasDog(st)) {
     const dx = L.W * 0.1 + ease(clamp01(p * 1.1)) * (L.W * 0.45);
     drawDog(g, dx, L.shepherd.y + 16, p);
   }
@@ -1070,7 +1082,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   g.px(b.x - 2, b.y + 2, 3, b.h - 2, "#4a3a26"); // bedposts
   g.px(b.x + b.w - 1, b.y + 2, 3, b.h - 2, "#4a3a26");
   // the dog lies in front of the fire, which is where she would be
-  if (owns(st, "dog")) drawDog(g, hx + I.hearth.w + 8, I.floorY - 12, 0);
+  if (hasDog(st)) drawDog(g, hx + I.hearth.w + 8, I.floorY - 12, 0);
 
   // a window on the back wall: daylight, or the dark and a star
   const win = { x: Math.round(I.W * 0.72), y: Math.round(I.floorY - 78), w: 26, h: 22 };
@@ -1191,6 +1203,18 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
       g.px(kx + 4, sh.y + 11, 3, 1, "#e0c34c"); // the bow
     });
   }
+  if (owns(st, "fiddle")) {
+    put(() => {
+      g.px(kx + 2, sh.y + 4, 7, 5, "#7a4a2c"); // the body, hung by its scroll
+      g.px(kx + 2, sh.y + 4, 7, 1, "#94603c");
+      g.px(kx + 3, sh.y + 9, 5, 3, "#6b4326"); // the waist of it
+      g.px(kx + 2, sh.y + 12, 7, 4, "#7a4a2c");
+      g.px(kx + 4, sh.y + 16, 3, 4, "#6b4326"); // the neck
+      g.px(kx + 4, sh.y + 20, 3, 2, "#4a2f1c"); // the scroll
+      g.px(kx + 5, sh.y + 5, 1, 11, "#c9c3ae"); // strings
+      g.px(kx + 9, sh.y + 6, 1, 14, "#8a7a5c"); // the bow, beside it
+    });
+  }
   if (owns(st, "saltlick")) {
     put(() => {
       g.px(kx, sh.y + 13, 11, 7, "#c6c3b2"); // the block
@@ -1257,7 +1281,8 @@ export const GLEN_ART: ArtPack = {
      * wolf, a fox raid — is queued between them, so a raid is no longer
      * played after the sun has already come up.
      */
-    const night = k === "sleep" ? ease(clamp01(p)) : k === "dawn" ? 1 - ease(clamp01(p)) : 0;
+    const night =
+      k === "sleep" ? ease(clamp01(p)) : k === "dawn" ? 1 - ease(clamp01(p)) : k === "bark" || k === "fox" ? 1 : 0;
 
     setSpriteState({
       inverse: s.inverse,
@@ -1270,6 +1295,7 @@ export const GLEN_ART: ArtPack = {
         shears: owns(st, "shears"),
         lamp: owns(st, "lamp"),
         cart: owns(st, "cart"),
+        collie: owns(st, "collie"),
         watch: owns(st, "watch"),
         oilskin: owns(st, "oilskin"),
         saltlick: owns(st, "saltlick"),

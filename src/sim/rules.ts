@@ -60,17 +60,26 @@ export function grazing(g: GameState) {
   const growth =
     fed *
     p.quality *
+    // the collie keeps them moving over the ground rather than standing
+    (owns(g, "collie") ? BALANCE.collieGraze : 1) *
     weatherOn(g).graze *
     (buffed(g, "settled flock") ? BALANCE.settledGrowth : 1) *
+    (buffed(g, "fiddled") ? BALANCE.fiddleGrowth : 1) *
     (buffed(g, "tended") ? BALANCE.tendedGrowth : 1);
   return { eaten, fed, growth };
 }
+
+/** whichever dog is on the hill, or none */
+export const hasDog = (g: GameState) => owns(g, "dog") || owns(g, "collie");
+/** what she is worth against a fox: the sheltie is the better deterrent */
+export const dogFoxBias = (g: GameState) =>
+  owns(g, "dog") ? BALANCE.dogFoxBias : owns(g, "collie") ? BALANCE.collieFoxBias : 1;
 
 export function foxRisk(g: GameState): number {
   if (owns(g, "pelt")) return BALANCE.peltFoxRisk;
   let risk = here(g).risk * weatherOn(g).foxBias;
   if (g.gatheredToday) risk *= BALANCE.gatheredFoxBias;
-  if (owns(g, "dog")) risk *= BALANCE.dogFoxBias;
+  risk *= dogFoxBias(g);
   if (buffed(g, "settled flock")) risk *= BALANCE.settledFoxBias;
   return risk;
 }

@@ -12,9 +12,11 @@ import { CHEATS, REVEAL_ORDER, revealNextCheat } from "../src/sim/cheats";
  * or day count in config.ts moves, these fail until the glossary catches up.
  */
 describe("the buff glossary", () => {
-  it("lists all four buffs with their live duration and effect", () => {
+  it("lists every buff with its live duration and effect", () => {
     const entries = buffGlossary();
-    expect(entries.map((e) => e.id).sort()).toEqual(["hale", "settled flock", "steady hands", "tended"]);
+    // every buff the sim can apply must be explained here, or the appendix
+    // quietly stops describing the game
+    expect(entries.map((e) => e.id).sort()).toEqual(["fiddled", "hale", "settled flock", "steady hands", "tended"]);
 
     const tended = entries.find((e) => e.id === "tended")!;
     expect(tended.meta).toContain(`${BALANCE.tendDays} days`);

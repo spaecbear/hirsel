@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ACTIONS, Game, newGame } from "../src/sim/game";
 import { BALANCE, OPEN_QUESTIONS, START_MONEY } from "../src/sim/config";
 import { ACHIEVEMENTS } from "../src/sim/achievements";
-import { here, readyToShear, weatherOn } from "../src/sim/rules";
+import { dogFoxBias, foxRisk, grazing, here, readyToShear, weatherOn } from "../src/sim/rules";
 import type { AnimId, GameState, Sheep } from "../src/sim/types";
 
 /** run the game with animations resolved instantly, in order */
@@ -446,6 +446,86 @@ describe("the pocket watch, interrupted", () => {
     state.taps = 6;
     game.runRoutine();
     expect(game.busy).toBe(true);
+  });
+});
+
+describe("the dog and the instrument are slots, not a shopping list", () => {
+  it("refuses a second dog, whichever you bought first", () => {
+    for (const [first, second] of [["dog", "collie"], ["collie", "dog"]] as const) {
+      const { game, state } = harness({ money: 500 });
+      game.buyTool(first);
+      expect(state.owned[first]).toBe(true);
+      const purse = state.money;
+      game.buyTool(second);
+      expect(state.owned[second], `${second} after ${first}`).toBeUndefined();
+      expect(state.money, "and it takes no money for refusing").toBe(purse);
+    }
+  });
+
+  it("never lets the two deterrents compound", () => {
+    // both would put fox risk at 0.6 x 0.75 = 0.45, quietly deleting the fox
+    const { game, state } = harness({ money: 500, at: 2 });
+    game.buyTool("dog");
+    game.buyTool("collie");
+    const both = state.owned.dog && state.owned.collie;
+    expect(both).toBeFalsy();
+    expect(dogFoxBias(state)).toBe(BALANCE.dogFoxBias);
+  });
+
+  it("the sheltie is the better deterrent, the collie the better grazier", () => {
+    const sheltie = harness({ owned: { dog: true }, at: 1 });
+    const collie = harness({ owned: { collie: true }, at: 1 });
+    expect(foxRisk(sheltie.state)).toBeLessThan(foxRisk(collie.state));
+    expect(grazing(collie.state).growth).toBeGreaterThan(grazing(sheltie.state).growth);
+    // and both work the flock in overnight
+    for (const h of [sheltie, collie]) {
+      h.game.sleep();
+      expect(h.state.log.some((l) => /had them in|brought them in/.test(l.t))).toBe(true);
+    }
+  });
+
+  it("the fiddle replaces what the music action does, rather than adding to it", () => {
+    const pipes = harness({ taps: 6 });
+    pipes.game.doAction("music");
+    expect(pipes.state.buffs["settled flock"]).toBe(BALANCE.cozyBuffDays);
+    expect(pipes.state.buffs.fiddled).toBeUndefined();
+
+    const fiddle = harness({ taps: 6, owned: { fiddle: true } });
+    fiddle.game.doAction("music");
+    expect(fiddle.state.buffs.fiddled).toBe(BALANCE.fiddleDays);
+    expect(fiddle.state.buffs["settled flock"], "no stacking with the pipes").toBeUndefined();
+
+    // more growth, and nothing against a fox — the trade we designed
+    expect(grazing(fiddle.state).growth).toBeGreaterThan(grazing(pipes.state).growth);
+    expect(foxRisk(fiddle.state)).toBeGreaterThan(foxRisk(pipes.state));
+  });
+
+  it("barks on the night she turns one, and only then", () => {
+    // her whole worth is the raids that never happen, which the player could
+    // never once see before
+    let barks = 0;
+    let raids = 0;
+    for (let seed = 0; seed < 120; seed++) {
+      const state = Object.assign(newGame({ seed }), {
+        flock: [sheep(4), sheep(4), sheep(4)],
+        at: 2,
+        owned: { dog: true },
+        forecast: ["mist", "sun", "sun"] as const,
+      });
+      const game = new Game(state);
+      const played: AnimId[] = [];
+      game.onAnim = (a, after) => {
+        played.push(a);
+        after?.();
+      };
+      game.sleep();
+      if (played.includes("bark")) barks++;
+      if (played.includes("fox")) raids++;
+      // she never barks on a night one got through
+      expect(played.includes("bark") && played.includes("fox")).toBe(false);
+    }
+    expect(barks, "she should be earning her keep some nights").toBeGreaterThan(0);
+    expect(raids, "and not all of them").toBeGreaterThan(0);
   });
 });
 

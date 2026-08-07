@@ -34,6 +34,12 @@ export function buffGlossary(): GlossaryEntry[] {
       effect: `${pct(BALANCE.steadyHandsBonus)} wool from every shearing.`,
     },
     {
+      id: "fiddled",
+      name: "Fiddled",
+      meta: `${BALANCE.fiddleDays} days · Strike up the fiddle`,
+      effect: `${pct(BALANCE.fiddleGrowth)} fleece growth. Nothing against a fox — that is the trade.`,
+    },
+    {
       id: "settled flock",
       name: "Settled flock",
       meta: `${BALANCE.cozyBuffDays} days · Strike up the bagpipes`,

@@ -409,7 +409,14 @@ export class WorldUi {
     const lex = this.game.lex;
     return ACTIONS.filter((a) => ids.includes(a.id)).map((a) => {
       const cost = this.game.costOf(a);
-      const name = a.id === "gather" ? lex.gather : a.id === "shear" ? lex.shear : a.name;
+      const name =
+        a.id === "gather"
+          ? lex.gather
+          : a.id === "shear"
+            ? lex.shear
+            : a.id === "music" && owns(g, "fiddle")
+              ? "Strike up the fiddle"
+              : a.name;
       const done = this.doneToday(a.id);
       return {
         label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : ""}`,
@@ -555,6 +562,17 @@ export class WorldUi {
     for (const t of TOOLS) {
       const has = owns(g, t.id);
       if (has) continue;
+      // one dog, ever: the other is shown, closed, so the choice is visible
+      const takenBy = t.id === "dog" && owns(g, "collie") ? "collie" : t.id === "collie" && owns(g, "dog") ? "dog" : null;
+      if (takenBy) {
+        rows.push({
+          label: t.name,
+          detail: "You have a dog. One shepherd, one dog — that is what a hirsel is.",
+          info: true,
+          onPick: () => {},
+        });
+        continue;
+      }
       rows.push({
         label: `${t.name} · £${t.cost}`,
         detail: t.what,

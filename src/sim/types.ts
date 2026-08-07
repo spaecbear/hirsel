@@ -46,6 +46,8 @@ export type ToolId =
   | "shears"
   | "lamp"
   | "dog"
+  | "collie"
+  | "fiddle"
   | "cart"
   | "watch"
   | "sword"
@@ -68,7 +70,7 @@ export type ActionId =
   | "pub"
   | "ask";
 
-export type BuffId = "tended" | "steady hands" | "settled flock" | "hale";
+export type BuffId = "tended" | "steady hands" | "settled flock" | "hale" | "fiddled";
 
 export type LogClass = "" | "hi" | "bad" | "gold" | "cozy";
 
@@ -97,6 +99,8 @@ export type AnimId =
   | "fox"
   | "wolf"
   | "wolflost"
+  /** the dog seeing something off in the dark */
+  | "bark"
   /** the day you walked out, played once at the start of a run */
   | "quit";
 

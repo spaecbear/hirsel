@@ -1,7 +1,7 @@
 import "./styles.css";
 
 import { Game } from "./sim/game";
-import { owns } from "./sim/rules";
+import { hasDog } from "./sim/rules";
 import { loadSettings, prefersReducedMotion, saveSettings, type Settings } from "./sim/settings";
 import { clearSave, exportFile, hasSave, importFile, readSave, saveGame } from "./sim/save";
 import { lexicon } from "./sim/lexicon";
@@ -62,7 +62,7 @@ function openingLines(g: Game) {
 
 function wire(g: Game) {
   g.onAnim = (anim, after, payload) => {
-    sfx.forAnim(anim, owns(g.state, "dog"));
+    sfx.forAnim(anim, hasDog(g.state));
     animator.play(anim, after, payload);
     render();
   };

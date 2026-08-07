@@ -44,7 +44,27 @@ export const BALANCE = {
   haleDays: 3,
 
   gatheredFoxBias: 0.35,
+  /*
+   * The two dogs, and the two instruments, are sidegrades at one price —
+   * different shapes, not different amounts. The sheltie is the safe pick and
+   * the collie the productive one; the pipes settle the flock and the fiddle
+   * grows it. Each is a slot: one dog, one instrument, never both, or the
+   * choice collapses into a shopping list and the bonuses compound.
+   */
   dogFoxBias: 0.6,
+  /*
+   * Measured, not guessed. Across 60 seeded 30-day runs on one policy:
+   *   sheltie  median £66, 0.73 sheep lost per run
+   *   collie   median £71, 0.93 sheep lost per run
+   * A sheep is worth £24 and up, so the collie's extra £5 is roughly paid
+   * for by the extra animal she does not save — the choice is flock safety
+   * against income, not a better and a worse option. 0.75 left the collie
+   * quietly ahead on both counts; 0.9 made her not worth having.
+   */
+  collieFoxBias: 0.85,
+  collieGraze: 1.05,
+  fiddleGrowth: 1.25,
+  fiddleDays: 3,
   peltFoxRisk: 0.01,
 
   flystrikeFleece: 11,
@@ -170,7 +190,9 @@ export const TOOLS = [
   { id: "crook", name: "Shepherd's crook", cost: 18, what: "Gathering costs no tap." },
   { id: "shears", name: "Blade shears", cost: 32, what: "Every fleece comes off a fifth heavier." },
   { id: "boots", name: "Stout boots", cost: 26, what: "One more tap every day." },
-  { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night. Foxes think twice." },
+  { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night, and foxes think twice about her." },
+  { id: "collie", name: "Border collie", cost: 58, what: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a fox, but they do better under her." },
+  { id: "fiddle", name: "A fiddle", cost: 34, what: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a fox off." },
   { id: "cart", name: "Pony and cart", cost: 74, what: "Market costs no tap." },
   { id: "saltlick", name: "Salt lick", cost: 28, what: "Set it on the hill and they take a quarter less grass for the same growth." },
   { id: "oilskin", name: "Waxed oilskin", cost: 36, what: "You can shear through a haar in this. Rain is still rain." },
@@ -207,4 +229,5 @@ export const ANIM_MS: Record<string, number> = {
   wolf: 6000,
   wolflost: 5000,
   quit: 7000,
+  bark: 900,
 };

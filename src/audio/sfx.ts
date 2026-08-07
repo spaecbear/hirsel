@@ -12,6 +12,8 @@ export type SfxName =
   | "fox"
   | "bark"
   | "pipes"
+  | "fiddle"
+  | "bark"
   | "pipe"
   | "pub"
   | "sword"
@@ -83,6 +85,27 @@ export class Sfx {
           e.noise(t, 0.5, "highpass", 2600, 1, 0.34);
           e.tone1(t, 2400, 900, 0.5, "triangle", 0.16);
           break;
+        case "fiddle": {
+          // a reel: bowed double-stops, sawn out rather than droned
+          const reel = [69, 72, 74, 76, 74, 72, 69, 67];
+          reel.forEach((n, i) => {
+            const at = t + i * 0.16;
+            const o = e.tone1(at, HZ(n), HZ(n), 0.2, "sawtooth", 0.1);
+            if (o && e.ac) {
+              const vib = e.ac.createOscillator();
+              vib.frequency.value = 5.5;
+              const amt = e.ac.createGain();
+              amt.gain.value = 4;
+              vib.connect(amt);
+              amt.connect(o.frequency);
+              vib.start(at);
+              vib.stop(at + 0.2);
+            }
+            if (i % 2 === 0) e.tone1(at, HZ(n - 5), HZ(n - 5), 0.18, "sawtooth", 0.05); // the drone string
+            e.noise(at, 0.03, "bandpass", 2600, 3, 0.03); // the bite of the bow
+          });
+          break;
+        }
         case "pipes":
           e.drone(HZ(50), t, 2.0, 0.1, e.sfxBus);
           [62, 69, 74, 76, 74, 69].forEach((n, i) => e.tone1(t + 0.15 + i * 0.28, HZ(n), HZ(n), 0.3, "sawtooth", 0.1));
@@ -133,6 +156,7 @@ export class Sfx {
       muck: "wind",
       pipe: "pipe",
       music: "pipes",
+      bark: "bark",
       pub: "pub",
       move: "bleat",
       sleep: "wind",
