@@ -916,7 +916,13 @@ export const GLEN_ART: ArtPack = {
     const k = s.anim;
     const p = s.p;
     const L = layoutWorld(g.W, g.H, st, { shepherdAt: s.shepherdAt });
-    const night = k === "sleep" ? Math.sin(p * Math.PI) : 0;
+    /*
+     * The night is two beats: `sleep` takes the light down and leaves it
+     * down, `dawn` brings it back. Anything that happens in the dark — the
+     * wolf, a fox raid — is queued between them, so a raid is no longer
+     * played after the sun has already come up.
+     */
+    const night = k === "sleep" ? ease(clamp01(p)) : k === "dawn" ? 1 - ease(clamp01(p)) : 0;
 
     setSpriteState({
       inverse: s.inverse,

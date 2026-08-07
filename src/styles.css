@@ -490,6 +490,14 @@ body.no-motion .tutorial.nudge {
   margin-top: 8px;
 }
 
+/* already done today: still legible, plainly finished */
+.act.done .n {
+  color: var(--grass);
+}
+.act.done:not(:disabled) {
+  border-color: #4a5a38;
+}
+
 /* the title */
 .title {
   background: var(--peat);

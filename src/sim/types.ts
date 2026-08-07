@@ -91,6 +91,8 @@ export type AnimId =
   | "pub"
   | "move"
   | "sleep"
+  /** the sky coming back up, played after anything that happens in the dark */
+  | "dawn"
   | "buysheep"
   | "fox"
   | "wolf"
@@ -114,6 +116,8 @@ export interface GameState {
   gatheredToday: boolean;
   actsToday: number;
   pubs: number;
+  /** the inn is once a night — you cannot drink the day away */
+  pubToday: boolean;
   /** win / loss bookkeeping */
   over: null | { kind: "win" | "lose"; title: string; body: string };
   /** pocket watch */

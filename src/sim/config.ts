@@ -193,13 +193,17 @@ export const ANIM_MS: Record<string, number> = {
   market: 1900,
   pipe: 2200,
   music: 2000,
-  pub: 2600,
+  // the pub and the night are the two set pieces worth sitting in: an £8
+  // pint should feel like an evening, and the dark is where the game's
+  // tension lives. SKELP halves all of this for anyone in a hurry.
+  pub: 4200,
   move: 1200,
-  sleep: 2400,
+  sleep: 2600, // dusk down into the dark
+  dawn: 2000, // and back up out of it
   tend: 1700,
   muck: 1600,
   buysheep: 1200,
-  fox: 2200,
+  fox: 2800,
   wolf: 6000,
   wolflost: 5000,
   quit: 7000,

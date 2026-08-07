@@ -127,6 +127,7 @@ function applySettings(patch: Partial<Settings>) {
   saveSettings(settings);
   audio.setLevels({ master: settings.master, music: settings.music, sfx: settings.sfx, muted: settings.muted });
   animator.reduced = prefersReducedMotion(settings);
+  animator.speed = settings.swift ? 2 : 1;
   document.body.classList.toggle("no-motion", animator.reduced);
   score.setTune(settings.inverse ? TOD_JIG : HIRSEL_AIR);
   game.lex = lexicon(settings.inverse);
@@ -202,6 +203,7 @@ const settingsUi = buildSettings({
     toggleRetro: () => applySettings({ ui: settings.ui === "retro" ? "glen" : "retro" }),
     toggleInverse: () => applySettings({ inverse: !settings.inverse }),
     toggleZen: () => applySettings({ zen: !settings.zen }),
+    toggleSwift: () => applySettings({ swift: !settings.swift }),
     setSpeed: () => {},
     closeSettings: () => closeSettings(),
   }),

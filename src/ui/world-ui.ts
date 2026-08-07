@@ -13,7 +13,7 @@
  */
 import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
-import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
+import { BALANCE, BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
 import { canShear, here, isFullMoon, moonName, owns, priceOn, readyToShear, tapsPerDay } from "../sim/rules";
 import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
@@ -26,6 +26,8 @@ interface Row {
   label: string;
   detail: string;
   disabled?: boolean;
+  /** already taken care of today — marked rather than hidden */
+  done?: boolean;
   tone?: "cozy" | "gold" | "stock" | "life";
   /** not a choice — something to read. Rendered as text, not a dimmed button. */
   info?: boolean;
@@ -174,6 +176,15 @@ export class WorldUi {
       return;
     }
 
+    /*
+     * Nothing that acts on the world answers while an animation or the
+     * watch's sequence is running. The sheet's buttons were already disabled
+     * for this, but the house, the door and the bed bypassed the sheet
+     * entirely — so you could walk in and sleep in the middle of the watch
+     * running a recorded day.
+     */
+    if (this.busy) return;
+
     // stepping in and out of the house
     if (!this.interior && spot.id === "croft") {
       this.interior = true;
@@ -254,7 +265,7 @@ export class WorldUi {
       }
       body.appendChild(
         button(
-          `act${r.tone ? ` ${r.tone}` : ""}`,
+          `act${r.tone ? ` ${r.tone}` : ""}${r.done ? " done" : ""}`,
           `<span class="n">${r.label}</span><span class="d">${r.detail}</span>`,
           () => {
             r.onPick();
@@ -281,7 +292,7 @@ export class WorldUi {
       case "croft":
         return "The croft";
       case "cart":
-        return `The cart · wool ${priceOn(g.day)}p a stone`;
+        return `The cart · ${this.game.lex.wool} ${priceOn(g.day)}p a stone`;
       case "flock":
         return `${this.game.lex.flockCap} · ${g.flock.length} on the hill`;
       case "shepherd":
@@ -353,7 +364,7 @@ export class WorldUi {
 
     const buffs = Object.entries(g.buffs).map(([k, v]) => `${k} (${v}d)`);
     rows.push({
-      label: `${tapsPerDay(g)} taps a day · wool ${priceOn(g.day)}p a stone`,
+      label: `${tapsPerDay(g)} taps a day · ${this.game.lex.wool} ${priceOn(g.day)}p a stone`,
       detail: buffs.length ? `In you: ${buffs.join(", ")}` : "Nothing running in you just now.",
       info: true,
       onPick: () => {},
@@ -365,14 +376,44 @@ export class WorldUi {
     return rows;
   }
 
+  /**
+   * Things already done today.
+   *
+   * Some actions simply cannot be repeated (gathering, the pint) and some can
+   * but rarely want to be (mucking ground already mucked). Without a mark
+   * players re-open a sheet and wonder whether the tap went in, or spend one
+   * on something they already have.
+   */
+  private doneToday(id: string): boolean {
+    const g = this.game.state;
+    switch (id) {
+      case "gather":
+        return g.gatheredToday;
+      case "pub":
+        return g.pubToday;
+      case "tend":
+        return (g.buffs.tended ?? 0) >= BALANCE.tendDays;
+      case "pipe":
+        return (g.buffs["steady hands"] ?? 0) >= BALANCE.cozyBuffDays;
+      case "music":
+        return (g.buffs["settled flock"] ?? 0) >= BALANCE.cozyBuffDays;
+      case "muck":
+        return here(g).grass > BALANCE.muckMaxGrass;
+      default:
+        return false;
+    }
+  }
+
   private actionRows(ids: string[]): Row[] {
     const g = this.game.state;
     const lex = this.game.lex;
     return ACTIONS.filter((a) => ids.includes(a.id)).map((a) => {
       const cost = this.game.costOf(a);
       const name = a.id === "gather" ? lex.gather : a.id === "shear" ? lex.shear : a.name;
+      const done = this.doneToday(a.id);
       return {
-        label: `${name}${cost === 0 ? " · free" : ""}`,
+        label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : ""}`,
+        done,
         detail: a.desc(g),
         disabled: g.taps < cost || !a.can(g),
         tone: a.cozy ? ("cozy" as const) : undefined,
@@ -502,7 +543,7 @@ export class WorldUi {
       const b = BREEDS[breed];
       rows.push({
         label: `Buy a ${lex.breeds[breed]} · £${b.cost}`,
-        detail: `${b.note} · fleece ×${b.growth.toFixed(2)} growth, ×${b.value.toFixed(2)} value`,
+        detail: `${lex.breedNotes[breed]} · ${lex.fleeceWord} ×${b.growth.toFixed(2)} growth, ×${b.value.toFixed(2)} value`,
         disabled: g.money < b.cost,
         tone: "stock",
         closes: true, // she walks onto the hill; the sheet was covering her
@@ -571,7 +612,7 @@ export class WorldUi {
     const g = this.game.state;
     if (g.over) return "";
     if (this.busy) return "";
-    if (!canShear(g) && readyToShear(g.flock) > 0) return "No shearing in this weather.";
+    if (!canShear(g) && readyToShear(g.flock) > 0) return `No ${this.game.lex.shear.toLowerCase()} in this weather.`;
     if (g.taps <= 0) return "The day is spent — tap the croft to sleep.";
     return "";
   }

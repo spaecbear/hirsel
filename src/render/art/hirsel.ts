@@ -595,7 +595,7 @@ export const HIRSEL_ART: ArtPack = {
     const p = s.p;
     setSpriteState({
       inverse: s.inverse,
-      night: k === "sleep" ? Math.sin(p * Math.PI) : 0,
+      night: k === "sleep" ? ease(clamp01(p)) : k === "dawn" ? 1 - ease(clamp01(p)) : 0,
       kit: {
         // he is not wearing it during the fight — the set piece hands it to him
         pelt: owns(st, "pelt") && k !== "wolf",
@@ -624,7 +624,8 @@ export const HIRSEL_ART: ArtPack = {
     if (k === "wolf") return wolfScene(g, st, p, true);
     if (k === "wolflost") return wolfScene(g, st, p, false);
 
-    const night = k === "sleep" ? Math.sin(p * Math.PI) : 0;
+    // sleep takes the light down and leaves it down; dawn brings it back
+    const night = k === "sleep" ? ease(clamp01(p)) : k === "dawn" ? 1 - ease(clamp01(p)) : 0;
     drawLand(g, s, night);
 
     setSheep(g, st, s, { dog: owns(st, "dog") && k !== "sleep" && k !== "gather" && k !== "move" });
@@ -641,7 +642,7 @@ export const HIRSEL_ART: ArtPack = {
     else if (k === "move") {
       drawShepherd(g, SHEP_X, sy, { crook: true, walk: p });
       if (owns(st, "dog")) drawDog(g, SHEP_X - 36 + Math.sin(p * Math.PI * 4) * 8, GROUND + 8, p);
-    } else if (k === "sleep") {
+    } else if (k === "sleep" || k === "dawn") {
       drawShepherd(g, SHEP_X, sy, {});
       // she stays visible through the night
       if (owns(st, "dog")) drawDog(g, SHEP_X - 32, GROUND + 6, 0);

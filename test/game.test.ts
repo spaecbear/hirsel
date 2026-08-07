@@ -359,9 +359,26 @@ describe("the croft and the ask", () => {
   it("the pint surfaces what is still missing from the second one on", () => {
     const { game, state } = harness({ money: 100 });
     game.doAction("pub");
+    game.sleep(); // the inn is once a night, so the second pint is the next one
     game.state.taps = 3;
     game.doAction("pub");
     expect(state.log.some((l) => l.t.includes("roof still lets the rain in"))).toBe(true);
+  });
+
+  it("the inn is once a night", () => {
+    const { game, state } = harness({ money: 100, taps: 6 });
+    game.doAction("pub");
+    expect(state.pubs).toBe(1);
+    const purse = state.money;
+
+    game.doAction("pub"); // a second pint the same day
+    expect(state.pubs, "no second pint").toBe(1);
+    expect(state.money, "and no second £8").toBe(purse);
+
+    game.sleep();
+    state.taps = 3;
+    game.doAction("pub");
+    expect(state.pubs).toBe(2); // a new night, a new pint
   });
 });
 
@@ -380,6 +397,55 @@ describe("the pocket watch", () => {
     game.runRoutine();
     expect(state.buffs.tended).toBe(BALANCE.tendDays);
     expect(state.at).toBe(1);
+  });
+});
+
+describe("the pocket watch, interrupted", () => {
+  /**
+   * Reported: record a day, run it, then sleep before the sequence finishes.
+   * Everything froze and the sequence never resumed; only a reload cleared it.
+   * The step chain lives in animation callbacks, so `busy` stayed true with
+   * nothing left alive to clear it.
+   */
+  function watchHarness() {
+    const state = Object.assign(newGame({ seed: 11 }), { taps: 6, owned: { watch: true } });
+    const game = new Game(state);
+    const pending: (() => void)[] = [];
+    // hold every animation open, the way real playback does
+    game.onAnim = (_a, after) => {
+      if (after) pending.push(after);
+    };
+    return { game, state, pending };
+  }
+
+  it("gives the day back when the night interrupts a running sequence", () => {
+    const { game, state, pending } = watchHarness();
+    state.routine = [{ kind: "act", act: "tend" }, { kind: "act", act: "pipe" }, { kind: "act", act: "music" }];
+
+    game.runRoutine();
+    expect(game.busy).toBe(true); // playback owns the day
+
+    game.sleep(); // the reported interruption
+    expect(game.busy, "the day must not stay frozen").toBe(false);
+    expect(state.day).toBe(2);
+
+    // the abandoned callbacks must not stagger on into the new day
+    const tapsAfterSleep = state.taps;
+    for (const resume of pending) resume();
+    expect(game.busy).toBe(false);
+    expect(state.taps).toBe(tapsAfterSleep);
+  });
+
+  it("a later run is not confused by the abandoned one", () => {
+    const { game, state, pending } = watchHarness();
+    state.routine = [{ kind: "act", act: "tend" }, { kind: "act", act: "pipe" }];
+    game.runRoutine();
+    game.cancelRoutine();
+    for (const resume of pending) resume();
+
+    state.taps = 6;
+    game.runRoutine();
+    expect(game.busy).toBe(true);
   });
 });
 

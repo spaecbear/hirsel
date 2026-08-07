@@ -27,6 +27,8 @@ export interface Settings {
   inverse: boolean;
   /** "ZEN" — the day never runs out of taps. Nothing else changes. */
   zen: boolean;
+  /** "SKELP": everything plays at double pace */
+  swift: boolean;
   /** codes the player has ever entered, so the cheat list can show what's known */
   cheatsFound: string[];
   /** the title screen is skipped once a run is under way */
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autosave: true,
   inverse: false,
   zen: false,
+  swift: false,
   cheatsFound: [],
   seenTitle: false,
   tutorialSeen: false,

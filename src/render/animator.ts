@@ -26,6 +26,8 @@ export class Animator {
   private after?: () => void;
   private queue: Job[] = [];
   reduced = false;
+  /** SKELP: 2 runs everything at double pace */
+  speed = 1;
   onStart: (anim: AnimId) => void = () => {};
   onIdle: () => void = () => {};
 
@@ -45,7 +47,7 @@ export class Animator {
     this.current = job.anim;
     this.payload = job.payload;
     this.after = job.after;
-    this.dur = this.reduced ? 1 : (ANIM_MS[job.anim] ?? 1200);
+    this.dur = this.reduced ? 1 : (ANIM_MS[job.anim] ?? 1200) / Math.max(0.25, this.speed);
     this.start = performance.now();
     this.p = 0;
     this.onStart(job.anim);

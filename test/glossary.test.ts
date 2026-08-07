@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { buffGlossary, statusGlossary } from "../src/sim/glossary";
 import { saveEarned, clearEarned } from "../src/sim/achievements";
 import { BALANCE } from "../src/sim/config";
-import { CHEATS, revealNextCheat } from "../src/sim/cheats";
+import { CHEATS, REVEAL_ORDER, revealNextCheat } from "../src/sim/cheats";
 
 /**
  * These pin the glossary's wording to the live BALANCE numbers, not to a
@@ -107,7 +107,26 @@ describe("the reward for finishing a run", () => {
     expect(revealNextCheat(found)).toBeNull();
   });
 
-  it("saves 1680 for last, so a first win cannot give the wolf away", () => {
+  it("hands them over weakest first, with the game-breaking ones last", () => {
+    const order: string[] = [];
+    let found: string[] = [];
+    for (let i = 0; i < codes.length; i++) {
+      const prize = revealNextCheat(found)!;
+      order.push(prize.code);
+      found = [...found, prize.code];
+    }
+    expect(order).toEqual(REVEAL_ORDER);
+    // the three that undo the game come last
+    expect(order.slice(-3)).toEqual(["TOD", "SILLER", "ZEN"]);
+    // and quality of life comes early
+    expect(order.indexOf("SKELP")).toBeLessThan(order.indexOf("HIRSEL"));
+  });
+
+  it("lists every code in the reveal order, so none is unreachable", () => {
+    expect([...REVEAL_ORDER].sort()).toEqual([...codes].sort());
+  });
+
+  it("does not give the wolf away on an early win", () => {
     // it is the one code whose description explains him
     const order: string[] = [];
     let found: string[] = [];
@@ -116,6 +135,7 @@ describe("the reward for finishing a run", () => {
       order.push(prize.code);
       found = [...found, prize.code];
     }
-    expect(order[order.length - 1]).toBe("1680");
+    // by the time 1680 arrives the player has finished five runs
+    expect(REVEAL_ORDER.indexOf("1680")).toBeGreaterThanOrEqual(5);
   });
 });

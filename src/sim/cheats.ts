@@ -13,6 +13,7 @@ export interface CheatContext {
   toggleRetro: () => void;
   toggleInverse: () => void;
   toggleZen: () => void;
+  toggleSwift: () => void;
   setSpeed: (mult: number) => void;
   /** get out of the way — some codes have something to show you */
   closeSettings: () => void;
@@ -123,6 +124,17 @@ export const CHEATS: Cheat[] = [
     },
   },
   {
+    code: "SKELP",
+    name: "Skelp",
+    kind: "toggle",
+    isOn: (c) => c.settings.swift,
+    blurb: "Everything moves at twice the pace. The nights and the inn are long on purpose, but not everyone has the evening.",
+    apply: (c) => {
+      c.toggleSwift();
+      return c.settings.swift ? "Away at a fair skelp." : "Back to the ordinary pace of things.";
+    },
+  },
+  {
     code: "HAAR",
     kind: "action",
     name: "Haar",
@@ -138,19 +150,35 @@ export const CHEATS: Cheat[] = [
 ];
 
 /**
- * The reward for finishing a run: a code you did not have yet, for the next one.
+ * The order codes are handed over in, one per finished run.
  *
- * `1680` is deliberately last in the queue. It is the only code that gives the
- * wolf away, so it is only ever handed over once every other code is already
- * known — by which point the player has finished the game at least six times
- * and has almost certainly met him.
+ * Weakest and most quality-of-life first, so an early win changes how the
+ * game feels rather than how hard it is; the ones that actually undo the
+ * game are the reward for playing it a lot.
+ *
+ *   RETRO    cosmetic
+ *   SKELP    pace only, nothing about the game changes
+ *   HAAR     three days of weather, once
+ *   LANGDAY  three taps, once
+ *   HIRSEL   twelve beasts — powerful, but you still have to farm them
+ *   1680     dangerous rather than strong, if you do not know what you are
+ *            doing. By here the player has won five times and has almost
+ *            certainly met him, so it gives nothing away that is still secret
+ *   TOD      the strangest thing in the game, saved as a treat
+ *   SILLER   money, which skips the part the game is about
+ *   ZEN      unlimited days, which skips the rest of it
  */
+export const REVEAL_ORDER = ["RETRO", "SKELP", "HAAR", "LANGDAY", "HIRSEL", "1680", "TOD", "SILLER", "ZEN"];
+
 export function revealNextCheat(found: string[]): Cheat | null {
   const have = new Set(found);
-  const ordinary = CHEATS.filter((c) => c.code !== "1680" && !have.has(c.code));
-  if (ordinary.length) return ordinary[0];
-  const secret = CHEATS.find((c) => c.code === "1680" && !have.has(c.code));
-  return secret ?? null;
+  for (const code of REVEAL_ORDER) {
+    if (have.has(code)) continue;
+    const cheat = CHEATS.find((c) => c.code === code);
+    if (cheat) return cheat;
+  }
+  // anything not listed above, so a new code can never be unreachable
+  return CHEATS.find((c) => !have.has(c.code)) ?? null;
 }
 
 export function findCheat(input: string): Cheat | null {

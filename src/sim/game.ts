@@ -95,6 +95,7 @@ export function newGame(opts: GameOptions = {}): GameState {
     gatheredToday: false,
     actsToday: 0,
     pubs: 0,
+    pubToday: false,
     over: null,
     routine: null,
     draft: [],
@@ -180,7 +181,7 @@ export class Game {
     if (!this.zen && !this.freeTaps) g.taps -= n;
     g.actsToday++;
     if (wolfWarningDue(g)) {
-      this.say("The flock will not settle. Something is watching from above the corrie.", "bad");
+      this.say(`The ${this.lex.flock} will not settle. Something is watching from above the corrie.`, "bad");
     }
     // the wolf is not called here: he comes at night, when you lie down on his
     // ground. Spending the fifth action only sets the conditions — walking back
@@ -215,7 +216,7 @@ export class Game {
     if (g.recording) g.draft.push({ kind: "move", to: i });
     g.at = i;
     g.gatheredToday = false;
-    this.say(`You drive the flock up to the ${g.pastures[i].name}.`, "hi");
+    this.say(this.lex.driveUp(g.pastures[i].name), "hi");
     this.onAnim("move");
     this.spend(1);
   }
@@ -289,7 +290,7 @@ export class Game {
     g.stats.earned += take;
     this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.unit} at the cart. £${take}.`, "gold");
     if (g.flock.length === 0) {
-      this.lose("You sold the last of them", "There is no shepherd without a flock. You take the road down.");
+      this.lose(this.lex.soldLast.title, this.lex.soldLast.body);
     }
     this.award();
     this.changed();
@@ -335,11 +336,16 @@ export class Game {
   private wolf() {
     const g = this.state;
     if (owns(g, "sword")) {
-      g.owned.pelt = true;
       this.say("Something is standing on the skyline that is not a fox.", "bad");
       this.say("The last wolf in Scotland. You draw the broadsword.", "gold");
-      this.say("You take the pelt. No fox will come near this ground again.", "gold");
-      this.onAnim("wolf");
+      // the pelt is not yours until you have watched him lose it — the same
+      // rule the fox and the bought ewe follow
+      this.onAnim("wolf", () => {
+        g.owned.pelt = true;
+        this.say("You take the pelt. No fox will come near this ground again.", "gold");
+        this.award();
+        this.changed();
+      });
     } else {
       const keep = Math.min(g.flock.length, OPEN_QUESTIONS.survivorsAfterWolf);
       const lost = g.flock.length - keep;
@@ -351,7 +357,7 @@ export class Game {
       this.onAnim("wolflost", () => {
         g.flock = survivors;
         this.say(
-          `He went through them. ${lost} gone. ${keep === 1 ? "One ewe" : `${keep} ewes`} left standing.`,
+          this.lex.maulSurvivors(lost, keep),
           "bad",
         );
         this.award();
@@ -364,8 +370,15 @@ export class Game {
   sleep() {
     const g = this.state;
     if (g.over) return;
+    // the night ends the day, and with it anything the watch was still doing
+    this.cancelRoutine();
     this.stopRecording();
 
+    /*
+     * The night is two beats with whatever happens in the dark between them.
+     * It used to be one: dusk, dark, sunrise — and then the fox raid played
+     * *after* the sun was up, which read as a raid the following morning.
+     */
     this.onAnim("sleep", () => this.changed());
 
     const p = here(g);
@@ -388,7 +401,7 @@ export class Game {
     }
     if (g.flock.length && fed < BALANCE.hungryBelow) {
       g.stats.daysHungry++;
-      this.say(`Grass is thin on the ${p.name}. The flock went hungry.`, "bad");
+      this.say(this.lex.hungry(p.name), "bad");
     }
 
     // 2. the dog brings them in
@@ -409,7 +422,7 @@ export class Game {
         const lost = g.flock.splice(takenIndex, 1)[0];
         if (lost) g.stats.foxLosses++;
         this.say(this.lex.raidLine(owns(g, "dog")), "bad");
-        if (g.flock.length === 0) this.lose("The last of them gone", "You are a shepherd with no sheep. The croft goes quiet.");
+        if (g.flock.length === 0) this.lose(this.lex.lastGone.title, this.lex.lastGone.body);
         this.changed();
       });
     }
@@ -419,7 +432,7 @@ export class Game {
     if (struck && this.rng() < BALANCE.flystrikeChance) {
       g.flock.splice(g.flock.indexOf(struck), 1);
       g.stats.strikeLosses++;
-      this.say("Strike in a matted fleece. You found her too late.", "bad");
+      this.say(this.lex.strike, "bad");
     }
 
     // 5. feed
@@ -435,6 +448,9 @@ export class Game {
       x.grass = Math.min(x.cap, x.grass + r);
     }
 
+    // the sky comes back up last, after the wolf and the fox have had the dark
+    this.onAnim("dawn");
+
     // 7. weather, moon, buffs
     g.forecast.shift();
     g.forecast.push(pick(this.rng, WEATHER_BAG));
@@ -447,6 +463,7 @@ export class Game {
     g.day++;
     this.freeTaps = false; // the free day is over the moment it ends
     g.gatheredToday = false;
+    g.pubToday = false;
     g.actsToday = 0;
     g.taps = tapsPerDay(g);
     this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
@@ -456,7 +473,7 @@ export class Game {
 
     // 8. fail state
     if (g.flock.length === 0) {
-      this.lose("The last of them gone", "You are a shepherd with no sheep. The croft goes quiet.");
+      this.lose(this.lex.lastGone.title, this.lex.lastGone.body);
     } else if (g.money < 0) {
       this.lose("The purse is empty", "You cannot feed them and you cannot feed yourself. You go back to the job you left.");
     }
@@ -476,9 +493,7 @@ export class Game {
     g.over = {
       kind: "win",
       title: "She said aye",
-      body:
-        `Slated roof, a hearth, a byre of your own, and ${g.flock.length} sheep on the hill. ` +
-        `You lasted ${g.day} days, and you are not doing the rest of it alone.`,
+      body: this.lex.winBody(g.flock.length, g.day),
     };
     this.award();
     this.changed();
@@ -505,12 +520,33 @@ export class Game {
     g.draft = [];
   }
 
+  /**
+   * Which run of the watch is current.
+   *
+   * The step chain lives in animation callbacks, so anything that interrupts
+   * the day mid-sequence has to be able to disown those callbacks. Without
+   * it, sleeping partway through left `busy` true forever: every action was
+   * dead until the page was reloaded, which is what rebuilt the Game.
+   */
+  private routineRun = 0;
+
+  /** stop the watch's sequence and give the day back to the player */
+  cancelRoutine() {
+    this.routineRun++;
+    if (this.busy) {
+      this.busy = false;
+      this.changed();
+    }
+  }
+
   runRoutine() {
     const g = this.state;
     if (!g.routine?.length || this.busy || g.over) return;
     this.busy = true;
+    const run = ++this.routineRun;
     const steps = [...g.routine];
     const step = () => {
+      if (run !== this.routineRun) return; // a later run, or a cancel, owns the day now
       const g2 = this.state;
       if (g2.over || !steps.length || g2.taps <= 0) {
         this.busy = false;
@@ -704,15 +740,19 @@ export const ACTIONS: ActionDef[] = [
     anim: "pub",
     cost: one,
     desc: (g) =>
-      g.money < BALANCE.pintCost
-        ? `£${BALANCE.pintCost}. You cannot spare it.`
-        : `£${BALANCE.pintCost}. Three days hale and hearty: one more tap a day.`,
-    can: (g) => g.money >= BALANCE.pintCost,
+      g.pubToday
+        ? "You have had your pint. There is a limit, and you are at it."
+        : g.money < BALANCE.pintCost
+          ? `£${BALANCE.pintCost}. You cannot spare it.`
+          : `£${BALANCE.pintCost}. Three days hale and hearty: one more tap a day.`,
+    // one a night: the pint is an event, and the courtship is paced by it
+    can: (g) => g.money >= BALANCE.pintCost && !g.pubToday,
     run: (game) => {
       const g = game.state;
       g.money -= BALANCE.pintCost;
       game.buff("hale", BALANCE.haleDays);
       g.pubs++;
+      g.pubToday = true;
       game.say(`£${BALANCE.pintCost} gone on beer and talk. Worth it, probably.`, "cozy");
       if (g.pubs === 2) game.say("The lass behind the bar knows your order now.", "cozy");
       if (g.pubs === 4) game.say("She kept you talking well past when she should have been closing.", "cozy");
