@@ -69,6 +69,48 @@ function mixHex(a: string, b: string, t: number): string {
  * behind them, so they read as silhouettes. On dark ground against dark hill
  * they simply disappeared.
  */
+
+/* ------------------------------------------------------------------ *
+ * The one thing that happens in the picture.
+ *
+ * A fox puts his head over the edge, both dogs turn and see him off, and he
+ * goes. It runs on a loop off the clock, and both the painter and the sound
+ * read the same function, so the bark lands on the frame where their heads
+ * come up rather than near it.
+ * ------------------------------------------------------------------ */
+
+/** where he puts his head in, as a fraction of the width */
+const FOX_X_FRAC = 0.8;
+
+const FOX_CYCLE = 26000;
+const FOX_IN = 9000; // he appears
+const FOX_SEEN = 12000; // they notice him
+const FOX_OFF = 14200; // and he is away
+const FOX_GONE = 17000;
+
+export interface CreditsBeat {
+  /** 0 → 1 as his head comes up over the lip, 1 while he is there */
+  foxIn: number;
+  /** 0 → 1 as he clears off again */
+  foxOut: number;
+  /** the dogs have their heads round and are giving him a row */
+  barking: boolean;
+  /** true on the frame the barking starts, for the sound */
+  barkStarts: boolean;
+}
+
+export function creditsBeat(time: number, dt = 16): CreditsBeat {
+  const t = time % FOX_CYCLE;
+  const prev = (time - dt) % FOX_CYCLE;
+  const ramp = (from: number, to: number) => Math.max(0, Math.min(1, (t - from) / (to - from)));
+  return {
+    foxIn: t >= FOX_IN && t < FOX_OFF ? ramp(FOX_IN, FOX_SEEN) : 0,
+    foxOut: t >= FOX_OFF && t < FOX_GONE ? ramp(FOX_OFF, FOX_GONE) : 0,
+    barking: t >= FOX_SEEN && t < FOX_GONE,
+    barkStarts: t >= FOX_SEEN && prev < FOX_SEEN && prev <= t,
+  };
+}
+
 export function drawCredits(g: Painter, W: number, H: number, time: number) {
   const horizonY = Math.round(H * 0.4);
 
@@ -239,30 +281,13 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
     }
   }
 
-  /*
-   * A fox, trotting along the slope above the croft. He spent the whole game
-   * taking sheep off you and there is nothing left to guard tonight.
-   *
-   * He is up on the apron rather than down on the near edge because the
-   * sprites are all one size: beside the seated figures he came out bigger
-   * than the sheep and bigger than the people, and the eye read him as the
-   * subject of the picture. At that distance, among fallen blocks his own
-   * size, he is a fox on a hillside.
-   */
+  /* ---- a couple of the flock, well clear of the dogs ---- */
   {
-    // he keeps to the open slope on the left: run the whole width and he
-    // crosses the croft, and a fox standing on the roof is a different picture
-    const t = (time / 20000) % 1;
-    const fx = Math.round(-34 + t * (W * 0.58 + 34));
-    drawFox(g, fx, apronTop(fx) + Math.round(H * 0.055), t * 7, 1);
-  }
-
-  /* ---- a couple of the flock, out along the shelf ---- */
-  {
+    // two, not three: the third stood directly behind the collie and the two
+    // of them read as one animal with a sheep's back and a dog's head
     const ewe = (n: number): Sheep => ({ id: n, fleece: 6, breed: "blackface", age: 40 });
-    drawSheep(g, Math.round(W * 0.72), shelfTop(Math.round(W * 0.72)) + 4, ewe(1), { graze: true });
-    drawSheep(g, Math.round(W * 0.82), shelfTop(Math.round(W * 0.82)) + 9, ewe(2), { graze: true, flip: true });
-    drawSheep(g, Math.round(W * 0.9), shelfTop(Math.round(W * 0.9)) + 3, ewe(3), { graze: true });
+    drawSheep(g, Math.round(W * 0.9), shelfTop(Math.round(W * 0.9)) + 4, ewe(1), { graze: true });
+    drawSheep(g, Math.round(W * 0.97), shelfTop(Math.round(W * 0.97)) + 9, ewe(2), { graze: true, flip: true });
   }
 
   /*
@@ -283,19 +308,69 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
      * and put back after.
      */
     const wasCollie = KIT.collie;
+    const beat = creditsBeat(time);
+
     /*
-     * Both of them standing rather than curled. The curled sprite is lovely
-     * in the room at the fire, but out here at this size it is a dark oval —
-     * a dog reads from her legs, her head and her tail, and she needs to be
-     * on her feet to have them.
+     * The two of them nose to nose — which no single run can show you, since
+     * a game only ever has one dog. They face each other by default, and both
+     * turn to face the fox when he puts his head over the lip.
+     *
+     * The wag is intermittent: a dog greeting another dog wags in bursts, and
+     * a tail going without pause reads as clockwork. It stops while they are
+     * barking, because nothing wags at a fox.
      */
+    /*
+     * The pair of them sit together on the right of the couple rather than
+     * one either side: nose to nose only reads if there is nothing between
+     * the noses, and with the two humans in the middle they were just two
+     * dogs at opposite ends of the ledge.
+     */
+    const sx = gx0 + Math.round(u * 1.25);
+    const cxd = sx + 22; // a sprite's width apart, so their muzzles nearly touch
+    const foxX = Math.round(FOX_X_FRAC * W);
+    const foxSide: 1 | -1 = foxX > (sx + cxd) / 2 ? 1 : -1;
+    /*
+     * They take turns. Wagging in step the two of them looked mechanical —
+     * one animal drawn twice — so each has its own half of the cycle with a
+     * pause between, which is how two dogs pleased with each other actually
+     * do it. Neither wags at a fox.
+     */
+    const phase = Math.sin(time / 2400);
+    const sheltieWag = !beat.barking && phase > 0.3;
+    const collieWag = !beat.barking && phase < -0.3;
+    const lift = beat.barking ? (Math.sin(time / 90) > 0 ? 1 : 0) : 0;
+
     setSpriteState({ kit: { collie: false } });
-    const sx = gx0 - Math.round(u * 2.0);
-    drawDog(g, sx, nearY(sx) - 12, 0, 0, 1, true); // the sheltie, tail going
+    drawDog(g, sx, nearY(sx) - 12 - lift, 0, 0, beat.barking ? foxSide : 1, sheltieWag);
     setSpriteState({ kit: { collie: true } });
-    const cxd = gx0 + Math.round(u * 1.55);
-    drawDog(g, cxd, nearY(cxd) - 12, 0, 0, -1, false); // the collie, watching the light
+    drawDog(g, cxd, nearY(cxd) - 12 - lift, 0, 0, beat.barking ? foxSide : -1, collieWag);
     setSpriteState({ kit: { collie: wasCollie } });
+
+    /*
+     * The fox, up over the edge on the far side of them. Only his head and
+     * shoulders clear the lip — the rest of him is below it, which is what
+     * makes it a fox looking in rather than a fox standing about.
+     */
+    if (beat.foxIn > 0 || beat.foxOut > 0) {
+      const fxx = Math.round(FOX_X_FRAC * W);
+      const lip = nearY(fxx);
+      const up = beat.foxOut > 0 ? 1 - beat.foxOut : beat.foxIn;
+      // only his head and the top of his back clear the lip. Raised far
+      // enough to show all of him he was not looking over an edge, he was
+      // standing on the ledge beside the dogs
+      const peek = Math.round(up * 7);
+      if (peek > 1) {
+        // clipped to the lip: draw him, then paint the near ground back over
+        // everything below the edge so he is genuinely behind it
+        drawFox(g, fxx, lip - peek, beat.foxOut > 0 ? time / 90 : 0, -1);
+        for (let x = fxx - 4; x < fxx + 34; x++) {
+          const y = nearY(x);
+          g.px(x, y, 1, H - y, "#2a2114");
+          g.px(x, y, 1, 2, "#e0a04c");
+          g.px(x, y + 2, 1, 2, "#5a421f");
+        }
+      }
+    }
 
     drawGroup(g, gx0, gy, u, time);
   }
@@ -408,17 +483,43 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
     g.px(px0 + 2, shoulderY + Math.round(hh * 0.1), pw - 4, 1, "#565c68"); // the fall of the fur
     g.px(px0 - 1, shoulderY + 2, 2, Math.round(hh * 0.3), "#6a707e"); // the brush down his back
     g.px(px0 - 1, shoulderY + Math.round(hh * 0.3), 2, 3, "#e8ecf2"); // its white tip
-    // and the head of it, pushed back off his own as a hood
-    g.px(px0 + 1, shoulderY - Math.round(hh * 0.1), 5, Math.round(hh * 0.1), "#5e646f");
-    g.px(px0 + 1, shoulderY - Math.round(hh * 0.13), 2, 3, "#5e646f"); // its ears
-    g.px(px0 + 4, shoulderY - Math.round(hh * 0.13), 2, 3, "#5e646f");
-
-    // his head, hair and bunnet
+    /*
+     * The head of the wolf, pushed back off his own as a hood.
+     *
+     * It was three flat blocks the same grey as the skin and read as part of
+     * his collar — no ears at all. The ears have to break the outline against
+     * the sky to be ears, so they stand proud of the hood with a dark inner
+     * fold, and the muzzle lies forward over his shoulder.
+     */
+    // his head and hair
     const headR = Math.max(3, Math.round(hh * 0.15));
     const headCy = shoulderY - headR;
     disc(g, manX, headCy, headR, "#8a6b4c");
     g.px(manX - headR, headCy - headR, headR * 2, Math.max(2, Math.round(headR * 0.9)), "#2f3327"); // bunnet
-    g.px(manX - headR + 1, headCy - headR - 1, headR * 2 - 2, 1, "#3a3f31");
+
+    /*
+     * The wolf's head, worn as a hood — which is how the game describes the
+     * pelt and the only way the ears mean anything. Sat on his shoulder it
+     * read as a wolf looking over it rather than something he was wearing.
+     * It comes down over the crown of his own head, the ears stand up clear
+     * of his outline, and the muzzle lies forward above his brow.
+     */
+    const hoodW = headR * 2 + 3;
+    const hoodX = manX - Math.round(hoodW / 2);
+    const hoodY = headCy - headR - 2;
+    const hoodH = headR + 2;
+    g.px(hoodX, hoodY, hoodW, hoodH, "#5e646f");
+    g.px(hoodX + 1, hoodY, hoodW - 2, 1, "#9aa2b0"); // the sun over the crown
+    g.px(hoodX, hoodY + hoodH - 1, hoodW, 1, "#4a505c"); // where it sits on his brow
+    g.px(hoodX + hoodW - 2, hoodY + 2, 3, Math.max(2, hoodH - 2), "#5e646f"); // the muzzle, forward
+    g.px(hoodX + hoodW, hoodY + 3, 1, 1, "#22252f"); // its nose
+    // the ears, standing clear above him
+    for (const ex of [hoodX + 1, hoodX + hoodW - 4]) {
+      g.px(ex, hoodY - 4, 3, 5, "#4a505c");
+      g.px(ex + 1, hoodY - 3, 1, 3, "#22252f"); // the dark inside them
+      g.px(ex, hoodY - 4, 2, 1, "#b6bec9"); // and the sun on the tips
+    }
+
     g.px(manX + headR - 1, headCy - headR + 2, 1, headR * 2 - 2, rim); // sun down his right
     g.px(manX + Math.round(shoulderW / 2) - 1, shoulderY + 2, 1, torsoH - 2, rim);
   }

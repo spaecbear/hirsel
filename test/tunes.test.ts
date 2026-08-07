@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DORIAN_D, HARP_FIGURES, HIRSEL_AIR, MIXOLYDIAN_D, TOD_JIG, sequence } from "../src/audio/tunes";
+import { DORIAN_D, HARP_FIGURES, HIRSEL_AIR, LONG_ROAD_HOME, MIXOLYDIAN_D, TOD_JIG, sequence } from "../src/audio/tunes";
 
 const inMode = (scale: number[]) => new Set(scale.map((n) => n % 12));
 
 describe("the tunes", () => {
-  it.each([HIRSEL_AIR, TOD_JIG])("$name fills every bar exactly", (tune) => {
+  it.each([HIRSEL_AIR, TOD_JIG, LONG_ROAD_HOME])("$name fills every bar exactly", (tune) => {
     // a mistyped duration would quietly put the tune out of time
     for (const [name, part] of Object.entries(tune.parts)) {
       part.bars.forEach((bar, i) => {
@@ -18,6 +18,7 @@ describe("the tunes", () => {
   it.each([
     [HIRSEL_AIR, DORIAN_D],
     [TOD_JIG, MIXOLYDIAN_D],
+    [LONG_ROAD_HOME, DORIAN_D],
   ])("$0.name stays in its mode", (tune, scale) => {
     const classes = inMode(scale as number[]);
     for (const part of Object.values((tune as typeof HIRSEL_AIR).parts)) {

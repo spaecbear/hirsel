@@ -14,14 +14,14 @@ import { DIFFICULTY } from "./sim/config";
 import { Animator } from "./render/animator";
 import { Screen } from "./render/screen";
 import { GLEN_ART } from "./render/art/glen";
-import { drawCredits } from "./render/art/credits";
+import { creditsBeat, drawCredits } from "./render/art/credits";
 import { HIRSEL_ART } from "./render/art/hirsel";
 import type { ArtPack } from "./render/art/types";
 
 import { AudioEngine } from "./audio/engine";
 import { Score } from "./audio/score";
 import { Rain } from "./audio/rain";
-import { HIRSEL_AIR, TOD_JIG } from "./audio/tunes";
+import { HIRSEL_AIR, LONG_ROAD_HOME, TOD_JIG } from "./audio/tunes";
 import { Sfx } from "./audio/sfx";
 
 import { View } from "./ui/view";
@@ -316,6 +316,8 @@ function showCredits() {
   scroll.style.animation = "";
   world.close(); // nothing else on screen while it rolls
   rolling = true;
+  // its own air: the only tune in the game that resolves
+  score.setTune(LONG_ROAD_HOME);
   document.body.classList.add("rolling");
   $("credits").classList.add("on");
   // when the roll runs out, go back to the menu rather than dropping the
@@ -326,6 +328,7 @@ function showCredits() {
 /** the credits end at the menu, not back on a finished hill */
 function closeCredits() {
   rolling = false;
+  score.setTune(settings.inverse ? TOD_JIG : HIRSEL_AIR);
   $("credits").classList.remove("on");
   document.body.classList.remove("rolling");
   $("over").classList.remove("on");
@@ -434,6 +437,8 @@ animator.onIdle = () => {
 let endShown = false;
 /** the credits are rolling, and the canvas is showing the last picture */
 let rolling = false;
+/** the previous frame's clock, so the credits beat can spot the moment it turns */
+let lastFrame = 0;
 function showEnd() {
   const o = game.state.over;
   if (!o || endShown) return;
@@ -576,6 +581,9 @@ function frame(now: number) {
   screen.painter.cx.save();
   if (rolling) {
     // the last picture, behind the roll: the glen has nothing left to say
+    const beat = creditsBeat(now, Math.max(1, now - lastFrame));
+    lastFrame = now;
+    if (beat.barkStarts) sfx.play("bark");
     drawCredits(screen.painter, screen.W, screen.H, now);
     screen.painter.cx.restore();
     requestAnimationFrame(frame);

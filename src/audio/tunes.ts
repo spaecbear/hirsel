@@ -201,3 +201,76 @@ export function sequence(tune: Tune): { events: Event[]; roots: number[]; beats:
   }
   return { events, roots, beats: bar * tune.beatsPerBar };
 }
+
+/* ------------------------------------------------------------------ *
+ * "The Long Road Home" — the credits, for a player who found everything.
+ *
+ * The Hirsel is an air that falls and then climbs back; this is the one that
+ * arrives. It stays in D Dorian so it is plainly the same glen, but it is a
+ * slow waltz rather than a four — three beats is the time signature of every
+ * Scottish farewell tune worth the name — and where the air ends on a breath,
+ * this ends on the tonic, held, with nothing after it.
+ *
+ * The shape is deliberate: A states it, A2 answers a step higher, B lifts to
+ * the top of the range and then lets go, and C walks all the way down to a D
+ * that lasts a whole bar. It is the only tune in the game that resolves.
+ * ------------------------------------------------------------------ */
+
+const E5 = 76;
+const F5 = 77;
+const B4 = 71;
+
+/** A — the statement, opening on the fifth the way the air does */
+const HOME_A: Part = {
+  roots: [D_, D_, C_, D_],
+  bars: [
+    [{ n: A4, d: 1 }, { n: D5, d: 1 }, { n: C5, d: 1 }],
+    [{ n: A4, d: 1.5 }, { n: G4, d: 0.5 }, { n: F4, d: 1 }],
+    [{ n: G4, d: 1 }, { n: E4, d: 1 }, { n: G4, d: 1 }],
+    [{ n: D4, d: 2 }, { n: null, d: 1 }],
+  ],
+};
+
+/** A2 — the same answered a step higher, and left open */
+const HOME_A2: Part = {
+  roots: [D_, D_, C_, D_],
+  bars: [
+    [{ n: A4, d: 1 }, { n: D5, d: 1 }, { n: E5, d: 1 }],
+    [{ n: D5, d: 1.5 }, { n: C5, d: 0.5 }, { n: A4, d: 1 }],
+    [{ n: G4, d: 1 }, { n: A4, d: 1 }, { n: C5, d: 1 }],
+    [{ n: D5, d: 2 }, { n: null, d: 1 }],
+  ],
+};
+
+/** B — the lift, up to the top of the range, and letting go of it */
+const HOME_B: Part = {
+  roots: [C_, C_, D_, D_],
+  bars: [
+    [{ n: C5, d: 1 }, { n: D5, d: 1 }, { n: E5, d: 1 }],
+    [{ n: F5, d: 2 }, { n: E5, d: 1 }],
+    [{ n: D5, d: 1 }, { n: C5, d: 1 }, { n: B4, d: 1 }],
+    [{ n: A4, d: 2 }, { n: null, d: 1 }],
+  ],
+};
+
+/** C — the walk down, and home. The held D is the end of the game. */
+const HOME_C: Part = {
+  roots: [D_, C_, D_, D_],
+  bars: [
+    [{ n: A4, d: 1 }, { n: G4, d: 1 }, { n: F4, d: 1 }],
+    [{ n: E4, d: 1 }, { n: D4, d: 1 }, { n: F4, d: 1 }],
+    [{ n: G4, d: 1 }, { n: A4, d: 1 }, { n: C5, d: 1 }],
+    [{ n: D4, d: 3 }],
+  ],
+};
+
+export const LONG_ROAD_HOME: Tune = {
+  name: "The Long Road Home",
+  bpm: 54, // slower than the air, which is already slow
+  beatsPerBar: 3,
+  parts: { A: HOME_A, A2: HOME_A2, B: HOME_B, C: HOME_C },
+  form: ["A", "A2", "B", "C"],
+  harp: HARP_FIGURES,
+  harpStep: 1, // one note of the chord to a beat, so the waltz can be heard
+  pulse: [0], // the downbeat only: a waltz, not a march
+};
