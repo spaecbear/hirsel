@@ -256,6 +256,19 @@ that midpoint lands back on itself**. The profile eye sat there at first and he 
 identical turned either way. Verified by rendering the sprite offscreen and reading the eye
 pixel's x, not by eye.
 
+### The inn
+
+The one room in the game with other people in it: the landlord behind the bar and the lass
+with her tray — the one the croft is quietly being built for, drawn to be recognised, since
+by the sixth pint the writing assumes you know who is being talked about.
+
+Everyone in there is sized from the room rather than drawn at a fixed size, because the canvas
+has no fixed resolution. Two things learned building it: a figure is **mostly leg with a small
+head** (roughly 18/42/40, and never more than a third as wide as it is tall) — blocked out at
+half its height wide it reads as furniture, not a person. And the two at the near side are
+drawn taller than the landlord: at the same height their heads sat against the dark bar front
+where nothing could be made out.
+
 ### Design invariants
 
 Things that are easy to break by accident:

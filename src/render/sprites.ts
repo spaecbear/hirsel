@@ -303,9 +303,18 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
     // storm lantern in the free hand, burning brighter the darker it gets
     const lx = -7;
     const ly = 12;
-    const glow = 0.35 + NIGHT * 0.55;
-    al(lx - 5, ly - 5, 14, 15, 240, 190, 90, 0.05 + NIGHT * 0.26);
-    al(lx - 2, ly - 2, 8, 9, 240, 200, 110, 0.08 + NIGHT * 0.34);
+    /*
+     * It has to read as the thing you paid £44 for. The window of a built-up
+     * hearth throws real light across the croft at night and this was a faint
+     * smudge beside it — so the pool it casts now grows with the dark, in
+     * three falling-off steps rather than one flat wash.
+     */
+    const glow = 0.45 + NIGHT * 0.55;
+    al(lx - 13, ly - 12, 30, 30, 240, 186, 88, 0.04 + NIGHT * 0.2);
+    al(lx - 8, ly - 7, 20, 21, 244, 196, 100, 0.07 + NIGHT * 0.3);
+    al(lx - 4, ly - 3, 12, 13, 250, 208, 118, 0.1 + NIGHT * 0.4);
+    // and it throws a pool on the ground he is standing on
+    al(lx - 10, ly + 12, 26, 3, 240, 190, 90, 0.05 + NIGHT * 0.3);
     px(lx + 1, ly - 4, 2, 3, "#6d7263"); // bail
     px(lx, ly - 1, 5, 6, "#8a8f88"); // body
     al(lx + 1, ly, 3, 4, 255, 214, 120, glow); // the flame
@@ -329,7 +338,16 @@ export function drawDog(g: Painter, x: number, y: number, run: number) {
   g.px(x + 11, y + 7, 2, 4, "#f2eee2");
   g.px(x + 1, y + 2, 13, 6, "#2a2320");
   g.px(x + 1, y + 6, 13, 2, "#b07a3e");
-  g.px(x + 1, y + 1, 5, 4, "#f2eee2"); // ruff
+  /*
+   * The mane. A rough collie's chest is the thing you actually recognise her
+   * by — a white bib standing out well past the line of her shoulder — and
+   * she had a four-pixel smudge where it should be.
+   */
+  g.px(x + 11, y, 5, 4, "#f2eee2"); // the bib, up under her chin
+  g.px(x + 10, y + 2, 6, 5, "#f2eee2");
+  g.px(x + 12, y + 6, 4, 3, "#e2ded2"); // where it falls between her legs
+  g.px(x + 10, y + 1, 1, 6, "#d8d4c8"); // the shaded edge of it
+  g.px(x + 2, y + 1, 3, 2, "#f2eee2"); // and a little white at her shoulder
   g.px(x + 13, y - 1, 6, 7, "#2a2320");
   g.px(x + 15, y + 3, 5, 3, "#b07a3e");
   g.px(x + 16, y, 2, 4, "#f2eee2"); // blaze

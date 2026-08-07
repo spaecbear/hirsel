@@ -492,14 +492,33 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       }
       break;
     }
-    case "tend":
-      drawShepherd(g, sx, sy + 4, { arm: 4 });
-      g.px(sx + 12, sy + 17, 5, 3, "#c9a583");
-      for (let i = 0; i < 6; i++) {
-        const t = (p * 1.6 + i / 6) % 1;
-        g.a(sx + 4 + i * 6, sy + 10 - t * 22, 2, 2, 125, 154, 85, 0.7 * (1 - t));
+    case "tend": {
+      /*
+       * One of them comes over and he goes down on his knees to her: feet,
+       * fleece, eyes. It used to be him waving an arm at the middle distance,
+       * which is a poor picture of the most careful thing you do all day.
+       */
+      const come = ease(clamp01(p / 0.32)); // she walks up
+      const kneel = ease(clamp01((p - 0.2) / 0.2)); // he goes down to her
+      const rise = ease(clamp01((p - 0.86) / 0.14)); // and back up at the end
+      const down = Math.round((kneel - rise) * 9);
+      const ewe = st.flock[0] ?? { id: -1, fleece: 6, breed: "blackface" as const, age: 0 };
+      const ex = sx + 26 - come * 16;
+
+      drawShepherd(g, sx, sy + down, { facing: 1, arm: 6 - down });
+      // his hand out on her, checking her over
+      const hand = Math.sin(p * Math.PI * 7) > 0 ? 0 : 1;
+      g.px(sx + 15, sy + down + 12 + hand, 4, 3, "#c9a583");
+      drawSheep(g, ex, L.shepherd.y + 12, ewe, { graze: false, flip: true, run: come < 1 ? p : 0 });
+      // she is standing still for it once she is there
+      if (come >= 1) {
+        for (let i = 0; i < 4; i++) {
+          const t = (p * 1.4 + i / 4) % 1;
+          g.a(ex + 4 + i * 4, L.shepherd.y + 6 - t * 16, 2, 2, 125, 154, 85, 0.55 * (1 - t));
+        }
       }
       break;
+    }
     case "pipe": {
       drawShepherd(g, sx, sy, {});
       g.px(sx + 10, sy + 5, 4, 2, "#6b5433");
@@ -689,45 +708,229 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
   }
 }
 
-/** the pub leaves the glen entirely — that is what makes £8 feel like an event */
+/**
+ * The inn.
+ *
+ * The pub leaves the glen entirely, which is what makes an £8 pint feel like
+ * an event rather than a line item. It is also the only room in the game with
+ * other people in it: the landlord behind the bar, and the lass carrying a
+ * tray — the one the croft is quietly being built for. She is drawn to be
+ * recognised, since by the sixth pint the writing assumes you know exactly
+ * who is being talked about.
+ *
+ * Everybody in here is drawn to a height derived from the room rather than a
+ * fixed sprite. The canvas has no fixed resolution, and a figure sized for a
+ * desktop's short interior stood chest-deep in the floor on a phone.
+ */
+function drawBackFigure(
+  g: Painter,
+  cx: number,
+  headTop: number,
+  footY: number,
+  o: { coat: string; coatLit: string; hair: string; hat?: string; skirt?: string; apron?: string; step?: number },
+) {
+  /*
+   * Proportioned rather than blocked out. The first version was three solid
+   * rectangles at nearly half its own height wide, which at this scale read
+   * as a wardrobe standing at the bar. A person is mostly leg and the head
+   * is small: roughly 18% head, 42% body, 40% leg, and never more than about
+   * a third as wide as they are tall.
+   */
+  const h = Math.max(20, footY - headTop);
+  const headH = Math.round(h * 0.18);
+  const bodyH = Math.round(h * 0.42);
+  const legH = h - headH - bodyH;
+  const headW = Math.max(4, Math.round(h * 0.2));
+  const bodyW = Math.max(6, Math.round(h * 0.3));
+  const legW = Math.max(2, Math.round(h * 0.1));
+  const bodyX = Math.round(cx - bodyW / 2);
+  const headX = Math.round(cx - headW / 2);
+  const step = o.step ?? 0;
+
+  // legs, or a skirt to the floor
+  if (o.skirt) {
+    g.px(bodyX, headTop + headH + bodyH, bodyW, legH, o.skirt);
+    g.px(bodyX - 1, footY - Math.round(legH * 0.25), bodyW + 2, Math.round(legH * 0.25), o.skirt);
+  } else {
+    g.px(bodyX + 1, headTop + headH + bodyH, legW, legH, "#3a3226");
+    g.px(bodyX + bodyW - legW - 1, headTop + headH + bodyH - step, legW, legH, "#3a3226");
+  }
+  // body
+  g.px(bodyX, headTop + headH, bodyW, bodyH, o.coat);
+  g.px(bodyX, headTop + headH, bodyW, Math.max(1, Math.round(h * 0.04)), o.coatLit); // shoulders
+  if (o.apron) g.px(bodyX + 1, headTop + headH + Math.round(bodyH * 0.45), bodyW - 2, Math.round(bodyH * 0.55), o.apron);
+  // head
+  g.px(headX, headTop, headW, headH, o.hair);
+  if (o.hat) g.px(headX - 1, headTop - 1, headW + 2, Math.max(2, Math.round(headH * 0.55)), o.hat);
+  return { bodyX, bodyW, headX, headW, headH, bodyH };
+}
+
 function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
-  const inRoom = clamp01(p < 0.15 ? p / 0.15 : p > 0.85 ? (1 - p) / 0.15 : 1);
+  const inRoom = clamp01(p < 0.12 ? p / 0.12 : p > 0.88 ? (1 - p) / 0.12 : 1);
   g.a(0, 0, L.W, L.H, 20, 23, 15, inRoom);
   if (inRoom < 0.92) return;
 
-  g.px(0, 0, L.W, L.H, "#2a2018");
-  for (let x = 0; x < L.W; x += 28) g.px(x, 0, 3, L.H, "#221a13");
-  for (let y = 0; y < L.H; y += 34) g.a(0, y, L.W, 1, 0, 0, 0, 0.16);
+  const W = L.W;
+  const H = L.H;
+  const flick = Math.sin(time / 130) * 2;
 
-  const fy = Math.round(L.H * 0.4);
-  g.px(6, fy, 54, 56, "#3a2c1e"); // hearth
-  g.px(12, fy + 8, 42, 8, "#241a12");
-  const flick = Math.sin(time / 130) * 3;
-  g.px(16, fy + 26, 34, 28, "#c07a24");
-  g.px(22, fy + 32 + flick, 22, 20, C.fire);
-  g.px(28, fy + 38 + flick, 12, 12, "#f0c86a");
-  g.a(0, fy - 8, 70, 70, 240, 180, 80, 0.12 + Math.sin(time / 200) * 0.03);
-
-  const by = Math.round(L.H * 0.52);
-  g.px(Math.round(L.W * 0.38), by, Math.round(L.W * 0.6), 10, "#4a3826"); // bar
-  g.px(Math.round(L.W * 0.38), by, Math.round(L.W * 0.6), 2, "#5f4a32");
-  g.px(Math.round(L.W * 0.38), by + 10, Math.round(L.W * 0.6), Math.max(10, L.H - by - 10), "#33261a");
-
-  const mx = Math.round(L.W * 0.5);
-  g.px(mx, by - 34, 16, 36, "#4a5540"); // him at the bar, back to us
-  g.px(mx + 2, by - 42, 12, 8, "#2f3327");
-  g.px(mx + 16, by - 22, 5, 12, "#c9a583");
-
-  const fill = clamp01((p - 0.3) / 0.4); // the pint
-  g.px(mx + 24, by - 26, 16, 26, "#9aa3a5");
-  g.px(mx + 26, by - 4 - fill * 22, 12, fill * 22, "#c98a2e");
-  if (fill > 0.9) {
-    g.px(mx + 26, by - 26, 12, 5, "#f2eddb");
-    g.px(mx + 28, by - 28, 8, 3, "#f2eddb");
+  /* ---- the room ---- */
+  g.px(0, 0, W, H, "#2f2418");
+  for (let y = 0; y < H; y += 3) {
+    const lit = 1 - Math.min(1, y / (H * 0.8));
+    g.a(0, y, W, 1, 90, 66, 40, 0.08 + lit * 0.12);
   }
-  for (let i = 0; i < 5; i++) {
-    const t = (p * 1.3 + i / 5) % 1;
-    g.a(L.W * 0.75 + i * 8, by - 12 - t * 30, 3, 3, 224, 163, 60, 0.4 * (1 - t));
+  for (let x = 0; x < W; x += 22) g.px(x, 0, 2, H, "#241b12");
+  g.px(0, 0, W, 5, "#241b12"); // a low beamed ceiling
+  for (let x = 6; x < W; x += 34) g.px(x, 0, 5, 7, "#3a2c1e");
+
+  // the counter sits low in the frame, so there is room to stand at it
+  const barY = Math.round(H * 0.62);
+  const floorY = Math.round(H * 0.82);
+  const barX = Math.round(W * 0.26);
+  const barW = W - barX;
+
+  g.px(0, floorY, W, H - floorY, "#4a3826"); // flagstones
+  for (let x = 0; x < W; x += 13) {
+    for (let y = floorY; y < H; y += 7) {
+      if (((x / 13 + y / 7) | 0) % 2) g.a(x, y, 12, 6, 0, 0, 0, 0.12);
+    }
+  }
+  g.px(0, floorY, W, 1, "#5b4a30");
+
+  /* ---- the hearth: wide and low, a fire you could dry a coat at ---- */
+  const fw = Math.max(44, Math.round(W * 0.22));
+  const fx = Math.round(W * 0.02);
+  const fy = floorY - Math.max(26, Math.round(H * 0.19)); // wide and low, not a slot
+  g.px(fx - 4, fy - 6, fw + 8, 6, "#6d7263"); // the mantel, with a lamp on it
+  g.px(fx - 4, fy - 6, fw + 8, 2, "#8a8f88");
+  g.px(fx + fw - 14, fy - 11, 5, 5, "#8a8f88");
+  g.a(fx + fw - 13, fy - 10, 3, 3, 255, 214, 120, 0.7);
+  g.px(fx, fy, fw, floorY - fy, "#3a2c1e"); // the surround
+  // an arched opening
+  for (let i = 0; i < 4; i++) g.px(fx + 4 + i * 2, fy + 4 - i, fw - 8 - i * 4, 3, "#1d1610");
+  g.px(fx + 4, fy + 6, fw - 8, floorY - fy - 6, "#1d1610");
+  const fireH = Math.max(9, Math.round((floorY - fy) * 0.62));
+  g.px(fx + 7, floorY - 4, fw - 14, 4, "#4a3a2a"); // logs in the grate
+  g.px(fx + 10, floorY - 6, fw - 20, 3, "#3a2c20");
+  g.px(fx + 8, floorY - fireH, fw - 16, fireH - 3, "#c07a24");
+  g.px(fx + 12, floorY - fireH + 3 + flick, fw - 24, fireH - 7, C.fire);
+  g.px(fx + 17, floorY - fireH + 6 + flick, fw - 34, fireH - 10, "#f6d98a");
+  g.a(fx - 14, fy - 14, fw + 34, floorY - fy + 30, 240, 176, 80, 0.13 + Math.sin(time / 200) * 0.025);
+
+  /* ---- the back-bar ---- */
+  const shelfY = Math.round(H * 0.14);
+  g.px(barX + 6, shelfY + 13, barW - 12, 2, "#4a3826");
+  g.px(barX + 6, shelfY + 29, barW - 12, 2, "#4a3826");
+  for (let i = 0; i < Math.floor((barW - 20) / 7); i++) {
+    const bx = barX + 10 + i * 7;
+    const tall = hash(i * 3) > 0.5;
+    const col = ["#3d5a4a", "#5a4a2c", "#6a3a2c", "#4a4a5a"][Math.floor(hash(i * 5) * 4)];
+    g.px(bx, shelfY + (tall ? 3 : 5), 4, tall ? 10 : 8, col);
+    g.px(bx + 1, shelfY + (tall ? 1 : 3), 2, 2, col);
+    if (hash(i * 7) > 0.7) g.px(bx, shelfY + 21, 4, 8, col);
+  }
+  const caskX = barX + Math.round(barW * 0.6);
+  g.px(caskX, shelfY + 33, 22, 13, "#6b5433");
+  g.px(caskX, shelfY + 35, 22, 2, "#4a3a24");
+  g.px(caskX, shelfY + 42, 22, 2, "#4a3a24");
+  g.px(caskX + 20, shelfY + 39, 3, 3, "#c9a83c"); // its tap
+
+  /* ---- the landlord, behind the bar, cut off at the counter ---- */
+  // small enough to belong to the room rather than fill it. The two on the
+  // near side are taller: they stand in front of the counter, and at the same
+  // height as the landlord their heads sat against the dark bar front where
+  // nothing could be made out.
+  const figH = Math.max(24, Math.min(46, Math.round(H * 0.2)));
+  const nearH = Math.round(figH * 1.4);
+  const lx = barX + Math.round(barW * 0.13);
+  const lTop = barY + 8 - figH;
+  const lm = drawBackFigure(g, lx, lTop, barY + 8, {
+    coat: "#6a5a44",
+    coatLit: "#7b6a52",
+    hair: "#4a4038",
+    apron: "#d8d3c2",
+  });
+  // he is facing the room, so his face goes over the head block
+  g.px(lm.headX, lTop + 1, lm.headW, lm.headH - 1, "#c9a583");
+  g.px(lm.headX, lTop, lm.headW, 2, "#4a4038"); // hair
+  g.px(lm.headX + 1, lTop + 3, 1, 1, "#26201a");
+  g.px(lm.headX + lm.headW - 2, lTop + 3, 1, 1, "#26201a");
+  g.px(lm.headX + 1, lTop + 5, lm.headW - 2, 1, "#6a5040"); // a moustache
+  const polish = Math.sin(time / 260) > 0 ? 0 : 1;
+  g.px(lm.bodyX + lm.bodyW, barY - 12 + polish, 4, 6, "#9aa3a5"); // the glass he is drying
+  g.a(lm.bodyX + lm.bodyW, barY - 12 + polish, 4, 2, 240, 240, 230, 0.4);
+
+  /* ---- the bar itself, drawn over him ---- */
+  g.px(barX, barY + 6, barW, floorY - barY - 6, "#33261a");
+  for (let x = barX; x < W; x += 11) g.px(x, barY + 10, 9, floorY - barY - 14, "#3b2d1f");
+  g.px(barX, barY, barW, 6, "#5b4530");
+  g.px(barX, barY, barW, 2, "#7a6242");
+
+  /* ---- him, at the near side of it, back to us ---- */
+  const mx = Math.round(W * 0.52); // clear of the landlord behind the bar
+  const mm = drawBackFigure(g, mx, floorY - 1 - nearH, floorY - 1, {
+    coat: "#4a5540",
+    coatLit: "#5a6650",
+    hair: "#8a6b4c",
+    hat: "#2f3327",
+  });
+  g.px(mm.bodyX + mm.bodyW, barY - 5, 4, 3, "#c9a583"); // a hand up on the counter
+
+  const fill = clamp01((p - 0.28) / 0.36);
+  const gx0 = mm.bodyX + mm.bodyW + 6;
+  g.px(gx0, barY - 14, 11, 14, "#9aa3a5");
+  g.a(gx0, barY - 14, 11, 14, 255, 255, 255, 0.12);
+  g.px(gx0 + 1, barY - 2 - fill * 12, 9, fill * 12, "#c98a2e");
+  if (fill > 0.85) {
+    g.px(gx0 + 1, barY - 14, 9, 3, "#f2eddb");
+    g.px(gx0 + 3, barY - 16, 5, 2, "#f2eddb");
+  }
+
+  /* ---- the lass, come over with a tray ---- */
+  const walk = clamp01((p - 0.18) / 0.32);
+  const gxs = Math.round(W * 0.86 - walk * (W * 0.19));
+  const gTop = floorY - 1 - nearH;
+  const gm = drawBackFigure(g, gxs, gTop, floorY - 1, {
+    coat: "#e8e3d2", // her blouse
+    coatLit: "#f2eee0",
+    hair: "#7a3a24",
+    skirt: "#3d5a4a",
+    apron: "#c9c3ae",
+  });
+  // she is facing him, so she gets a face and hair down past her shoulders
+  g.px(gm.headX, gTop + 1, gm.headW, gm.headH - 1, "#c9a583");
+  g.px(gm.headX, gTop, gm.headW, 2, "#7a3a24");
+  g.px(gm.headX - 1, gTop + 1, 1, gm.headH + 2, "#7a3a24");
+  g.px(gm.headX + gm.headW, gTop + 1, 1, gm.headH + 2, "#7a3a24");
+  g.px(gm.headX + 1, gTop + 3, 1, 1, "#26201a");
+  g.px(gm.headX + gm.headW - 2, gTop + 3, 1, 1, "#26201a");
+  g.px(gm.headX + 1, gTop + 5, gm.headW - 2, 1, "#a8674f"); // smiling at something he said
+  // the tray she is carrying, on the side nearest him
+  const trayY = gTop + gm.headH + Math.round(gm.bodyH * 0.5);
+  g.px(gm.bodyX - 8, trayY, 8, 2, "#6b5433");
+  g.px(gm.bodyX - 7, trayY - 4, 3, 4, "#9aa3a5");
+  g.px(gm.bodyX - 3, trayY - 3, 2, 3, "#c98a2e");
+  g.px(gm.bodyX - 2, trayY + 1, 3, 3, "#c9a583"); // her hand under it
+
+  /* ---- the rest of the room ---- */
+  const tx = Math.round(W * 0.86);
+  g.px(tx, floorY - 14, 18, 3, "#6b5433");
+  g.px(tx + 7, floorY - 11, 4, 11, "#54452c");
+  g.px(tx + 5, floorY - 18, 4, 4, "#9aa3a5");
+
+  for (let i = 0; i < 2; i++) {
+    const hx = Math.round(W * (0.36 + i * 0.34));
+    g.px(hx, 5, 1, 6, "#3a2c1e");
+    g.px(hx - 3, 11, 7, 5, "#8a8f88");
+    g.a(hx - 2, 13, 5, 3, 255, 214, 120, 0.75);
+    g.a(hx - 12, 8, 25, 24, 240, 190, 90, 0.07);
+  }
+
+  g.a(0, 0, W, H, 240, 170, 80, 0.05);
+  for (let i = 0; i < 4; i++) {
+    const t = (p * 1.1 + i / 4) % 1;
+    g.a(W * 0.9 + i * 4, floorY - 22 - t * 24, 3, 3, 224, 163, 60, 0.35 * (1 - t));
   }
 }
 
@@ -831,11 +1034,25 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
     g.px(hx + 12, hy + I.hearth.h - 14 + flick, I.hearth.w - 24, 12, C.fire);
     g.px(hx + 16, hy + I.hearth.h - 9 + flick, I.hearth.w - 32, 7, "#f0c86a");
     g.a(hx - 12, hy - 10, I.hearth.w + 40, I.hearth.h + 30, 240, 180, 80, 0.1 + Math.sin(time / 200) * 0.02);
-    // the sword goes above the fire, exactly as its description says
+    // the sword goes above the fire, exactly as its description says.
+    // A Highland broadsword is a basket hilt: the guard is the whole point
+    // of it, and a plain bar with a gold block on it read as a shelf.
     if (owns(st, "sword")) {
-      g.px(hx + 2, hy - 12, I.hearth.w - 4, 3, "#cdd3d8");
-      g.px(hx + 2, hy - 12, I.hearth.w - 4, 1, "#f0f4f6");
-      g.px(hx + I.hearth.w / 2 - 3, hy - 14, 6, 3, "#8a6a3c");
+      const bl = Math.max(26, I.hearth.w - 6);
+      const bx = hx + 3;
+      const by = hy - 13;
+      g.px(bx, by, bl - 12, 3, "#b9c0c6"); // the blade
+      g.px(bx, by, bl - 12, 1, "#eef2f4"); // light along its edge
+      g.px(bx, by + 1, bl - 12, 1, "#8e979e"); // the fuller down the middle
+      g.px(bx - 3, by, 3, 3, "#9aa3a9"); // the point
+      const gx0 = bx + bl - 12;
+      g.px(gx0, by - 3, 2, 9, "#7a5c30"); // the guard
+      g.px(gx0 + 1, by - 4, 6, 2, "#8a6a3c"); // the basket, over his hand
+      g.px(gx0 + 1, by + 5, 6, 2, "#8a6a3c");
+      g.px(gx0 + 6, by - 3, 2, 9, "#8a6a3c");
+      g.px(gx0 + 2, by, 5, 3, "#3a3226"); // the grip inside it
+      g.px(gx0 + 8, by, 3, 3, "#c9a83c"); // the pommel
+      g.px(bx - 4, by + 4, bl + 14, 1, "#2a2118"); // the pegs it rests on
     }
   } else {
     g.px(hx + 6, hy + I.hearth.h - 8, I.hearth.w - 12, 6, "#1a1610");
@@ -893,14 +1110,92 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
     draw();
     kx += step;
   };
-  if (owns(st, "crook")) put(() => { for (let i = 0; i < 8; i++) g.px(kx + 4, sh.y + 2 + i * 3, 2, 3, "#6b5433"); g.px(kx + 2, sh.y, 5, 2, "#6b5433"); });
-  if (owns(st, "shears")) put(() => { g.px(kx, sh.y + 12, 10, 3, "#b9bcae"); g.px(kx + 1, sh.y + 16, 8, 2, "#6b5433"); });
-  if (owns(st, "boots")) put(() => { g.px(kx, sh.y + 16, 5, 8, "#2a2118"); g.px(kx + 6, sh.y + 16, 5, 8, "#2a2118"); g.px(kx, sh.y + 23, 11, 2, "#6b5a44"); });
-  if (owns(st, "lamp")) put(() => { g.px(kx + 3, sh.y + 6, 2, 3, "#6d7263"); g.px(kx + 1, sh.y + 9, 7, 8, "#8a8f88"); g.a(kx + 2, sh.y + 11, 5, 5, 255, 214, 120, 0.7); });
-  if (owns(st, "oilskin")) put(() => { g.px(kx, sh.y + 4, 11, 18, "#2f3a35"); g.px(kx, sh.y + 4, 11, 2, "#43524a"); g.px(kx + 10, sh.y + 6, 1, 13, "#54655c"); });
-  if (owns(st, "watch")) put(() => { g.px(kx + 2, sh.y + 10, 7, 7, "#c9a83c"); g.px(kx + 4, sh.y + 8, 3, 2, "#e0c34c"); g.px(kx + 5, sh.y + 12, 1, 3, "#3a3226"); });
-  if (owns(st, "saltlick")) put(() => { g.px(kx, sh.y + 14, 10, 6, "#b9b6a4"); g.px(kx, sh.y + 14, 10, 1, "#d8d5c4"); });
-  if (owns(st, "pelt")) put(() => { g.px(kx - 2, sh.y + 4, 16, 12, "#3a3d47"); g.px(kx - 2, sh.y + 4, 16, 2, "#4a4e5a"); g.px(kx + 2, sh.y + 16, 3, 6, "#8f939c"); });
+  /*
+   * Each thing on the wall is drawn to be recognised at a glance, since the
+   * point of the room is seeing what you have bought. They were flat blocks
+   * of one colour before, which needed the label to tell them apart.
+   */
+  if (owns(st, "crook")) {
+    put(() => {
+      for (let i = 0; i < 9; i++) g.px(kx + 5, sh.y + 4 + i * 2, 2, 2, "#6b5433"); // the shaft
+      g.px(kx + 2, sh.y + 1, 5, 2, "#7c6242"); // and the crook of it, turning over
+      g.px(kx + 1, sh.y + 2, 2, 4, "#7c6242");
+      g.px(kx + 3, sh.y + 5, 2, 2, "#6b5433");
+      g.px(kx + 5, sh.y + 21, 2, 2, "#5a4526"); // the worn ferrule
+    });
+  }
+  if (owns(st, "shears")) {
+    put(() => {
+      g.px(kx + 1, sh.y + 8, 9, 2, "#c6cabc"); // one blade
+      g.px(kx + 1, sh.y + 12, 9, 2, "#b9bcae"); // and the other
+      g.px(kx + 9, sh.y + 9, 2, 4, "#8e9186"); // the rivet
+      g.px(kx, sh.y + 7, 2, 8, "#6b5433"); // the bow that springs them
+      g.px(kx - 1, sh.y + 9, 1, 4, "#6b5433");
+    });
+  }
+  if (owns(st, "boots")) {
+    put(() => {
+      for (const bx of [kx, kx + 6]) {
+        g.px(bx, sh.y + 13, 5, 9, "#2a2118"); // the leg
+        g.px(bx, sh.y + 12, 5, 2, "#3a2f22"); // its turned-over top
+        g.px(bx - 1, sh.y + 21, 7, 2, "#4a3a2a"); // the sole
+        g.px(bx - 1, sh.y + 23, 7, 1, "#6b5a44"); // tackets
+      }
+    });
+  }
+  if (owns(st, "lamp")) {
+    put(() => {
+      g.px(kx + 3, sh.y + 2, 2, 3, "#6d7263"); // the bail
+      g.px(kx + 1, sh.y + 4, 7, 2, "#8a8f88"); // the cap
+      g.px(kx + 1, sh.y + 6, 1, 8, "#8a8f88"); // the frame
+      g.px(kx + 7, sh.y + 6, 1, 8, "#8a8f88");
+      g.px(kx + 2, sh.y + 6, 5, 8, "#3a3f3c"); // the glass
+      g.a(kx + 2, sh.y + 8, 5, 5, 255, 214, 120, 0.55); // the wick, turned low
+      g.px(kx + 1, sh.y + 14, 7, 2, "#6d7263"); // the oil font
+    });
+  }
+  if (owns(st, "oilskin")) {
+    put(() => {
+      g.px(kx + 4, sh.y + 2, 3, 2, "#5a5f58"); // the peg
+      g.px(kx + 2, sh.y + 4, 7, 3, "#3a4a42"); // shoulders
+      g.px(kx + 1, sh.y + 7, 9, 13, "#2f3a35"); // the coat hanging
+      g.px(kx + 5, sh.y + 7, 1, 13, "#26302c"); // where it falls open
+      g.px(kx + 9, sh.y + 8, 1, 10, "#54655c"); // wax catching the light
+      g.px(kx + 1, sh.y + 19, 9, 1, "#26302c"); // its hem
+    });
+  }
+  if (owns(st, "watch")) {
+    put(() => {
+      for (let i = 0; i < 5; i++) g.px(kx + 3 + (i % 2), sh.y + 2 + i * 2, 1, 2, "#c9a83c"); // the chain
+      g.px(kx + 2, sh.y + 12, 7, 7, "#c9a83c"); // the case
+      g.px(kx + 3, sh.y + 13, 5, 5, "#e8e3d2"); // its face
+      g.px(kx + 5, sh.y + 14, 1, 3, "#3a3226"); // the hands
+      g.px(kx + 5, sh.y + 16, 2, 1, "#3a3226");
+      g.px(kx + 4, sh.y + 11, 3, 1, "#e0c34c"); // the bow
+    });
+  }
+  if (owns(st, "saltlick")) {
+    put(() => {
+      g.px(kx, sh.y + 13, 11, 7, "#c6c3b2"); // the block
+      g.px(kx, sh.y + 13, 11, 2, "#dedbca"); // lit on top
+      g.px(kx + 2, sh.y + 15, 3, 2, "#b0ad9c"); // licked hollow
+      g.px(kx + 6, sh.y + 16, 2, 2, "#b0ad9c");
+      g.px(kx - 1, sh.y + 20, 13, 2, "#5b4a30"); // the tray it sits in
+    });
+  }
+  if (owns(st, "pelt")) {
+    put(() => {
+      g.px(kx + 1, sh.y + 3, 10, 4, "#3a3d47"); // the head, up on the wall
+      g.px(kx + 1, sh.y + 1, 3, 3, "#3a3d47"); // ears
+      g.px(kx + 8, sh.y + 1, 3, 3, "#3a3d47");
+      g.px(kx + 3, sh.y + 4, 2, 1, "#e8b23c"); // the eyes still in it
+      g.px(kx + 7, sh.y + 4, 2, 1, "#e8b23c");
+      g.px(kx - 1, sh.y + 7, 14, 11, "#3a3d47"); // the skin, spread wide
+      g.px(kx - 1, sh.y + 7, 14, 1, "#4a4e5a");
+      g.px(kx + 4, sh.y + 18, 4, 5, "#4a4e5a"); // the brush hanging down
+      g.px(kx + 5, sh.y + 22, 3, 2, "#8f939c");
+    });
+  }
   // the ring sits on the mantel, not on a peg with the tools
   if (owns(st, "ring")) {
     g.px(hx + I.hearth.w / 2 - 2, hy - 7, 4, 4, "#c9c3ae");
