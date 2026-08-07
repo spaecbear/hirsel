@@ -38,6 +38,7 @@ import {
   drawSaltLick,
   drawSheep,
   drawShepherd,
+  SHEPHERD_H,
   drawWolfBeast,
   drawWoolSacks,
   hash,
@@ -1152,6 +1153,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   // the dog lies in front of the fire, which is where she would be
   if (hasDog(st)) drawDog(g, hx + I.hearth.w + 8, I.floorY - 12, 0);
 
+
   // a window on the back wall: daylight, or the dark and a star
   const win = { x: Math.round(I.W * 0.72), y: Math.round(I.floorY - 78), w: 26, h: 22 };
   if (win.y > 12) {
@@ -1325,6 +1327,17 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
     }
   }
 
+  /*
+   * And the man himself, drawn last so nothing in the room paints over him —
+   * he stood behind the door at first. The room read as empty without him:
+   * you walked into the place you live and there was nobody in it. He stands
+   * on the floor between the table and the bed, turned towards the fire, and
+   * keeps his idle ticks so the room is never quite still.
+   */
+  drawShepherd(g, Math.round(I.W * 0.56), I.floorY - SHEPHERD_H, {
+    facing: -1, // looking across at the hearth
+    tick: idleTick(time) ?? undefined,
+  });
 }
 
 /* ================================================================== *
