@@ -65,6 +65,7 @@ export type ActionId =
   | "market"
   | "tend"
   | "muck"
+  | "build"
   | "pipe"
   | "music"
   | "pub"
@@ -88,6 +89,7 @@ export type AnimId =
   | "market"
   | "tend"
   | "muck"
+  | "build"
   | "pipe"
   | "music"
   | "pub"
@@ -127,6 +129,11 @@ export interface GameState {
    */
   didToday: Partial<Record<ActionId, number>>;
   muckedToday: number[];
+  /**
+   * The croft milestone paid for and now being worked on, and how many days
+   * of work have gone into it. Money buys the materials; the days are yours.
+   */
+  building: { id: CroftId; done: number } | null;
   actsToday: number;
   pubs: number;
   /** the inn is once a night — you cannot drink the day away */

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ACTIONS, Game, newGame } from "../src/sim/game";
-import { BALANCE, OPEN_QUESTIONS, START_MONEY } from "../src/sim/config";
+import { BALANCE, CROFT, OPEN_QUESTIONS, START_MONEY } from "../src/sim/config";
 import { ACHIEVEMENTS } from "../src/sim/achievements";
 import { dogFoxBias, foxRisk, grazing, here, readyToShear, weatherOn } from "../src/sim/rules";
 import type { AnimId, GameState, Sheep } from "../src/sim/types";
@@ -330,20 +330,70 @@ describe("the last wolf", () => {
 });
 
 describe("the croft and the ask", () => {
+  /** pay for it, then put the days in — the croft is built, not bought */
+  function raise(game: Game, id: "roof" | "hearth" | "byre" | "ring") {
+    game.buyCroft(id);
+    const m = CROFT.find((c) => c.id === id)!;
+    for (let i = 0; i < m.work; i++) {
+      game.state.taps = 6;
+      game.doAction("build");
+    }
+  }
+
   it("is strictly sequential", () => {
-    const { game, state } = harness({ money: 2000 });
+    const { game, state } = harness({ money: 2000, taps: 6 });
     game.buyCroft("hearth");
-    expect(state.owned.hearth).toBeUndefined();
-    game.buyCroft("roof");
-    game.buyCroft("hearth");
+    expect(state.building, "the hearth cannot be started before the roof").toBeNull();
+    raise(game, "roof");
+    expect(state.owned.roof).toBe(true);
+    raise(game, "hearth");
     expect(state.owned.hearth).toBe(true);
+  });
+
+  it("pays for materials, then wants the days", () => {
+    const { game, state } = harness({ money: 2000, taps: 6 });
+    const roof = CROFT.find((c) => c.id === "roof")!;
+    const before = state.money;
+
+    game.buyCroft("roof");
+    expect(state.money).toBe(before - roof.cost);
+    expect(state.owned.roof, "paying is not building").toBeUndefined();
+    expect(state.building).toEqual({ id: "roof", done: 0 });
+
+    for (let i = 0; i < roof.work - 1; i++) {
+      state.taps = 6;
+      game.doAction("build");
+      expect(state.owned.roof).toBeUndefined();
+    }
+    state.taps = 6;
+    game.doAction("build");
+    expect(state.owned.roof).toBe(true);
+    expect(state.building).toBeNull();
+  });
+
+  it("spends a tap on every day of it", () => {
+    // the whole point: the road to winning competes with the day's work
+    const { game, state } = harness({ money: 2000, taps: 6 });
+    game.buyCroft("roof");
+    const before = state.taps;
+    game.doAction("build");
+    expect(state.taps).toBe(before - 1);
+  });
+
+  it("will not have two things up at once", () => {
+    const { game, state } = harness({ money: 3000, taps: 6 });
+    game.buyCroft("roof");
+    const money = state.money;
+    game.buyCroft("hearth"); // needs the roof anyway, but also: one at a time
+    expect(state.money).toBe(money);
+    expect(state.building?.id).toBe("roof");
   });
 
   it("needs all four milestones and six pints", () => {
     const ask = ACTIONS.find((a) => a.id === "ask")!;
-    const { game, state } = harness({ money: 3000 });
+    const { game, state } = harness({ money: 3000, taps: 6 });
     expect(ask.can(state)).toBe(false);
-    for (const id of ["roof", "hearth", "byre", "ring"] as const) game.buyCroft(id);
+    for (const id of ["roof", "hearth", "byre", "ring"] as const) raise(game, id);
     expect(ask.can(state)).toBe(false);
     state.pubs = BALANCE.pubsToAsk;
     expect(ask.can(state)).toBe(true);

@@ -11,9 +11,11 @@ export type SfxName =
   | "coins"
   | "fox"
   | "bark"
+  | "build"
   | "pipes"
   | "fiddle"
   | "bark"
+  | "build"
   | "pipe"
   | "pub"
   | "sword"
@@ -131,6 +133,15 @@ export class Sfx {
             if (i % 3 === 0) e.tone1(t + i * 0.16, 190, 150, 0.14, "triangle", 0.05);
           }
           break;
+        case "build": {
+          // a hammer on stone, three times, with the ring of it
+          for (let i = 0; i < 3; i++) {
+            const at = t + i * 0.22;
+            e.noise(at, 0.07, "bandpass", 900 + i * 120, 3, 0.16);
+            e.tone1(at, 320 - i * 20, 120, 0.16, "square", 0.05);
+          }
+          break;
+        }
         case "wind":
           // night wind over the hill: it should arrive, not start loud
           e.noiseSwell(t, 2.3, "lowpass", 420, 220, 0.7, 0.42);
@@ -154,6 +165,7 @@ export class Sfx {
       market: "cart",
       tend: "bleat",
       muck: "wind",
+      build: "build",
       pipe: "pipe",
       music: "pipes",
       bark: "bark",

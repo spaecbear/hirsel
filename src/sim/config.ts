@@ -222,11 +222,24 @@ export const TOOLS = [
   { id: "watch", name: "Brass pocket watch", cost: 165, what: "Set a day's work to it once and it will keep that day for you after." },
 ] as const;
 
+/**
+ * The croft is built, not bought.
+ *
+ * Paying for it was a pure money sink that cost no part of the day, so the
+ * whole road to winning never once competed with the work — and a player who
+ * kept a small flock never met any tap pressure at all. The money buys the
+ * materials; `work` is the days of your own labour it then takes, so the
+ * thing you are playing for is made of the same scarce stuff as everything
+ * else.
+ *
+ * The ring is the exception that proves it: you do not build a ring, you walk
+ * to Inverness for it, and that is the two days.
+ */
 export const CROFT = [
-  { id: "roof", name: "Slate the cottage roof", cost: 240, need: null, what: "The thatch has been letting water since before you came." },
-  { id: "hearth", name: "Build up the hearth", cost: 330, need: "roof", what: "A proper fire, a settle, a place that is not just shelter." },
-  { id: "byre", name: "Raise a stone byre", cost: 420, need: "hearth", what: "Somewhere to bring them in out of the worst of it." },
-  { id: "ring", name: "A silver ring, Inverness", cost: 520, need: "byre", what: "You have known for a while now. You just had nothing to offer." },
+  { id: "roof", name: "Slate the cottage roof", cost: 240, work: 3, need: null, what: "The thatch has been letting water since before you came." },
+  { id: "hearth", name: "Build up the hearth", cost: 330, work: 4, need: "roof", what: "A proper fire, a settle, a place that is not just shelter." },
+  { id: "byre", name: "Raise a stone byre", cost: 420, work: 5, need: "hearth", what: "Somewhere to bring them in out of the worst of it." },
+  { id: "ring", name: "A silver ring, Inverness", cost: 520, work: 2, need: "byre", what: "You have known for a while now. You just had nothing to offer." },
 ] as const;
 
 export const ANIM_MS: Record<string, number> = {
@@ -244,6 +257,7 @@ export const ANIM_MS: Record<string, number> = {
   dawn: 2000, // and back up out of it
   tend: 1700,
   muck: 1600,
+  build: 1700,
   buysheep: 1200,
   fox: 2800,
   wolf: 6000,

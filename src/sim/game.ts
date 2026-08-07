@@ -99,6 +99,7 @@ export function newGame(opts: GameOptions = {}): GameState {
     gatheredToday: false,
     didToday: {},
     muckedToday: [],
+    building: null,
     actsToday: 0,
     pubs: 0,
     pubToday: false,
@@ -259,17 +260,47 @@ export class Game {
     this.changed();
   }
 
+  /**
+   * Pay for a croft milestone. This buys the materials and starts the work —
+   * the days of labour come out of the same taps as everything else, so the
+   * road to winning competes with the day instead of running alongside it.
+   */
   buyCroft(id: CroftId) {
     const g = this.state;
     const m = CROFT.find((x) => x.id === id);
-    if (!m || owns(g, id) || g.money < m.cost) return;
+    if (!m || owns(g, id) || g.money < m.cost || g.building) return;
     if (m.need && !owns(g, m.need)) return;
     g.money -= m.cost;
-    g.owned[id] = true;
-    this.say(`Paid £${m.cost}. ${m.name}.`, "gold");
-    if (id === "ring") this.say("It is in your coat pocket now. You keep checking it is still there.", "cozy");
+    g.building = { id, done: 0 };
+    this.say(
+      id === "ring"
+        ? `Paid £${m.cost}. It is being made up for you in Inverness — it is a walk to fetch it.`
+        : `Paid £${m.cost} for the materials. Now it wants building.`,
+      "gold",
+    );
     this.award();
     this.changed();
+  }
+
+  /** one day's work on whatever is being built */
+  buildOnce() {
+    const g = this.state;
+    if (!g.building) return;
+    const m = CROFT.find((x) => x.id === g.building!.id);
+    if (!m) return;
+    g.building.done++;
+    if (g.building.done < m.work) {
+      this.say(
+        m.id === "ring" ? "A long walk, and a longer one back." : `Another day on it. ${m.work - g.building.done} to go.`,
+        "hi",
+      );
+      return;
+    }
+    g.owned[m.id] = true;
+    g.building = null;
+    this.say(`${m.name}. Done.`, "gold");
+    if (m.id === "ring") this.say("It is in your coat pocket now. You keep checking it is still there.", "cozy");
+    this.award();
   }
 
   buyEwe(breed: BreedId) {
@@ -721,6 +752,22 @@ export const ACTIONS: ActionDef[] = [
       game.buff("tended", BALANCE.tendDays);
       game.say("You go through them one by one. Feet, fleece, eyes.", "hi");
     },
+  },
+  {
+    id: "build",
+    name: "Work on the croft",
+    anim: "build",
+    cost: one,
+    desc: (g) => {
+      const b = g.building;
+      if (!b) return "Nothing wants building. The materials come from the cart.";
+      const m = CROFT.find((x) => x.id === b.id)!;
+      const left = m.work - b.done;
+      if (m.id === "ring") return `Walk down for it. ${left} day${left === 1 ? "" : "s"} of walking left.`;
+      return `${m.name}. ${b.done} of ${m.work} days into it.`;
+    },
+    can: (g) => g.building !== null,
+    run: (game) => game.buildOnce(),
   },
   {
     id: "muck",

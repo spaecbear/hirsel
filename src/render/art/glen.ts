@@ -563,6 +563,29 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       }
       break;
     }
+    case "build": {
+      /*
+       * Working on the croft: he stands at the house with his back to us,
+       * and what he is putting up rises a course at a time. Drawn at the
+       * croft rather than at his mark, because that is where the work is.
+       */
+      const bx = L.croft.x + L.croft.w + 2;
+      const by = L.croft.y + 10;
+      drawShepherd(g, bx, by, { arm: Math.sin(p * Math.PI * 12) > 0 ? 0 : 3, facing: -1 });
+      // the hammer, and the stone or slate going on
+      const swing = Math.sin(p * Math.PI * 12) > 0 ? 0 : 3;
+      g.px(bx - 5, by + 6 + swing, 5, 2, "#6b5433");
+      g.px(bx - 7, by + 5 + swing, 3, 4, "#8a8f88");
+      const courses = Math.min(4, Math.floor(p * 5));
+      for (let i = 0; i < courses; i++) {
+        g.px(L.croft.x + 6, L.croft.y + 8 - i * 3, L.croft.w - 12, 2, i % 2 ? "#6d7263" : "#5c6154");
+      }
+      for (let i = 0; i < 5; i++) {
+        const t = (p * 1.4 + i / 5) % 1;
+        g.a(bx - 2 + i * 3, by + 4 - t * 14, 2, 2, 198, 190, 170, 0.5 * (1 - t)); // stone dust
+      }
+      break;
+    }
     case "muck": {
       const x = L.W * 0.1 + ease(p) * (L.W * 0.7);
       drawShepherd(g, sx, sy, { walk: p, facing: 1 });

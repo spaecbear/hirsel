@@ -478,18 +478,48 @@ export class WorldUi {
 
   private croftRows(): Row[] {
     const g = this.game.state;
-    const rows: Row[] = CROFT.map((m) => {
+    const rows: Row[] = [];
+
+    // whatever is going up gets the top of the list, with its progress
+    if (g.building) {
+      const m = CROFT.find((x) => x.id === g.building!.id)!;
+      const build = ACTIONS.find((a) => a.id === "build")!;
+      const left = m.work - g.building.done;
+      rows.push({
+        label: `${m.id === "ring" ? "Walk down for the ring" : `Work on it · ${g.building.done}/${m.work}`}`,
+        detail: build.desc(g),
+        disabled: g.taps < this.game.costOf(build),
+        tone: "gold",
+        onPick: () => this.game.doAction("build"),
+      });
+      rows.push({
+        label: m.name,
+        detail: `Paid for. ${left} day${left === 1 ? "" : "s"} of work left in it.`,
+        info: true,
+        onPick: () => {},
+      });
+    }
+
+    // whatever is up is shown above; don't list it again as something to buy
+    rows.push(...CROFT.filter((m) => m.id !== g.building?.id).map((m) => {
       const has = owns(g, m.id);
       const locked = m.need ? !owns(g, m.need) : false;
       const first = m.need ? CROFT.find((x) => x.id === m.need)?.name.toLowerCase() : "";
+      const busy = g.building !== null;
       return {
         label: `${m.name}${has ? "" : ` · £${m.cost}`}`,
-        detail: has ? "Done." : locked ? `First: ${first}.` : m.what,
-        disabled: has || locked || g.money < m.cost,
+        detail: has
+          ? "Done."
+          : locked
+            ? `First: ${first}.`
+            : busy
+              ? "One thing at a time. Finish what is up first."
+              : `${m.what} · ${m.work} days of work once it is paid for.`,
+        disabled: has || locked || busy || g.money < m.cost,
         tone: "life" as const,
         onPick: () => this.game.buyCroft(m.id as CroftId),
       };
-    });
+    }));
     // no Sleep here any more: you sleep by going to the bed, which is the
     // whole reason the inside of the house exists
     return rows;
