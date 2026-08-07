@@ -763,12 +763,18 @@ function drawBackFigure(
    * a third as wide as they are tall.
    */
   const h = Math.max(20, footY - headTop);
-  const headH = Math.round(h * 0.18);
-  const bodyH = Math.round(h * 0.42);
+  /*
+   * Matched to the shepherd's own proportions rather than to life. His head
+   * is about a fifth of him and nearly as wide as his shoulders; drawn to
+   * realistic ratios the pub folk had small heads on wide bodies and looked
+   * like a different game's art standing in the same room.
+   */
+  const headH = Math.round(h * 0.22);
+  const bodyH = Math.round(h * 0.4);
   const legH = h - headH - bodyH;
-  const headW = Math.max(4, Math.round(h * 0.2));
-  const bodyW = Math.max(6, Math.round(h * 0.3));
-  const legW = Math.max(2, Math.round(h * 0.1));
+  const headW = Math.max(5, Math.round(h * 0.26));
+  const bodyW = Math.max(6, Math.round(h * 0.32));
+  const legW = Math.max(2, Math.round(h * 0.11));
   const bodyX = Math.round(cx - bodyW / 2);
   const headX = Math.round(cx - headW / 2);
   const step = o.step ?? 0;
@@ -810,9 +816,16 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   g.px(0, 0, W, 5, "#241b12"); // a low beamed ceiling
   for (let x = 6; x < W; x += 34) g.px(x, 0, 5, 7, "#3a2c1e");
 
-  // the counter sits low in the frame, so there is room to stand at it
-  const barY = Math.round(H * 0.62);
-  const floorY = Math.round(H * 0.82);
+  /*
+   * The floor and the people come first, and the counter is derived from
+   * them — a bar is about chest height on a standing man. Fixing the counter
+   * at a fraction of the screen made it exactly as tall as the figures, so
+   * the landlord behind it had to be drawn floating at head height to be
+   * seen at all, and looked like he was standing on the bar.
+   */
+  const floorY = Math.round(H * 0.84);
+  const figH = Math.max(24, Math.min(46, Math.round(H * 0.2)));
+  const barY = floorY - Math.round(figH * 0.58);
   const barX = Math.round(W * 0.26);
   const barW = W - barX;
 
@@ -836,12 +849,18 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   // an arched opening
   for (let i = 0; i < 4; i++) g.px(fx + 4 + i * 2, fy + 4 - i, fw - 8 - i * 4, 3, "#1d1610");
   g.px(fx + 4, fy + 6, fw - 8, floorY - fy - 6, "#1d1610");
-  const fireH = Math.max(9, Math.round((floorY - fy) * 0.62));
-  g.px(fx + 7, floorY - 4, fw - 14, 4, "#4a3a2a"); // logs in the grate
-  g.px(fx + 10, floorY - 6, fw - 20, 3, "#3a2c20");
-  g.px(fx + 8, floorY - fireH, fw - 16, fireH - 3, "#c07a24");
-  g.px(fx + 12, floorY - fireH + 3 + flick, fw - 24, fireH - 7, C.fire);
-  g.px(fx + 17, floorY - fireH + 6 + flick, fw - 34, fireH - 10, "#f6d98a");
+  // a fire burning down in a grate, rather than a lit panel
+  const fireH = Math.max(8, Math.round((floorY - fy) * 0.4));
+  g.px(fx + 6, floorY - 5, fw - 12, 5, "#4a3a2a"); // logs
+  g.px(fx + 9, floorY - 8, fw - 18, 3, "#3a2c20");
+  for (let i = 0; i < 5; i++) {
+    // tongues of it, each its own height
+    const tw = Math.round((fw - 20) / 5);
+    const th = fireH - Math.round(hash(i * 5) * 4) + (i % 2 ? Math.round(flick) : 0);
+    g.px(fx + 10 + i * tw, floorY - 6 - th, tw - 1, th, "#c07a24");
+    g.px(fx + 11 + i * tw, floorY - 6 - th + 2, tw - 3, th - 3, C.fire);
+    if (th > 6) g.px(fx + 12 + i * tw, floorY - 6 - th + 5, tw - 5, th - 8, "#f6d98a");
+  }
   g.a(fx - 14, fy - 14, fw + 34, floorY - fy + 30, 240, 176, 80, 0.13 + Math.sin(time / 200) * 0.025);
 
   /* ---- the back-bar ---- */
@@ -863,11 +882,8 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   g.px(caskX + 20, shelfY + 39, 3, 3, "#c9a83c"); // its tap
 
   /* ---- the landlord, behind the bar, cut off at the counter ---- */
-  // small enough to belong to the room rather than fill it. The two on the
-  // near side are taller: they stand in front of the counter, and at the same
-  // height as the landlord their heads sat against the dark bar front where
-  // nothing could be made out.
-  const figH = Math.max(24, Math.min(46, Math.round(H * 0.2)));
+  // the two on the near side are taller because they are nearer: the
+  // landlord stands further back, behind the counter
   const nearH = Math.round(figH * 1.4);
   const lx = barX + Math.round(barW * 0.13);
   const lTop = barY + 8 - figH;
@@ -880,12 +896,16 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   // he is facing the room, so his face goes over the head block
   g.px(lm.headX, lTop + 1, lm.headW, lm.headH - 1, "#c9a583");
   g.px(lm.headX, lTop, lm.headW, 2, "#4a4038"); // hair
-  g.px(lm.headX + 1, lTop + 3, 1, 1, "#26201a");
-  g.px(lm.headX + lm.headW - 2, lTop + 3, 1, 1, "#26201a");
-  g.px(lm.headX + 1, lTop + 5, lm.headW - 2, 1, "#6a5040"); // a moustache
+  // eyes only. A mouth line at this size reads as a scowl, and the shepherd
+  // has never had one — two different faces in the same game
+  // eyes scaled off the head. Single pixels vanished at this size, and the
+  // shepherd's own eyes are a far bigger share of his face than that.
+  const le = Math.max(1, Math.round(lm.headH * 0.22));
+  g.px(lm.headX + 1, lTop + Math.round(lm.headH * 0.35), le, le, "#26201a");
+  g.px(lm.headX + lm.headW - 1 - le, lTop + Math.round(lm.headH * 0.35), le, le, "#26201a");
   const polish = Math.sin(time / 260) > 0 ? 0 : 1;
-  g.px(lm.bodyX + lm.bodyW, barY - 12 + polish, 4, 6, "#9aa3a5"); // the glass he is drying
-  g.a(lm.bodyX + lm.bodyW, barY - 12 + polish, 4, 2, 240, 240, 230, 0.4);
+  g.px(lm.bodyX + lm.bodyW, barY - 9 + polish, 4, 6, "#9aa3a5"); // the glass he is drying
+  g.a(lm.bodyX + lm.bodyW, barY - 9 + polish, 4, 2, 240, 240, 230, 0.4);
 
   /* ---- the bar itself, drawn over him ---- */
   g.px(barX, barY + 6, barW, floorY - barY - 6, "#33261a");
@@ -903,14 +923,22 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   });
   g.px(mm.bodyX + mm.bodyW, barY - 5, 4, 3, "#c9a583"); // a hand up on the counter
 
+  /*
+   * One glass size for the room. His pint was 14 tall against a 46-tall man
+   * — nearly a third of him — while the ones on her tray were 4, so the same
+   * drink came in two sizes depending on who was holding it.
+   */
+  const glassH = Math.max(6, Math.round(figH * 0.2));
+  const glassW = Math.max(4, Math.round(glassH * 0.62));
   const fill = clamp01((p - 0.28) / 0.36);
-  const gx0 = mm.bodyX + mm.bodyW + 6;
-  g.px(gx0, barY - 14, 11, 14, "#9aa3a5");
-  g.a(gx0, barY - 14, 11, 14, 255, 255, 255, 0.12);
-  g.px(gx0 + 1, barY - 2 - fill * 12, 9, fill * 12, "#c98a2e");
+  const gx0 = mm.bodyX + mm.bodyW + 5;
+  g.px(gx0, barY - glassH, glassW, glassH, "#9aa3a5");
+  g.a(gx0, barY - glassH, glassW, glassH, 255, 255, 255, 0.12);
+  const beerH = Math.round(fill * (glassH - 2));
+  g.px(gx0 + 1, barY - 1 - beerH, glassW - 2, beerH, "#c98a2e");
   if (fill > 0.85) {
-    g.px(gx0 + 1, barY - 14, 9, 3, "#f2eddb");
-    g.px(gx0 + 3, barY - 16, 5, 2, "#f2eddb");
+    g.px(gx0 + 1, barY - glassH, glassW - 2, 2, "#f2eddb"); // the head on it
+    g.px(gx0 + 2, barY - glassH - 1, glassW - 4, 1, "#f2eddb");
   }
 
   /* ---- the lass, come over with a tray ---- */
@@ -929,15 +957,21 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   g.px(gm.headX, gTop, gm.headW, 2, "#7a3a24");
   g.px(gm.headX - 1, gTop + 1, 1, gm.headH + 2, "#7a3a24");
   g.px(gm.headX + gm.headW, gTop + 1, 1, gm.headH + 2, "#7a3a24");
-  g.px(gm.headX + 1, gTop + 3, 1, 1, "#26201a");
-  g.px(gm.headX + gm.headW - 2, gTop + 3, 1, 1, "#26201a");
-  g.px(gm.headX + 1, gTop + 5, gm.headW - 2, 1, "#a8674f"); // smiling at something he said
-  // the tray she is carrying, on the side nearest him
-  const trayY = gTop + gm.headH + Math.round(gm.bodyH * 0.5);
-  g.px(gm.bodyX - 8, trayY, 8, 2, "#6b5433");
-  g.px(gm.bodyX - 7, trayY - 4, 3, 4, "#9aa3a5");
-  g.px(gm.bodyX - 3, trayY - 3, 2, 3, "#c98a2e");
-  g.px(gm.bodyX - 2, trayY + 1, 3, 3, "#c9a583"); // her hand under it
+  const ge = Math.max(1, Math.round(gm.headH * 0.22));
+  g.px(gm.headX + 1, gTop + Math.round(gm.headH * 0.35), ge, ge, "#26201a");
+  g.px(gm.headX + gm.headW - 1 - ge, gTop + Math.round(gm.headH * 0.35), ge, ge, "#26201a");
+  // the tray she is carrying, with the same glasses on it
+  const trayY = gTop + gm.headH + Math.round(gm.bodyH * 0.55);
+  const trayW = glassW * 2 + 5;
+  g.px(gm.bodyX - trayW - 1, trayY, trayW, 2, "#6b5433");
+  g.px(gm.bodyX - trayW - 1, trayY, trayW, 1, "#7c6242");
+  for (let i = 0; i < 2; i++) {
+    const bx = gm.bodyX - trayW + 1 + i * (glassW + 2);
+    g.px(bx, trayY - glassH, glassW, glassH, "#9aa3a5");
+    g.px(bx + 1, trayY - glassH + 2, glassW - 2, glassH - 3, "#c98a2e");
+    g.px(bx + 1, trayY - glassH, glassW - 2, 2, "#f2eddb"); // heads on them
+  }
+  g.px(gm.bodyX - 3, trayY + 1, 3, 3, "#c9a583"); // her hand under it
 
   /* ---- the rest of the room ---- */
   const tx = Math.round(W * 0.86);

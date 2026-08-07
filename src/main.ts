@@ -284,11 +284,19 @@ function showCredits() {
   world.close(); // nothing else on screen while it rolls
   document.body.classList.add("rolling");
   $("credits").classList.add("on");
+  // when the roll runs out, go back to the menu rather than dropping the
+  // player onto a hill whose run is already over
+  scroll.addEventListener("animationend", closeCredits, { once: true });
 }
-$("credits-close").addEventListener("click", () => {
+
+/** the credits end at the menu, not back on a finished hill */
+function closeCredits() {
   $("credits").classList.remove("on");
   document.body.classList.remove("rolling");
-});
+  $("over").classList.remove("on");
+  showTitle();
+}
+$("credits-close").addEventListener("click", closeCredits);
 
 /* ---------- the title ---------- */
 function showTitle() {
