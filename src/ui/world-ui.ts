@@ -16,6 +16,7 @@ import { ACTIONS, type Game } from "../sim/game";
 import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
 import { actionName, toolWhat } from "../sim/lexicon";
 import { startSpin } from "../render/dog-spin";
+import { tippyWalking } from "../render/tippy";
 import { canShear, here, isFullMoon, moonName, owns, woolPrice, readyToShear, tapsPerDay } from "../sim/rules";
 import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
@@ -239,6 +240,16 @@ export class WorldUi {
 
   /** rebuild the open sheet in place, so a purchase updates what's on screen */
   refresh() {
+    /*
+     * Tippy is earned by being in the room and watching her settle, not by
+     * owning a collie and a hearth at the same moment — the point of it is
+     * seeing where she chooses to lie. The painter runs her walk; this waits
+     * until she is down before the achievement lands.
+     */
+    const g = this.game.state;
+    if (this.interior && owns(g, "collie") && owns(g, "hearth") && !g.stats.sawTippy) {
+      if (!tippyWalking(performance.now())) this.game.markTippy();
+    }
     this.drawHud();
     if (this.active && this.sheet.classList.contains("on")) this.open(this.active);
   }

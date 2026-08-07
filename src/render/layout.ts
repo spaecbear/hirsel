@@ -271,8 +271,15 @@ export function boundsOf(h: Hotspot): Rect {
 export interface InteriorLayout {
   W: number;
   H: number;
-  /** where the floor begins */
+  /** where the floor begins — the back wall line */
   floorY: number;
+  /** the depth band he stands in */
+  midY: number;
+  /** the depth band nearest the camera */
+  frontY: number;
+  table: Rect;
+  /** where the man stands, top-left of his sprite */
+  man: { x: number; y: number };
   hearth: Rect;
   bed: Rect;
   door: Rect;
@@ -290,16 +297,39 @@ export function layoutInterior(W: number, H: number): InteriorLayout {
   // a tall screen gets a lower floor line, or the room is all bare boards
   const portrait = H > W * 1.15;
   const floorY = Math.round(H * (portrait ? 0.72 : 0.62));
-  const bedW = Math.min(58, Math.round(W * 0.32));
-  const bed: Rect = { x: Math.round(W * 0.56), y: floorY - 20, w: bedW, h: 30 };
-  const hearth: Rect = { x: Math.round(W * 0.06), y: floorY - 46, w: 48, h: 50 };
+
   /*
-   * The door is at the end of the room, not the middle of it. It was dead
-   * centre, which is exactly where a man standing in his own house should be
-   * — he ended up framed in his own doorway. Fire at one end, bed and door at
-   * the other, and the floor between them is his.
+   * The room has depth now.
+   *
+   * Everything used to sit on the one line where the floor meets the back
+   * wall, so the whole room was a strip of furniture with a wide empty floor
+   * in front of it — and the dog, standing at the wall, came out behind the
+   * table. Three bands instead: what is against the wall, where he stands,
+   * and what is nearest the camera. Draw order follows the bands, so nothing
+   * at the back can paint over something at the front.
    */
-  const door: Rect = { x: Math.min(W - 30, Math.round(W * 0.84)), y: floorY - 40, w: 24, h: 44 };
+  const depth = H - floorY;
+  const midY = Math.round(floorY + depth * 0.3);
+  const frontY = Math.round(floorY + depth * 0.56);
+
+  const bedW = Math.min(58, Math.round(W * 0.3));
+  const hearth: Rect = { x: Math.round(W * 0.06), y: floorY - 46, w: 48, h: 50 };
+  const bed: Rect = { x: Math.round(W * 0.54), y: floorY - 20, w: bedW, h: 30 };
+  /*
+   * The door is at the end of the room, not the middle of it — dead centre it
+   * framed him in his own doorway. It is placed off the bed's right edge with
+   * a gap that cannot close, since on a narrow screen the two were landing on
+   * top of each other.
+   */
+  const doorW = 24;
+  const doorX = Math.min(W - doorW - 6, Math.max(bed.x + bed.w + 10, Math.round(W * 0.84)));
+  const door: Rect = { x: doorX, y: floorY - 40, w: doorW, h: 44 };
+
+  // the table stands out in the room, not against the wall
+  const table: Rect = { x: Math.round(W * 0.2), y: frontY - 16, w: 34, h: 20 };
+  // and he stands in the middle of his own floor, a little forward of the wall
+  const man = { x: Math.round(W / 2) - 8, y: midY };
+
   const shelf: Rect = {
     x: Math.round(W * 0.2),
     y: Math.round(H * (portrait ? 0.34 : 0.2)),
@@ -311,9 +341,13 @@ export function layoutInterior(W: number, H: number): InteriorLayout {
     W,
     H,
     floorY,
+    midY,
+    frontY,
     hearth,
     bed,
     door,
+    table,
+    man,
     shelf,
     hotspots: [
       { id: "bed", rects: [pad(bed, 6)], label: "The bed" },

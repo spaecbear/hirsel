@@ -122,6 +122,7 @@ export function newGame(opts: GameOptions = {}): GameState {
       daysHungry: 0,
       wolfMaulings: 0,
       spunTwice: false,
+      sawTippy: false,
     },
     achievements: [],
     seed,
@@ -292,6 +293,17 @@ export class Game {
   bark() {
     if (this.state.over) return;
     this.onAnim("bark");
+  }
+
+  /** she has crossed the room and settled at the fire, and you watched her */
+  markTippy() {
+    const g = this.state;
+    // she cannot have settled at a fire that is not built, or been a collie
+    // that was never bought — the UI gates this too, but the rule lives here
+    if (!owns(g, "collie") || !owns(g, "hearth")) return;
+    if (this.state.stats.sawTippy) return;
+    this.state.stats.sawTippy = true;
+    this.award();
   }
 
   /** two turns in quick succession — Arrow's whole trick */

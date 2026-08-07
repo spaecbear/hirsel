@@ -162,6 +162,8 @@ export interface GameState {
     wolfMaulings: number;
     /** the sheltie was tapped into two turns hard on each other — Arrow */
     spunTwice: boolean;
+    /** you have stood in the room and seen the collie settle at the fire — Tippy */
+    sawTippy: boolean;
   };
   achievements: string[];
   seed: number;

@@ -15,6 +15,7 @@ import { drawMoonDisc, moonPos } from "../moon";
 import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldLayout } from "../layout";
 import { driftFor, idleTick } from "../wander";
 import { spinNow } from "../dog-spin";
+import { tippyFrame } from "../tippy";
 import {
   TERRAIN,
   mix,
@@ -1174,28 +1175,6 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   g.px(b.x + b.w - 14, b.y, 14, 8, "#ddd9c8"); // a pillow
   g.px(b.x - 2, b.y + 2, 3, b.h - 2, "#4a3a26"); // bedposts
   g.px(b.x + b.w - 1, b.y + 2, 3, b.h - 2, "#4a3a26");
-  /*
-   * Where the dog lies.
-   *
-   * A border collie, once there is a fire to lie in front of, lies in front
-   * of the fire — right in front of it, every time it is lit, and she will
-   * not be moved. The sheltie keeps her own place further into the room.
-   */
-  if (hasDog(st)) {
-    const collieAtFire = owns(st, "collie") && hearthBuilt;
-    if (collieAtFire) {
-      /*
-       * On the floorboards hard up against the hearth, nose to the fire.
-       * Centred on the hearth she was inside the firebox, lying on the
-       * flames and hiding them.
-       */
-      drawDog(g, hx + I.hearth.w + 1, I.floorY - 11, 0, 0, -1);
-    } else {
-      drawDog(g, hx + I.hearth.w + 8, I.floorY - 12, 0, 0, 1);
-    }
-  }
-
-
   // a window on the back wall: daylight, or the dark and a star
   const win = { x: Math.round(I.W * 0.3), y: Math.round(I.floorY - 78), w: 26, h: 22 };
   if (win.y > 12) {
@@ -1208,18 +1187,6 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
     if (!isNight) g.a(win.x - 6, win.y + win.h, win.w + 12, 20, 200, 214, 190, 0.06);
   }
 
-  // a table and a stool, because a room with only a bed is a cell
-  const tx = Math.round(I.W * 0.26);
-  const ty = I.floorY - 16;
-  g.px(tx, ty, 34, 4, "#6b5433");
-  g.px(tx, ty, 34, 1, "#7c6242");
-  g.px(tx + 2, ty + 4, 3, 12, "#54452c");
-  g.px(tx + 29, ty + 4, 3, 12, "#54452c");
-  g.px(tx + 12, ty - 5, 5, 5, "#9aa3a5"); // a cup on it
-  g.px(tx - 12, ty + 6, 9, 3, "#5b4a30"); // the stool
-  g.px(tx - 11, ty + 9, 2, 7, "#4a3a26");
-  g.px(tx - 5, ty + 9, 2, 7, "#4a3a26");
-
   // the door back out to the hill, with daylight round it
   const d = I.door;
   g.px(d.x - 2, d.y - 2, d.w + 4, d.h + 2, "#2a2318");
@@ -1227,6 +1194,30 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   for (let i = 0; i < d.w; i += 5) g.px(d.x + i, d.y, 4, d.h, i % 10 ? "#54452c" : "#5b4a30");
   g.px(d.x + d.w - 6, d.y + d.h / 2, 3, 3, "#c9a83c"); // the latch
   g.a(d.x - 3, d.y - 3, d.w + 6, d.h + 4, 200, 214, 190, 0.1);
+
+  /*
+   * Where the dog lies.
+   *
+   * A border collie, once there is a fire to lie in front of, lies in front
+   * of the fire. If the hearth is finished while you are standing here she
+   * gets up and crosses the room to it; if you walk in and it is already
+   * built, she is simply there.
+   */
+  const fireSpot = { x: hx + I.hearth.w + 1, y: I.floorY - 11 };
+  const dogHome = { x: Math.round(I.W * 0.44), y: I.midY - 11 };
+  if (hasDog(st)) {
+    const collieAtFire = owns(st, "collie") && hearthBuilt;
+    const tip = tippyFrame(time, true, collieAtFire);
+    if (collieAtFire) {
+      const e = tip.there * tip.there * (3 - 2 * tip.there); // ease in and out
+      const x = Math.round(dogHome.x + (fireSpot.x - dogHome.x) * e);
+      const y = Math.round(dogHome.y + (fireSpot.y - dogHome.y) * e);
+      // she trots over facing the way she is going, then settles nose-to-fire
+      drawDog(g, x, y, tip.walking ? time / 200 : 0, 0, -1);
+    } else {
+      drawDog(g, dogHome.x, dogHome.y, 0, 0, 1);
+    }
+  }
 
   // the shelf of everything bought
   const sh = I.shelf;
@@ -1370,16 +1361,55 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   }
 
   /*
-   * And the man himself, drawn last so nothing in the room paints over him —
-   * he stood behind the door at first. The room read as empty without him:
-   * you walked into the place you live and there was nobody in it. He stands
-   * in the middle of his own floor, turned towards the fire, and keeps his
-   * idle ticks so the room is never quite still.
+   * And the man himself. The room read as empty without him: you walked into
+   * the place you live and there was nobody in it. He stands out in the middle
+   * of his own floor rather than flat against the back wall, turned towards
+   * the fire, and keeps his idle ticks so the room is never quite still. He
+   * comes after everything at the wall and before the table, which is nearer
+   * the camera than he is.
    */
-  drawShepherd(g, Math.round(I.W / 2) - 8, I.floorY - SHEPHERD_H, {
+  drawShepherd(g, I.man.x, I.man.y - SHEPHERD_H, {
     facing: -1, // looking across at the hearth
     tick: idleTick(time) ?? undefined,
   });
+  /*
+   * The table last of all: it stands nearest the camera, so it has to be able
+   * to paint over the dog and over him. Drawn with the wall furniture it cut
+   * the room flat and the dog came out standing behind it.
+   */
+  const tx = I.table.x;
+  const ty = I.table.y;
+  // nearest the camera, so it is drawn a little larger than the things at the
+  // wall — the depth does not read from position alone at this scale
+  g.a(tx - 4, ty + 20, 46, 3, 0, 0, 0, 0.22); // it sits on the boards
+  g.px(tx, ty, 40, 5, "#6b5433"); // the top
+  g.px(tx, ty, 40, 1, "#8a6d47"); // light along the near edge
+  g.px(tx, ty + 5, 40, 1, "#4a3a26"); // and the shadow under it
+  g.px(tx + 2, ty + 6, 4, 15, "#54452c"); // legs
+  g.px(tx + 2, ty + 6, 1, 15, "#63512f");
+  g.px(tx + 34, ty + 6, 4, 15, "#54452c");
+  g.px(tx + 34, ty + 6, 1, 15, "#63512f");
+  g.px(tx + 14, ty - 6, 6, 6, "#9aa3a5"); // a cup on it
+  g.px(tx + 14, ty - 6, 6, 1, "#b6bdbd");
+  g.px(tx + 20, ty - 4, 2, 3, "#9aa3a5"); // its handle
+
+  /*
+   * The stool. It was three thin marks in the old room and read as a scuff on
+   * the floor rather than something to sit on: a round top on three splayed
+   * legs is the smallest thing that reads as a stool.
+   */
+  const sx = tx - 17;
+  const sy = ty + 7;
+  g.a(sx - 2, sy + 13, 16, 3, 0, 0, 0, 0.2);
+  g.px(sx, sy, 12, 4, "#5b4a30"); // the seat
+  g.px(sx + 1, sy, 10, 1, "#7c6242");
+  g.px(sx, sy + 4, 12, 1, "#43351f");
+  g.px(sx, sy + 5, 3, 9, "#4a3a26"); // three legs, splayed
+  g.px(sx + 9, sy + 5, 3, 9, "#4a3a26");
+  g.px(sx + 5, sy + 5, 2, 7, "#3d3020");
+  g.px(sx + 1, sy + 9, 10, 1, "#3d3020"); // the stretcher between them
+
+
 }
 
 /* ================================================================== *

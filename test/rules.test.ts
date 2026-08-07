@@ -16,7 +16,7 @@ import {
   wolfWarningDue,
   woolPrice,
 } from "../src/sim/rules";
-import { ACTIONS, newGame } from "../src/sim/game";
+import { ACTIONS, Game, newGame } from "../src/sim/game";
 import { ACHIEVEMENTS } from "../src/sim/achievements";
 import { BALANCE, TOOLS } from "../src/sim/config";
 import type { GameState } from "../src/sim/types";
@@ -283,14 +283,33 @@ describe("inverse mode says nothing about sheep", () => {
 });
 
 describe("the two dogs of the house", () => {
-  it("gives Tippy to a collie with a fire to lie at, and to nobody else", () => {
+  it("gives Tippy for watching her settle, not for owning the two things", () => {
+    /*
+     * The point of Tippy is where she chooses to lie, so it is earned by
+     * standing in the room while she crosses to the fire and goes down. It
+     * used to land the moment you owned a collie and a hearth, which could
+     * happen out on the hill with the door shut.
+     */
     const tippy = ACHIEVEMENTS.find((a) => a.id === "tippy")!;
     expect(tippy.secret).toBe(true);
-    expect(tippy.won(g({ owned: { collie: true, hearth: true } }))).toBe(true);
-    expect(tippy.won(g({ owned: { collie: true } }))).toBe(false);
-    expect(tippy.won(g({ owned: { hearth: true } }))).toBe(false);
-    // the sheltie is not Tippy, however warm the room is
-    expect(tippy.won(g({ owned: { dog: true, hearth: true } }))).toBe(false);
+    expect(tippy.won(g({ owned: { collie: true, hearth: true } }))).toBe(false);
+
+    const game = new Game(newGame({ seed: 4 }));
+    game.onAnim = (_a, after) => after?.();
+    Object.assign(game.state.owned, { collie: true, hearth: true });
+    game.markTippy();
+    expect(tippy.won(game.state)).toBe(true);
+  });
+
+  it("will not give Tippy to a sheltie, or without a fire", () => {
+    const tippy = ACHIEVEMENTS.find((a) => a.id === "tippy")!;
+    for (const owned of [{ dog: true, hearth: true }, { collie: true }, { hearth: true }]) {
+      const game = new Game(newGame({ seed: 5 }));
+      game.onAnim = (_a, after) => after?.();
+      Object.assign(game.state.owned, owned);
+      game.markTippy();
+      expect(tippy.won(game.state), JSON.stringify(owned)).toBe(false);
+    }
   });
 
   it("gives Arrow for the two turns and nothing else", () => {

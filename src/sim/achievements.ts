@@ -40,7 +40,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     name: "Tippy",
     hint: "The collie found the warmest spot in the house before you did.",
     secret: true,
-    won: (g) => owns(g, "collie") && owns(g, "hearth"),
+    won: (g) => g.stats.sawTippy,
   },
   {
     id: "arrow",
