@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ACTIONS, Game, newGame } from "../src/sim/game";
 import { BALANCE, CROFT, OPEN_QUESTIONS, START_MONEY } from "../src/sim/config";
 import { ACHIEVEMENTS } from "../src/sim/achievements";
+import { NORMAL } from "../src/sim/lexicon";
 import { dogFoxBias, foxRisk, grazing, here, readyToShear, weatherOn } from "../src/sim/rules";
 import type { AnimId, GameState, Sheep } from "../src/sim/types";
 
@@ -399,13 +400,13 @@ describe("the croft and the ask", () => {
     expect(ask.can(state)).toBe(false);
     state.pubs = BALANCE.pubsToAsk;
     expect(ask.can(state)).toBe(true);
-    expect(ask.desc(state)).toContain("Go on");
+    expect(ask.desc(state, NORMAL)).toContain("Go on");
   });
 
   it("names the next missing piece, so the player is never guessing", () => {
     const ask = ACTIONS.find((a) => a.id === "ask")!;
     const { state } = harness();
-    expect(ask.desc(state)).toContain("slate the cottage roof");
+    expect(ask.desc(state, NORMAL)).toContain("slate the cottage roof");
   });
 
   it("the pint surfaces what is still missing from the second one on", () => {

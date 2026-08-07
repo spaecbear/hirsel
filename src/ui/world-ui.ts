@@ -14,6 +14,7 @@
 import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
 import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
+import { actionName, toolWhat } from "../sim/lexicon";
 import { canShear, here, isFullMoon, moonName, owns, woolPrice, readyToShear, tapsPerDay } from "../sim/rules";
 import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
@@ -405,21 +406,14 @@ export class WorldUi {
     const lex = this.game.lex;
     return ACTIONS.filter((a) => ids.includes(a.id)).map((a) => {
       const cost = this.game.costOf(a);
-      const name =
-        a.id === "gather"
-          ? lex.gather
-          : a.id === "shear"
-            ? lex.shear
-            : a.id === "music" && owns(g, "fiddle")
-              ? "Strike up the fiddle"
-              : a.name;
+      const name = actionName(lex, a.id, owns(g, "fiddle")) || a.name;
       const done = this.doneToday(a.id);
       return {
         // a cost above one has to be on the button: the whole decision is
         // whether a day with three taps in it can afford this
         label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : cost > 1 ? ` · ${cost} taps` : ""}`,
         done,
-        detail: a.desc(g),
+        detail: a.desc(g, lex),
         disabled: g.taps < cost || !a.can(g),
         tone: a.cozy ? ("cozy" as const) : undefined,
         onPick: () => {
@@ -487,7 +481,7 @@ export class WorldUi {
       const left = m.work - g.building.done;
       rows.push({
         label: `${m.id === "ring" ? "Walk down for the ring" : `Work on it · ${g.building.done}/${m.work}`}`,
-        detail: build.desc(g),
+        detail: build.desc(g, this.lexicon),
         disabled: g.taps < this.game.costOf(build),
         tone: "gold",
         onPick: () => this.game.doAction("build"),
@@ -532,7 +526,7 @@ export class WorldUi {
     for (const t of TOOLS) {
       if (!owns(g, t.id)) continue;
       // the broadsword is never explained, here least of all
-      rows.push({ label: t.name, detail: t.id === "sword" ? "Hangs well above the fire." : t.what, info: true, onPick: () => {} });
+      rows.push({ label: t.name, detail: t.id === "sword" ? "Hangs well above the fire." : toolWhat(this.lexicon, t.id, t.what), info: true, onPick: () => {} });
     }
     if (owns(g, "pelt")) {
       rows.push({ label: "The last wolf's pelt", detail: "No fox comes near this ground.", info: true, onPick: () => {} });
@@ -553,7 +547,7 @@ export class WorldUi {
     const cost = this.game.costOf(market);
     rows.push({
       label: `Sell the ${lex.wool}${cost === 0 ? " · free" : ""}`,
-      detail: market.desc(g),
+      detail: market.desc(g, this.lexicon),
       disabled: g.taps < cost || !market.can(g),
       tone: "gold",
       closes: true, // the cart rolls off down the road
@@ -603,7 +597,7 @@ export class WorldUi {
       }
       rows.push({
         label: `${t.name} · £${t.cost}`,
-        detail: t.what,
+        detail: toolWhat(this.lexicon, t.id, t.what),
         disabled: g.money < t.cost,
         onPick: () => this.game.buyTool(t.id as ToolId),
       });

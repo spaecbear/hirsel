@@ -158,7 +158,7 @@ export class Sfx {
   }
 
   /** effects that belong to an animation, including the delayed ones */
-  forAnim(anim: AnimId, hasDog: boolean) {
+  forAnim(anim: AnimId, hasDog: boolean, fiddle = false) {
     const map: Partial<Record<AnimId, SfxName>> = {
       gather: "bleat",
       shear: "shears",
@@ -167,7 +167,9 @@ export class Sfx {
       muck: "wind",
       build: "build",
       pipe: "pipe",
-      music: "pipes",
+      // the fiddle has had its own reel in here all along; nothing ever
+      // reached it, so both instruments played the same drone
+      music: fiddle ? "fiddle" : "pipes",
       bark: "bark",
       pub: "pub",
       move: "bleat",

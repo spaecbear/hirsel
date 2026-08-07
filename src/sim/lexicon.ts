@@ -33,6 +33,19 @@ export interface Lexicon {
   winBody: (flock: number, days: number) => string;
   /** the fleece-quality words the flock roster shows */
   fleeceWord: string;
+  /*
+   * Action names and tool blurbs that name the animals.
+   *
+   * These were hard-coded strings scattered through game.ts and config.ts, so
+   * TOD swapped the sprites and the nouns around them but left "tend the
+   * flock", "cuts tonight's fox risk", "keeps foxes away" and the shears'
+   * "fleece" exactly as they were. Anything a player reads that names a
+   * beast has to live here, or the mode leaks.
+   */
+  /** the act of taking the crop off them, as a gerund */
+  shearing: string;
+  actionNames: Record<string, string>;
+  toolWhat: Record<string, string>;
 }
 
 export const NORMAL: Lexicon = {
@@ -74,7 +87,32 @@ export const NORMAL: Lexicon = {
     `Slated roof, a hearth, a byre of your own, and ${flock} sheep on the hill. ` +
     `You lasted ${days} days, and you are not doing the rest of it alone.`,
   fleeceWord: "fleece",
+  shearing: "shearing",
+  actionNames: {
+    gather: "Gather the flock",
+    shear: "Shear",
+    tend: "Tend the flock",
+    music: "Strike up the bagpipes",
+    fiddle: "Strike up the fiddle",
+  },
+  toolWhat: {
+    shears: "Every fleece comes off a fifth heavier, and you get through more of them in a day.",
+    dog: "Works the flock in on her own each night, and foxes think twice about her.",
+    collie: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a fox, but they do better under her.",
+    fiddle: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a fox off.",
+    crook: "Takes a tap off gathering — and off a big flock, which costs two.",
+    oilskin: "You can shear through a haar in this. Rain is still rain.",
+  },
 };
+
+/** the name a player reads on an action button, in this run's vocabulary */
+export function actionName(lex: Lexicon, id: string, fiddle = false): string {
+  if (id === "music" && fiddle) return lex.actionNames.fiddle;
+  return lex.actionNames[id] ?? "";
+}
+
+/** what a tool says it does, for the tools that name the animals */
+export const toolWhat = (lex: Lexicon, id: string, fallback: string) => lex.toolWhat[id] ?? fallback;
 
 export const INVERSE: Lexicon = {
   flock: "skulk",
@@ -117,6 +155,23 @@ export const INVERSE: Lexicon = {
     `Slated roof, a hearth, a byre of your own, and ${flock} foxes on the hill. ` +
     `You lasted ${days} days, and you are not doing the rest of it alone.`,
   fleeceWord: "brush",
+  shearing: "combing",
+  actionNames: {
+    gather: "Gather the skulk",
+    shear: "Comb the brushes",
+    tend: "Tend the skulk",
+    music: "Strike up the bagpipes",
+    fiddle: "Strike up the fiddle",
+  },
+  toolWhat: {
+    shears: "Every brush combs out a fifth heavier, and you get through more of them in a day.",
+    dog: "Works the skulk in on her own each night, and rams think twice about her.",
+    collie: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a ram, but they do better under her.",
+    fiddle: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a ram off.",
+    crook: "Takes a tap off gathering — and off a big skulk, which costs two.",
+    oilskin: "You can comb through a haar in this. Rain is still rain.",
+    sword: "Hangs well above the fire. Bonny thing. Not much use for keeping rams off, mind.",
+  },
 };
 
 export const lexicon = (inverse: boolean) => (inverse ? INVERSE : NORMAL);

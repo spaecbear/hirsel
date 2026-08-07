@@ -437,9 +437,11 @@ function foxRaidScene(g: Painter, st: GameState, p: number, time: number) {
     drawSheep(g, h.x + (h.x < fx ? -1 : 1) * flee * 40, h.y - flee * 4, s, { run: flee, flip: h.x > fx });
   });
 
-  // it turns round when it heads back up the hill, carrying one
-  if (isInverse()) drawRam(g, fx, fy - 2, p);
-  else drawFox(g, fx, fy, p, outbound ? 1 : -1);
+  // it turns round when it heads back up the hill, carrying one — which the
+  // fox always did and the ram never did, since it took no facing at all
+  const facing = outbound ? 1 : -1;
+  if (isInverse()) drawRam(g, fx, fy - 2, p, facing);
+  else drawFox(g, fx, fy, p, facing);
   if (!outbound) g.px(fx + 1, fy + 1, 8, 5, isInverse() ? "#b4472c" : "#cfcab8");
 
   if (dog) {

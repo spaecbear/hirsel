@@ -674,8 +674,11 @@ function foxRaid(g: Painter, L: WorldLayout, s: Scene) {
     drawSheep(g, home.x + (home.x < fx ? -1 : 1) * flee * 30, home.y - flee * 4, sh, { run: flee, flip: home.x > fx });
   });
 
-  if (isInverse()) drawRam(g, fx, fy - 2, p);
-  else drawFox(g, fx, fy, p, outbound ? 1 : -1);
+  // both raiders face the way they are running: out to the flock, then back
+  // off the hill with what they took
+  const facing = outbound ? 1 : -1;
+  if (isInverse()) drawRam(g, fx, fy - 2, p, facing);
+  else drawFox(g, fx, fy, p, facing);
   if (!outbound) g.px(fx + 1, fy + 1, 8, 5, isInverse() ? "#b4472c" : "#cfcab8");
 
   if (hasDog(st)) {

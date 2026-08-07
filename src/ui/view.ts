@@ -13,7 +13,7 @@ import {
   tapsPerDay,
 } from "../sim/rules";
 import { WEATHER } from "../sim/config";
-import { lexicon } from "../sim/lexicon";
+import { actionName, toolWhat, lexicon } from "../sim/lexicon";
 import type { Animator } from "../render/animator";
 import type { Settings } from "../sim/settings";
 import type { BreedId, CroftId, ToolId } from "../sim/types";
@@ -166,11 +166,11 @@ export class View {
     const lex = lexicon(this.settings.inverse);
     for (const act of this.groupActions(this.workTab)) {
       const cost = this.game.costOf(act);
-      const name = act.id === "gather" ? lex.gather : act.id === "shear" ? lex.shear : act.name;
+      const name = actionName(lex, act.id, owns(g, "fiddle")) || act.name;
       a.appendChild(
         button(
           `act${act.cozy ? " cozy" : ""}`,
-          `<span class="n">${name}${cost === 0 ? ' <em>free</em>' : ""}</span><span class="d">${act.desc(g)}</span>`,
+          `<span class="n">${name}${cost === 0 ? ' <em>free</em>' : ""}</span><span class="d">${act.desc(g, lex)}</span>`,
           () => this.game.doAction(act.id),
           g.taps < cost || !act.can(g) || this.busy,
         ),
@@ -260,7 +260,7 @@ export class View {
       sh.appendChild(
         button(
           `act buy${has ? " owned" : ""}`,
-          `<span class="n">${t.name}${has ? "" : ` · £${t.cost}`}</span><span class="d">${has ? `In the steading. ${t.what}` : t.what}</span>`,
+          `<span class="n">${t.name}${has ? "" : ` · £${t.cost}`}</span><span class="d">${has ? `In the steading. ${toolWhat(lex, t.id, t.what)}` : toolWhat(lex, t.id, t.what)}</span>`,
           () => this.game.buyTool(t.id as ToolId),
           has || g.money < t.cost || this.busy,
         ),

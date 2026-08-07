@@ -127,19 +127,23 @@ function drawFoxBeast(g: Painter, x: number, y: number, s: Sheep, o: { shorn?: b
 }
 
 /** the inverse raider: a ram off the hill, horns and all */
-export function drawRam(g: Painter, x: number, y: number, run: number) {
+/** the raider in TOD. Mirrored about its own span so it faces where it runs. */
+export function drawRam(g: Painter, x: number, y: number, run: number, facing: 1 | -1 = 1) {
+  const SPAN = 25;
   const leg = Math.sin(run * Math.PI * 14) > 0 ? 0 : 2;
-  g.px(x + 2, y + 8, 3, 5, "#3a352c");
-  g.px(x + 9, y + 8 - leg, 3, 5, "#3a352c");
-  g.px(x + 6, y + 8 + leg, 3, 5, "#2e2a22");
-  g.px(x + 13, y + 8, 3, 5, "#2e2a22");
-  g.px(x, y, 18, 9, "#ddd9c8");
-  g.px(x + 1, y - 1, 16, 2, "#efeada");
-  g.px(x + 17, y + 1, 7, 6, "#2b2b26");
-  g.px(x + 22, y + 3, 1, 1, "#e8d27a");
-  g.px(x + 17, y - 3, 7, 2, "#b8a878"); // horns
-  g.px(x + 23, y - 2, 2, 4, "#b8a878");
-  g.px(x + 15, y - 2, 2, 3, "#b8a878");
+  const p = (dx: number, dy: number, w: number, h: number, c: string) =>
+    g.px(facing > 0 ? x + dx : x + SPAN - dx - w, y + dy, w, h, c);
+  p(2, 8, 3, 5, "#3a352c");
+  p(9, 8 - leg, 3, 5, "#3a352c");
+  p(6, 8 + leg, 3, 5, "#2e2a22");
+  p(13, 8, 3, 5, "#2e2a22");
+  p(0, 0, 18, 9, "#ddd9c8");
+  p(1, -1, 16, 2, "#efeada");
+  p(17, 1, 7, 6, "#2b2b26"); // the head
+  p(22, 3, 1, 1, "#e8d27a"); // its eye
+  p(17, -3, 7, 2, "#b8a878"); // horns
+  p(23, -2, 2, 4, "#b8a878");
+  p(15, -2, 2, 3, "#b8a878");
 }
 
 export interface SheepOpts {

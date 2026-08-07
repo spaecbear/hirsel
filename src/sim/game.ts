@@ -66,7 +66,7 @@ export interface ActionDef {
   cozy?: boolean;
   anim: AnimId;
   cost: (g: GameState) => number;
-  desc: (g: GameState) => string;
+  desc: (g: GameState, lex: Lexicon) => string;
   can: (g: GameState) => boolean;
   run: (game: Game) => void;
 }
@@ -668,17 +668,17 @@ export const ACTIONS: ActionDef[] = [
     name: "Gather the flock",
     anim: "gather",
     cost: gatherCost,
-    desc: (g) => {
+    desc: (g, lex) => {
       if (g.gatheredToday) return "Already gathered today.";
       const big = g.flock.length > BALANCE.bigFlock && !hasDog(g);
       return big
-        ? `Bring them in close. Cuts tonight's fox risk hard — though ${g.flock.length} of them is a long walk on your own.`
-        : "Bring them in close. Cuts tonight's fox risk hard.";
+        ? `Bring them in close. Cuts tonight's ${lex.raider} risk hard — though ${g.flock.length} of them is a long walk on your own.`
+        : `Bring them in close. Cuts tonight's ${lex.raider} risk hard.`;
     },
     can: (g) => !g.gatheredToday,
     run: (game) => {
       game.state.gatheredToday = true;
-      game.say("You walk the ground and bring the flock in tight.", "hi");
+      game.say(`You walk the ground and bring the ${game.lex.flock} in tight.`, "hi");
     },
   },
   {
@@ -686,16 +686,16 @@ export const ACTIONS: ActionDef[] = [
     name: "Shear",
     anim: "shear",
     cost: shearCost,
-    desc: (g) => {
+    desc: (g, lex) => {
       if (!canShear(g)) {
         return weatherOn(g).id === "mist"
-          ? "The haar has soaked the fleeces through. Nothing to be done bare-handed."
-          : "Wet wool cannot be shorn. It would rot in the sack.";
+          ? `The haar has soaked the ${lex.fleeceWord}s through. Nothing to be done bare-handed.`
+          : `Wet ${lex.wool} cannot be taken. It would rot in the sack.`;
       }
       const n = readyToShear(g.flock);
       return n === 0
-        ? "No fleece worth taking yet."
-        : `${n} sheep ready · about ${Math.round(flockValue(g.flock))} stone of wool`;
+        ? `No ${lex.fleeceWord} worth taking yet.`
+        : `${n} ${lex.beasts} ready · about ${Math.round(flockValue(g.flock))} stone of ${lex.wool}`;
     },
     can: (g) => canShear(g) && readyToShear(g.flock) > 0,
     run: (game) => {
@@ -745,16 +745,16 @@ export const ACTIONS: ActionDef[] = [
     name: "Tend the flock",
     anim: "tend",
     cost: one,
-    desc: (g) => {
+    desc: (g, lex) => {
       const at = g.flock.filter((s) => s.fleece >= BALANCE.flystrikeFleece).length;
       return at
-        ? `${at} carrying heavy fleece. Strike will take one if you leave it.`
-        : "Check feet and fleece. Three days safe from strike, and they thrive on the attention.";
+        ? `${at} carrying heavy ${lex.fleeceWord}. Strike will take one if you leave it.`
+        : `Check feet and ${lex.fleeceWord}. Three days safe from strike, and they thrive on the attention.`;
     },
     can: (g) => g.flock.length > 0,
     run: (game) => {
       game.buff("tended", BALANCE.tendDays);
-      game.say("You go through them one by one. Feet, fleece, eyes.", "hi");
+      game.say(`You go through them one by one. Feet, ${game.lex.fleeceWord}, eyes.`, "hi");
     },
   },
   {
@@ -813,7 +813,7 @@ export const ACTIONS: ActionDef[] = [
     cozy: true,
     anim: "pipe",
     cost: one,
-    desc: () => "Free. Sit a while. Steadies your hands for tomorrow's shearing.",
+    desc: (_g, lex) => `Free. Sit a while. Steadies your hands for tomorrow's ${lex.shearing}.`,
     can: () => true,
     run: (game) => {
       game.buff("steady hands", BALANCE.cozyBuffDays);
@@ -826,10 +826,10 @@ export const ACTIONS: ActionDef[] = [
     cozy: true,
     anim: "music",
     cost: one,
-    desc: (g) =>
+    desc: (g, lex) =>
       owns(g, "fiddle")
-        ? `Free. ${BALANCE.fiddleDays} days of it: they put on more fleece. It will not keep a fox off.`
-        : "Free. The flock settles. Foxes are a shade warier for a night or two.",
+        ? `Free. ${BALANCE.fiddleDays} days of it: they put on more ${lex.fleeceWord}. It will not keep a ${lex.raider} off.`
+        : `Free. The ${lex.flock} settles. ${lex.raider === "fox" ? "Foxes" : "Rams"} are a shade warier for a night or two.`,
     can: () => true,
     run: (game) => {
       const g = game.state;
@@ -838,7 +838,7 @@ export const ACTIONS: ActionDef[] = [
         game.say("A reel, out over the hill. They graze the better for it.", "cozy");
       } else {
         game.buff("settled flock", BALANCE.cozyBuffDays);
-        game.say("The drone carries down the glen. The sheep stop fidgeting.", "cozy");
+        game.say(`The drone carries down the glen. The ${game.lex.beasts} stop fidgeting.`, "cozy");
       }
     },
   },

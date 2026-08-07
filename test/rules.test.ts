@@ -16,9 +16,10 @@ import {
   wolfWarningDue,
   woolPrice,
 } from "../src/sim/rules";
-import { newGame } from "../src/sim/game";
-import { BALANCE } from "../src/sim/config";
+import { ACTIONS, newGame } from "../src/sim/game";
+import { BALANCE, TOOLS } from "../src/sim/config";
 import type { GameState } from "../src/sim/types";
+import { INVERSE, actionName, toolWhat } from "../src/sim/lexicon";
 
 const g = (patch: Partial<GameState> = {}): GameState => Object.assign(newGame({ seed: 1 }), patch);
 
@@ -244,3 +245,38 @@ let id = 100;
 function f(fleece: number) {
   return { id: id++, fleece, breed: "blackface" as const, age: 0 };
 }
+
+describe("inverse mode says nothing about sheep", () => {
+  /*
+   * Player report: in TOD the skulk still offered to "tend the flock", the
+   * gather still cut "fox risk", the shears still talked about fleece and the
+   * pipes still kept foxes away. Those were hard-coded strings that the
+   * lexicon never got a look at.
+   *
+   * This walks every action description and every tool blurb in inverse mode
+   * and fails on any sheep-side word, so the next one that gets hard-coded
+   * shows up here rather than in a screenshot.
+   */
+  // only the sheep-side words: in TOD the beasts really are foxes and the
+  // vixens really are vixens, so those are the correct nouns there
+  const SHEEP_WORDS = /\b(sheep|ewes?|lambs?|flocks?|fleeces?|wool|shear\w*)\b/i;
+
+  it("keeps sheep words out of every action description", () => {
+    const state = newGame({ seed: 3 });
+    state.flock.forEach((s) => (s.fleece = 12)); // trip the heavy-fleece branches
+    for (const owned of [{}, { fiddle: true }, { dog: true }, { crook: true }]) {
+      const g2 = { ...state, owned } as GameState;
+      for (const a of ACTIONS) {
+        const name = actionName(INVERSE, a.id, !!owned.fiddle) || a.name;
+        expect(name, `action name ${a.id}`).not.toMatch(SHEEP_WORDS);
+        expect(a.desc(g2, INVERSE), `desc of ${a.id}`).not.toMatch(SHEEP_WORDS);
+      }
+    }
+  });
+
+  it("keeps sheep words out of the tool blurbs", () => {
+    for (const t of TOOLS) {
+      expect(toolWhat(INVERSE, t.id, t.what), `tool ${t.id}`).not.toMatch(SHEEP_WORDS);
+    }
+  });
+});
