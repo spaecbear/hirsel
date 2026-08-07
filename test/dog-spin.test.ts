@@ -48,6 +48,28 @@ describe("the sheltie's spin", () => {
     expect(startSpin(1000 + QUICK_MS + 500)).toBe(false);
   });
 
+  it("keeps turning right through the pair, with no dead gap", () => {
+    /*
+     * The bug this exists for: chaining used to push the start time forward
+     * by a turn's length, which sent the progress negative for the rest of
+     * the first turn. She stopped dead the moment you asked for the second
+     * one, waited, then played a single turn — two barks and one spin.
+     */
+    startSpin(1000);
+    startSpin(1200); // asked again while she is still going round
+    for (let t = 1000; t < 1000 + SPIN_MS * 2; t += 40) {
+      expect(spinNow(t), `t=${t}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("runs the two turns as two, not as one long one", () => {
+    startSpin(1000);
+    startSpin(1200);
+    // it resets to the top of the turn once, at the join between them
+    expect(spinNow(1000 + SPIN_MS - 40)).toBeGreaterThan(0.9);
+    expect(spinNow(1000 + SPIN_MS + 40)).toBeLessThan(0.1);
+  });
+
   it("stops after the queued second turn rather than running on", () => {
     startSpin(1000);
     startSpin(1200);
