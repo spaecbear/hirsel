@@ -50,6 +50,29 @@ export function feedCost(g: GameState): number {
   return Math.ceil(g.flock.length / 2);
 }
 
+/* ---------- what the work costs ---------- */
+
+/**
+ * Shearing a big flock takes longer than shearing a small one. Blade shears
+ * stretch how many you get through in a tap, and the total is capped so a
+ * day can always contain one clip.
+ */
+export function shearCost(g: GameState): number {
+  const per = owns(g, "shears") ? BALANCE.shearPerTapWithShears : BALANCE.shearPerTap;
+  const need = Math.ceil(Math.max(1, g.flock.length) / per);
+  return Math.max(1, Math.min(BALANCE.shearMaxTaps, need));
+}
+
+/**
+ * Gathering a big flock takes two taps on your own. A dog does the running,
+ * and the crook takes a tap off whatever it would otherwise cost — so with
+ * both, gathering even a large flock is still free.
+ */
+export function gatherCost(g: GameState): number {
+  const big = g.flock.length > BALANCE.bigFlock && !hasDog(g);
+  return Math.max(0, (big ? 2 : 1) - (owns(g, "crook") ? 1 : 0));
+}
+
 /* ---------- night maths ---------- */
 export function grazing(g: GameState) {
   const p = here(g);

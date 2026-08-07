@@ -58,6 +58,7 @@ describe("the walkthrough", () => {
     g.stats.earned = 24;
     expect(currentStep(g, seen)?.id).toBe("buy");
     g.flock.push({ id: 99, fleece: 3, breed: "blackface", age: 0 });
+    seen.add("scale");
     expect(currentStep(g, seen)?.id).toBe("ground");
     seen.add("did-muck");
     expect(currentStep(g, seen)?.id).toBe("hills");
@@ -115,7 +116,7 @@ describe("the walkthrough", () => {
     const g = newGame({ seed: 4 });
     tutorialSetup(g);
     g.forecast[0] = "rain"; // no shearing in this
-    const seen = new Set(["welcome", "shear", "market", "buy"]);
+    const seen = new Set(["welcome", "shear", "market", "buy", "scale"]);
     g.gatheredToday = true;
     // shearing is impossible today, so the walkthrough moves on rather than
     // parking the player on a step they cannot complete
@@ -128,6 +129,13 @@ describe("the walkthrough", () => {
     expect(shear.text).toMatch(/mats?/);
     expect(shear.text.toLowerCase()).toContain("rain");
     expect(shear.text.toLowerCase()).toContain("haar");
+  });
+
+  it("explains that a bigger flock is more work", () => {
+    const step = TUTORIAL.find((s) => s.id === "scale")!;
+    expect(step.text).toMatch(/two taps/);
+    expect(step.text.toLowerCase()).toContain("dog");
+    expect(step.text.toLowerCase()).toContain("crook");
   });
 
   it("teaches how a run ends badly", () => {

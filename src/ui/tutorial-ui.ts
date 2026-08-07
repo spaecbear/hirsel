@@ -103,7 +103,9 @@ export class TutorialUi {
     const row = el("div", { class: "tut-row" });
     if (next.readOnly) {
       const go = el("button", { class: "tut-go", type: "button" }, "Go on") as HTMLButtonElement;
-      go.addEventListener("click", () => this.note(next.id === "tools" ? "tools" : next.id === "sleep" ? "sleep-warned" : next.id));
+      go.addEventListener("click", () =>
+        this.note(next.id === "tools" ? "tools" : next.id === "sleep" ? "sleep-warned" : next.id),
+      );
       row.appendChild(go);
     }
     const skip = el("button", { class: "tut-skip", type: "button" }, "Skip the walkthrough") as HTMLButtonElement;

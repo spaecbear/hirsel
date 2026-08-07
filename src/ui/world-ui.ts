@@ -415,7 +415,9 @@ export class WorldUi {
               : a.name;
       const done = this.doneToday(a.id);
       return {
-        label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : ""}`,
+        // a cost above one has to be on the button: the whole decision is
+        // whether a day with three taps in it can afford this
+        label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : cost > 1 ? ` · ${cost} taps` : ""}`,
         done,
         detail: a.desc(g),
         disabled: g.taps < cost || !a.can(g),

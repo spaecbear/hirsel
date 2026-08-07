@@ -318,6 +318,36 @@ both counts, and 0.9 made her not worth having.
 £58 bought something the player could never once see. When the night's roll would have got in
 without her and misses with her, she gets the credit out loud.
 
+### Work scales with the flock
+
+Measured before it was changed: across 25 seeded 30-day runs, only about **one tap a day** had
+genuinely productive work in it — 64% of taps spare on day one with no tools, and 89% spare
+with the full kit. The day is gated by fleece growth, not by taps, so four days in five held
+nothing but gathering and the spare taps always went to the same filler.
+
+Shearing now costs a tap per 10 beasts (14 with blade shears, capped at 3 so a day can always
+hold one clip), and gathering a flock over 12 costs two taps unless a dog does the running.
+The crook takes a tap off either way.
+
+| kit | spare taps before | after |
+| --- | --- | --- |
+| nothing | 64% | over-subscribed |
+| crook + boots | 83% | 47% |
+| + dog | 86% | 58% |
+| + lantern (5 taps) | 89% | 66% |
+
+**The first measurement showed no change at all**, because the simulation never bought sheep —
+the flock stayed at six and the scaling never engaged. That is the honest shape of this change:
+it does nothing until the flock grows, which is the point. Growth was pure upside before; it
+costs a day now.
+
+The starting flock is deliberately untouched — six beasts is one tap to shear and one to
+gather, exactly as before, and `game.test.ts` pins that so the early game cannot drift.
+
+Still open: 66% is narrower, not tight. The next levers are actions that fill the empty days
+with investment rather than filler — repairing a dyke, dipping the flock — and the spec's own
+§14.5, that the pelt ends the fox game outright (measured: 7.3% risk → 1.0%, permanently).
+
 ### Design invariants
 
 Things that are easy to break by accident:

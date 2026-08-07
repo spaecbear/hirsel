@@ -54,6 +54,24 @@ export function buffGlossary(): GlossaryEntry[] {
   ];
 }
 
+/** how the day's work grows with the flock */
+export function workGlossary(): GlossaryEntry[] {
+  return [
+    {
+      id: "shearing",
+      name: "Shearing",
+      meta: `1 tap per ${BALANCE.shearPerTap} beasts · ${BALANCE.shearPerTapWithShears} with blade shears`,
+      effect: `Never more than ${BALANCE.shearMaxTaps} taps, so a day can always hold one clip.`,
+    },
+    {
+      id: "gathering",
+      name: "Gathering",
+      meta: `2 taps past ${BALANCE.bigFlock} beasts, on your own`,
+      effect: "A dog does the running for you, and the crook takes a tap off either way.",
+    },
+  ];
+}
+
 export function statusGlossary(): GlossaryEntry[] {
   const peltEarned = loadEarned().includes("pelt");
   return [

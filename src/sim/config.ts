@@ -33,6 +33,26 @@ export const BALANCE = {
 
   feedPerTwoSheep: 1,
 
+  /*
+   * Work scales with the flock.
+   *
+   * Measured across 25 seeded runs, only about one tap a day had genuinely
+   * productive work in it — 64% spare on day one with no tools at all, and
+   * 89% spare once the kit was in. The day is gated by fleece growth, not by
+   * taps, so four days in five held nothing but gathering and the spare taps
+   * went to the same filler every time.
+   *
+   * Scaling the work turns flock growth from pure upside into a real
+   * decision, and it is the game's own fiction: a hirsel is the ground one
+   * shepherd and one dog can work.
+   */
+  shearPerTap: 10,
+  shearPerTapWithShears: 14,
+  /** never so many that a day cannot contain one clip */
+  shearMaxTaps: 3,
+  /** past this, a flock needs two taps to gather — unless a dog does the running */
+  bigFlock: 12,
+
   shearMinFleece: 4,
   shearsBonus: 1.2,
   steadyHandsBonus: 1.15,
@@ -187,8 +207,8 @@ export const PASTURES = [
 ] as const;
 
 export const TOOLS = [
-  { id: "crook", name: "Shepherd's crook", cost: 18, what: "Gathering costs no tap." },
-  { id: "shears", name: "Blade shears", cost: 32, what: "Every fleece comes off a fifth heavier." },
+  { id: "crook", name: "Shepherd's crook", cost: 18, what: "Takes a tap off gathering — and off a big flock, which costs two." },
+  { id: "shears", name: "Blade shears", cost: 32, what: "Every fleece comes off a fifth heavier, and you get through more of them in a day." },
   { id: "boots", name: "Stout boots", cost: 26, what: "One more tap every day." },
   { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night, and foxes think twice about her." },
   { id: "collie", name: "Border collie", cost: 58, what: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a fox, but they do better under her." },

@@ -575,6 +575,47 @@ describe("what has been done today", () => {
   });
 });
 
+describe("work that scales with the flock", () => {
+  const shear = ACTIONS.find((a) => a.id === "shear")!;
+  const gather = ACTIONS.find((a) => a.id === "gather")!;
+  const flockOf = (n: number) => Array.from({ length: n }, () => sheep(6));
+
+  it("costs more to shear a bigger flock, up to a cap a day can hold", () => {
+    expect(shear.cost(harness({ flock: flockOf(6) }).state)).toBe(1);
+    expect(shear.cost(harness({ flock: flockOf(10) }).state)).toBe(1);
+    expect(shear.cost(harness({ flock: flockOf(11) }).state)).toBe(2);
+    expect(shear.cost(harness({ flock: flockOf(20) }).state)).toBe(2);
+    expect(shear.cost(harness({ flock: flockOf(21) }).state)).toBe(3);
+    // never more than a day can contain, however many there are
+    expect(shear.cost(harness({ flock: flockOf(90) }).state)).toBe(BALANCE.shearMaxTaps);
+    expect(BALANCE.shearMaxTaps).toBeLessThan(BALANCE.maxTaps);
+  });
+
+  it("blade shears get you through more of them in a tap", () => {
+    const flock = flockOf(12);
+    expect(shear.cost(harness({ flock }).state)).toBe(2);
+    expect(shear.cost(harness({ flock, owned: { shears: true } }).state)).toBe(1);
+  });
+
+  it("a big flock takes two taps to gather alone, and a dog does the running", () => {
+    const big = flockOf(BALANCE.bigFlock + 1);
+    expect(gather.cost(harness({ flock: big }).state)).toBe(2);
+    expect(gather.cost(harness({ flock: big, owned: { dog: true } }).state)).toBe(1);
+    expect(gather.cost(harness({ flock: big, owned: { collie: true } }).state)).toBe(1);
+    // the crook takes a tap off whatever it would otherwise be
+    expect(gather.cost(harness({ flock: big, owned: { crook: true } }).state)).toBe(1);
+    expect(gather.cost(harness({ flock: big, owned: { crook: true, dog: true } }).state)).toBe(0);
+  });
+
+  it("changes nothing for a starting flock", () => {
+    // the early game was tight and is meant to stay exactly as it was
+    const { state } = harness();
+    expect(state.flock).toHaveLength(BALANCE.startFlock);
+    expect(shear.cost(state)).toBe(1);
+    expect(gather.cost(state)).toBe(1);
+  });
+});
+
 describe("the economy", () => {
   /**
    * A modest, non-optimal policy: gather without the crook, shear and sell

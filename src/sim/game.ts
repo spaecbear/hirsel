@@ -17,6 +17,8 @@ import {
   breedOf,
   buffed,
   canShear,
+  gatherCost,
+  shearCost,
   dogFoxBias,
   hasDog,
   feedCost,
@@ -630,8 +632,14 @@ export const ACTIONS: ActionDef[] = [
     id: "gather",
     name: "Gather the flock",
     anim: "gather",
-    cost: (g) => (owns(g, "crook") ? 0 : 1),
-    desc: (g) => (g.gatheredToday ? "Already gathered today." : "Bring them in close. Cuts tonight's fox risk hard."),
+    cost: gatherCost,
+    desc: (g) => {
+      if (g.gatheredToday) return "Already gathered today.";
+      const big = g.flock.length > BALANCE.bigFlock && !hasDog(g);
+      return big
+        ? `Bring them in close. Cuts tonight's fox risk hard — though ${g.flock.length} of them is a long walk on your own.`
+        : "Bring them in close. Cuts tonight's fox risk hard.";
+    },
     can: (g) => !g.gatheredToday,
     run: (game) => {
       game.state.gatheredToday = true;
@@ -642,7 +650,7 @@ export const ACTIONS: ActionDef[] = [
     id: "shear",
     name: "Shear",
     anim: "shear",
-    cost: one,
+    cost: shearCost,
     desc: (g) => {
       if (!canShear(g)) {
         return weatherOn(g).id === "mist"

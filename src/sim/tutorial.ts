@@ -82,6 +82,14 @@ export const TUTORIAL: TutorialStep[] = [
     done: (g) => g.flock.length >= 6,
   },
   {
+    id: "scale",
+    text:
+      "Mind that a bigger flock is more work, not just more wool. Past ten beasts a clip takes two taps, " +
+      "and past a dozen you cannot gather them alone in one — a dog does the running, and a crook takes a tap off either way.",
+    readOnly: true,
+    done: (_g, seen) => seen.has("scale"),
+  },
+  {
     id: "ground",
     text: "They eat the grass down as they graze. Tap open ground to muck it and bring it back.",
     target: "ground",

@@ -1,7 +1,7 @@
 import { $, el, toast } from "./dom";
 import { ACHIEVEMENTS, clearEarned, loadEarned } from "../sim/achievements";
 import { CHEATS, findCheat, type CheatContext } from "../sim/cheats";
-import { buffGlossary, statusGlossary, type GlossaryEntry } from "../sim/glossary";
+import { buffGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
 import type { Settings } from "../sim/settings";
 
 export interface SettingsApi {
@@ -97,6 +97,7 @@ export function buildSettings(api: SettingsApi) {
       el("div", { class: e.secret && e.name === "?????" ? "locked" : "" }, `<b>${e.name}</b><i>${e.meta}</i><span>${e.effect}</span>`);
     for (const e of buffGlossary()) glossGrid.appendChild(glossEntry(e));
     for (const e of statusGlossary()) glossGrid.appendChild(glossEntry(e));
+    for (const e of workGlossary()) glossGrid.appendChild(glossEntry(e));
     gloss.appendChild(glossGrid);
     box.appendChild(gloss);
 
