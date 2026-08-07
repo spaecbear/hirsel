@@ -13,14 +13,14 @@
  */
 import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
-import { BALANCE, BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
+import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
 import { canShear, here, isFullMoon, moonName, owns, priceOn, readyToShear, tapsPerDay } from "../sim/rules";
 import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
 import type { Screen } from "../render/screen";
 import type { Animator } from "../render/animator";
 import type { Settings } from "../sim/settings";
-import type { BreedId, CroftId, ToolId } from "../sim/types";
+import type { ActionId, BreedId, CroftId, ToolId } from "../sim/types";
 
 interface Row {
   label: string;
@@ -386,22 +386,18 @@ export class WorldUi {
    */
   private doneToday(id: string): boolean {
     const g = this.game.state;
-    switch (id) {
-      case "gather":
-        return g.gatheredToday;
-      case "pub":
-        return g.pubToday;
-      case "tend":
-        return (g.buffs.tended ?? 0) >= BALANCE.tendDays;
-      case "pipe":
-        return (g.buffs["steady hands"] ?? 0) >= BALANCE.cozyBuffDays;
-      case "music":
-        return (g.buffs["settled flock"] ?? 0) >= BALANCE.cozyBuffDays;
-      case "muck":
-        return here(g).grass > BALANCE.muckMaxGrass;
-      default:
-        return false;
-    }
+    /*
+     * Read from what was recorded, never inferred from the effects.
+     *
+     * Inferring got two things wrong. The fiddle sets a different buff from
+     * the pipes, so playing it never ticked and could be played all day; and
+     * mucking was reading "the grass is above the threshold" as "you have
+     * mucked", which ticked it on ground nobody had touched.
+     */
+    if (id === "muck") return g.muckedToday.includes(g.at);
+    if (id === "gather") return g.gatheredToday; // cleared by moving them
+    if (id === "pub") return g.pubToday;
+    return (g.didToday[id as ActionId] ?? 0) > 0;
   }
 
   private actionRows(ids: string[]): Row[] {

@@ -5,7 +5,8 @@ import { hasDog } from "./sim/rules";
 import { loadSettings, prefersReducedMotion, saveSettings, type Settings } from "./sim/settings";
 import { clearSave, exportFile, hasSave, importFile, readSave, saveGame } from "./sim/save";
 import { lexicon } from "./sim/lexicon";
-import { revealNextCheat } from "./sim/cheats";
+import { CHEATS, revealNextCheat } from "./sim/cheats";
+import { ACHIEVEMENTS, loadEarned } from "./sim/achievements";
 import { tutorialSetup } from "./sim/tutorial";
 import type { GameState } from "./sim/types";
 
@@ -26,7 +27,7 @@ import { WorldUi } from "./ui/world-ui";
 import { SkyFeed } from "./ui/sky-feed";
 import { TutorialUi } from "./ui/tutorial-ui";
 import { buildSettings } from "./ui/settings-panel";
-import { $, toast } from "./ui/dom";
+import { $, el, toast } from "./ui/dom";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
@@ -230,6 +231,65 @@ addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeSettings();
 });
 
+/* ---------- the credits ---------- */
+
+/**
+ * Shown for finishing a run with nothing left to find — every achievement
+ * earned and every code known. Not for winning; for finishing it.
+ */
+function everythingFound(): boolean {
+  const earned = new Set(loadEarned());
+  const allAchievements = ACHIEVEMENTS.every((a) => earned.has(a.id));
+  const found = new Set(settings.cheatsFound);
+  const allCheats = CHEATS.every((c) => found.has(c.code));
+  return allAchievements && allCheats;
+}
+
+const CREDITS: [string, string][] = [
+  ["Design", "Joseph Ceccarelli"],
+  ["Code", "Joseph Ceccarelli"],
+  ["Pixel art", "Joseph Ceccarelli"],
+  ["Animation", "Joseph Ceccarelli"],
+  ["Music", "Joseph Ceccarelli"],
+  ["Sound", "Joseph Ceccarelli"],
+  ["Writing", "Joseph Ceccarelli"],
+  ["Balance", "Joseph Ceccarelli"],
+  ["Testing", "Joseph Ceccarelli"],
+  ["Production", "Joseph Ceccarelli"],
+  ["Special thanks", "Joseph Ceccarelli"],
+];
+
+function showCredits() {
+  const box = $("credits-scroll");
+  box.innerHTML = "";
+  box.appendChild(el("h2", {}, "Hirsel"));
+  box.appendChild(el("div", { class: "note" }, "a hill, a flock, and a life to build on it"));
+  for (const [role, name] of CREDITS) {
+    box.appendChild(el("div", { class: "role" }, role));
+    box.appendChild(el("div", { class: "name" }, name));
+  }
+  box.appendChild(
+    el(
+      "div",
+      { class: "note" },
+      `Every achievement found, every word known, and the croft finished on day ${game.state.day}.<br><br>` +
+        "Wolves were hunted out of Scotland some time in the 1680s.<br>Thank you for keeping the last one company.",
+    ),
+  );
+  // restart the roll from the bottom every time it is opened
+  const scroll = box as HTMLElement;
+  scroll.style.animation = "none";
+  void scroll.offsetWidth;
+  scroll.style.animation = "";
+  world.close(); // nothing else on screen while it rolls
+  document.body.classList.add("rolling");
+  $("credits").classList.add("on");
+}
+$("credits-close").addEventListener("click", () => {
+  $("credits").classList.remove("on");
+  document.body.classList.remove("rolling");
+});
+
 /* ---------- the title ---------- */
 function showTitle() {
   const save = readSave();
@@ -331,6 +391,14 @@ function showEnd() {
     }
   }
   $("over").classList.add("on");
+
+  // and for a run that finished with nothing left to find
+  if (o.kind === "win" && everythingFound()) {
+    setTimeout(() => {
+      $("over").classList.remove("on");
+      showCredits();
+    }, 2600);
+  }
 }
 
 /**

@@ -498,6 +498,78 @@ body.no-motion .tutorial.nudge {
   border-color: #4a5a38;
 }
 
+/* the credits: earned by finishing with nothing left to find */
+.credits {
+  background: rgba(11, 13, 8, 0.97);
+  overflow: hidden;
+}
+/* nothing else on screen while it rolls */
+body.rolling .hud-bar,
+body.rolling .glen-chrome,
+body.rolling .sheet,
+body.rolling .sky-log,
+body.rolling .hint,
+body.rolling .tutorial {
+  display: none;
+}
+.credits-scroll {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 32px));
+  text-align: center;
+  animation: credits-roll 62s linear forwards;
+}
+@keyframes credits-roll {
+  from {
+    top: 100vh;
+  }
+  to {
+    top: -180vh;
+  }
+}
+body.no-motion .credits-scroll {
+  animation: none;
+  top: 0;
+  position: relative;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 24px 0;
+}
+.credits h2 {
+  font-size: 20px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gorse);
+  text-indent: 0.5em;
+  margin-bottom: 6px;
+}
+.credits .role {
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin-top: 26px;
+}
+.credits .name {
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: var(--wool);
+  margin-top: 5px;
+}
+.credits .note {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--stone);
+  margin-top: 34px;
+}
+.credits-skip {
+  position: absolute;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  right: calc(14px + env(safe-area-inset-right));
+  background: rgba(11, 13, 8, 0.8);
+}
+
 /* the title */
 .title {
   background: var(--peat);

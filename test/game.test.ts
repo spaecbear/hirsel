@@ -529,6 +529,52 @@ describe("the dog and the instrument are slots, not a shopping list", () => {
   });
 });
 
+describe("what has been done today", () => {
+  /**
+   * Both reported: the fiddle could be played over and over because it never
+   * showed as done, and mucking showed as already done on ground nobody had
+   * touched. Both came of inferring "you did this" from side effects — the
+   * fiddle sets a different buff from the pipes, and muck was reading "the
+   * grass is high" as "you mucked it".
+   */
+  it("records the instrument however it is played", () => {
+    const pipes = harness({ taps: 6 });
+    pipes.game.doAction("music");
+    expect(pipes.state.didToday.music).toBe(1);
+
+    const fiddle = harness({ taps: 6, owned: { fiddle: true } });
+    fiddle.game.doAction("music");
+    expect(fiddle.state.didToday.music, "the fiddle counts as playing too").toBe(1);
+    expect(fiddle.state.buffs.fiddled).toBe(BALANCE.fiddleDays);
+    expect(fiddle.state.buffs["settled flock"], "and not the pipes' buff").toBeUndefined();
+  });
+
+  it("only counts ground actually mucked, per pasture", () => {
+    const { game, state } = harness({ taps: 6 });
+    state.pastures[0].grass = 50;
+    state.pastures[1].grass = 50;
+    expect(state.muckedToday).toEqual([]); // fresh ground is not "done"
+
+    game.doAction("muck");
+    expect(state.muckedToday).toEqual([0]);
+
+    game.moveTo(1);
+    expect(state.muckedToday, "moving hill does not carry it over").toEqual([0]);
+    game.doAction("muck");
+    expect(state.muckedToday).toEqual([0, 1]);
+  });
+
+  it("clears at the end of the night", () => {
+    const { game, state } = harness({ taps: 6 });
+    state.pastures[0].grass = 50;
+    game.doAction("muck");
+    game.doAction("pipe");
+    game.sleep();
+    expect(state.didToday).toEqual({});
+    expect(state.muckedToday).toEqual([]);
+  });
+});
+
 describe("the economy", () => {
   /**
    * A modest, non-optimal policy: gather without the crook, shear and sell

@@ -118,6 +118,15 @@ export interface GameState {
   forecast: WeatherId[];
   log: LogLine[];
   gatheredToday: boolean;
+  /**
+   * What has actually been done today, by action id, and which pastures have
+   * been mucked. Recorded rather than inferred: working it out from side
+   * effects got both the fiddle (which sets a different buff from the pipes)
+   * and mucking (which was reading "the grass is high" as "you did this")
+   * wrong. Cleared every night.
+   */
+  didToday: Partial<Record<ActionId, number>>;
+  muckedToday: number[];
   actsToday: number;
   pubs: number;
   /** the inn is once a night — you cannot drink the day away */

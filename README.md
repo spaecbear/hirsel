@@ -228,7 +228,24 @@ Two things that were bugs and are now rules:
   was unreachable. Each animal is its own target and the gaps fall through to the ground —
   measured at 73% of the field reaching the pasture, 9% the sheep.
 
+### Done today
+
+Which actions have been taken today is **recorded in the state**, never inferred from their
+effects. Inferring got two things wrong, both reported from play: the fiddle sets a different
+buff from the pipes, so playing it never ticked and could be played all day; and mucking was
+reading "the grass is above the threshold" as "you have mucked", which ticked it on ground
+nobody had touched. `didToday` counts actions and `muckedToday` holds pasture indices, both
+cleared at the end of the night.
+
+Adding those two fields is also why `save.ts` gained `hydrate`. `validate` used to require
+every key a fresh game has, so **any new field silently rejected every existing save** — a
+player losing their run to a feature they never asked for. It now checks only the shape the
+game cannot run without, and back-fills the rest from a fresh game.
+
 ### Finishing a run
+
+Finishing a run with **nothing left to find** — every achievement earned and every code known
+— rolls the credits. Not for winning; for finishing it.
 
 Marrying reveals a cheat code you did not have, for the next run — one per win, and `1680`
 is held back until every other code is known, since it is the only one that gives the wolf

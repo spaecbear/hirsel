@@ -36,7 +36,8 @@ export function readSave(): SaveFile | null {
     const raw = localStorage.getItem(SLOT);
     if (!raw) return null;
     const f = JSON.parse(raw) as SaveFile;
-    return validate(f) ? f : null;
+    if (!validate(f)) return null;
+    return { ...f, state: hydrate(f.state) };
   } catch {
     return null;
   }
@@ -54,6 +55,21 @@ export function clearSave() {
   }
 }
 
+/**
+ * Fill in anything a save predates.
+ *
+ * `validate` requires every key a fresh game has, so adding a field to
+ * GameState would otherwise silently reject every existing save — the player
+ * loses their run to a feature they never asked for. Anything missing is
+ * taken from a fresh game, top level and inside `stats`.
+ */
+export function hydrate(state: GameState): GameState {
+  const fresh = newGame();
+  const merged = { ...fresh, ...state } as GameState;
+  merged.stats = { ...fresh.stats, ...(state.stats ?? {}) };
+  return merged;
+}
+
 export function validate(f: unknown): f is SaveFile {
   if (!f || typeof f !== "object") return false;
   const s = f as SaveFile;
@@ -61,10 +77,14 @@ export function validate(f: unknown): f is SaveFile {
   const g = s.state;
   if (!g || typeof g !== "object") return false;
   // shape check against a fresh game: same top-level keys, same primitive kinds
-  const ref = newGame();
-  for (const k of Object.keys(ref) as (keyof GameState)[]) {
+  /*
+   * Only the shape the game cannot run without. Requiring every key meant
+   * every new field broke every existing save; anything absent is filled in
+   * by `hydrate` instead.
+   */
+  const core: (keyof GameState)[] = ["day", "money", "flock", "pastures", "forecast", "owned", "buffs"];
+  for (const k of core) {
     if (!(k in g)) return false;
-    if (typeof ref[k] !== typeof g[k]) return false;
   }
   return Array.isArray(g.flock) && Array.isArray(g.pastures) && Array.isArray(g.forecast);
 }
@@ -82,7 +102,7 @@ export function exportFile(state: GameState) {
 export async function importFile(file: File): Promise<GameState | null> {
   try {
     const parsed = JSON.parse(await file.text()) as unknown;
-    return validate(parsed) ? parsed.state : null;
+    return validate(parsed) ? hydrate(parsed.state) : null;
   } catch {
     return null;
   }

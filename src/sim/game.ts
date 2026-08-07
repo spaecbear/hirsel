@@ -95,6 +95,8 @@ export function newGame(opts: GameOptions = {}): GameState {
     forecast,
     log: [],
     gatheredToday: false,
+    didToday: {},
+    muckedToday: [],
     actsToday: 0,
     pubs: 0,
     pubToday: false,
@@ -202,6 +204,9 @@ export class Game {
     if (g.taps < cost || !act.can(g)) return;
     if (g.recording) g.draft.push({ kind: "act", act: id });
     act.run(this);
+    // what was done, recorded at the point of doing it
+    g.didToday[id] = (g.didToday[id] ?? 0) + 1;
+    if (id === "muck" && !g.muckedToday.includes(g.at)) g.muckedToday.push(g.at);
     this.onAnim(act.anim, id === "ask" ? () => this.win() : undefined);
     this.spend(cost);
   }
@@ -498,6 +503,8 @@ export class Game {
     this.freeTaps = false; // the free day is over the moment it ends
     g.gatheredToday = false;
     g.pubToday = false;
+    g.didToday = {};
+    g.muckedToday = [];
     g.actsToday = 0;
     g.taps = tapsPerDay(g);
     this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
