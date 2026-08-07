@@ -45,7 +45,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "arrow",
     name: "Arrow",
-    hint: "Twice round, because you came back.",
+    hint: "Twice round by the fire, because you came back.",
     secret: true,
     won: (g) => g.stats.spunTwice,
   },

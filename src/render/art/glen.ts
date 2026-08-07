@@ -1277,9 +1277,9 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
    * the opening, a little forward of the wall so she is on the floor rather
    * than in the grate.
    */
+  // both marks come from the layout, so where she is drawn and where she can
+  // be tapped are the same fact rather than two copies of it
   const fireSpot = { x: hx + Math.round(I.hearth.w / 2) - 6, y: I.floorY + 3 };
-  // and the sheltie keeps well clear of him: at 0.44 of the room she was
-  // standing behind the man and disappearing into him
   const dogHome = { x: Math.round(I.W * 0.3), y: I.midY - 11 };
   if (hasDog(st)) {
     const collieAtFire = owns(st, "collie") && hearthBuilt;
@@ -1509,7 +1509,7 @@ export const GLEN_ART: ArtPack = {
     const st = s.state;
     const k = s.anim;
     const p = s.p;
-    const L = layoutWorld(g.W, g.H, st, { shepherdAt: s.shepherdAt });
+    const L = layoutWorld(g.W, g.H, st, { shepherdAt: s.shepherdAt, time: s.time });
     /*
      * The night is two beats: `sleep` takes the light down and leaves it
      * down, `dawn` brings it back. Anything that happens in the dark — the
@@ -1539,7 +1539,7 @@ export const GLEN_ART: ArtPack = {
 
     // inside the house: a different room, not a different hill
     if (s.interior) {
-      const I = layoutInterior(g.W, g.H);
+      const I = layoutInterior(g.W, g.H, st);
       drawInterior(g, I, st, s.time, k === "sleep", !!s.spotlightBed);
         return;
     }

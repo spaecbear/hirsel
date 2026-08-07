@@ -56,6 +56,8 @@ export class WorldUi {
   canInteract: (id: HotspotId) => boolean = () => true;
   /** told when a tap was refused, so the prompt can ask for attention */
   onBlocked: () => void = () => {};
+  /** she was tapped: a bark, every time, spin or no spin */
+  onBark: () => void = () => {};
   /** true once the player has stepped inside the croft */
   interior = false;
   /** hold a finger on the pasture and he walks over */
@@ -152,7 +154,7 @@ export class WorldUi {
   private spotAt(clientX: number, clientY: number, at = performance.now()) {
     const { x, y } = this.screen.toLogical(clientX, clientY);
     if (this.interior) {
-      return hitTest(layoutInterior(this.screen.W, this.screen.H), x, y);
+      return hitTest(layoutInterior(this.screen.W, this.screen.H, this.game.state), x, y);
     }
     const L = layoutWorld(this.screen.W, this.screen.H, this.game.state, {
       shepherdAt: this.walk.position,
@@ -171,6 +173,7 @@ export class WorldUi {
     const { x, y } = this.screen.toLogical(clientX, clientY);
     const L = layoutWorld(this.screen.W, this.screen.H, this.game.state, {
       shepherdAt: this.walk.position,
+      time: performance.now(),
     });
     // keep him on the near ground, and clear of the very edges
     const ty = Math.max(L.groundY + 4, Math.min(this.screen.H - 30, y - 20));
@@ -211,13 +214,22 @@ export class WorldUi {
      * the world, so there is nothing here for the gate to protect; the bark
      * is held back while something else is playing, but the turn is not.
      */
+    /*
+     * The dog answers a tap herself rather than opening a sheet, and she
+     * answers it even while something else is playing. She only has a target
+     * indoors — see layoutInterior — so this cannot spend a day's work by
+     * accident the way a target out on the hill could.
+     *
+     * The bark is a sound rather than an animation on purpose. Played through
+     * the animator it made the world busy for 900ms, which is longer than the
+     * 800ms window the second turn of a pair has to land in, so asking for
+     * Arrow silenced her and swallowed the tap that earned it.
+     */
     if (spot.id === "dog") {
       const g = this.game.state;
-      if (owns(g, "collie")) {
-        if (!this.busy) this.game.bark();
-      } else {
+      this.onBark();
+      if (!owns(g, "collie")) {
         const quick = startSpin(performance.now());
-        if (!this.busy) this.game.bark();
         if (quick) this.game.markSpun();
       }
       this.close();

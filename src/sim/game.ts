@@ -289,12 +289,6 @@ export class Game {
   }
 
   /** one day's work on whatever is being built */
-  /** she was tapped: she answers, and that is all it is */
-  bark() {
-    if (this.state.over) return;
-    this.onAnim("bark");
-  }
-
   /** she has crossed the room and settled at the fire, and you watched her */
   markTippy() {
     const g = this.state;

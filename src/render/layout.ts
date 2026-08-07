@@ -87,11 +87,17 @@ export interface LayoutOpts {
    * than something the painter works out on its own. She moves, so a fixed
    * hotspot would not be on her — and this file is the single source for both
    * where a thing is drawn and where it can be tapped.
+   *
+   * Required, and deliberately so. It was optional with a fallback to her old
+   * fixed mark, and the painter did not pass it: she was drawn standing still
+   * in one place while her tap target ran round the ellipse somewhere else,
+   * so tapping her could only ever hit the ground behind her. A layout that
+   * can be built two different ways is not a single source of anything.
    */
-  time?: number;
+  time: number;
 }
 
-export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpts = {}): WorldLayout {
+export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpts): WorldLayout {
   /*
    * Orientation changes the composition, not just the crop. A desktop in
    * landscape gets a wide vista: the croft at one end, the cart at the other,
@@ -191,10 +197,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
    * Where she actually is this frame, so she can be drawn and tapped in the
    * same place. Without a clock we fall back to her old fixed mark.
    */
-  const dogAt =
-    opts.time === undefined
-      ? { ...dog, facing: 1 as 1 | -1, running: false }
-      : (() => {
+  const dogAt = (() => {
           /*
            * The circuit has to fit the canvas, not just the flock. Sized off
            * the flock box alone she ran clean off the left edge on a wide
@@ -209,9 +212,9 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
           // and she stays on the near ground: never up into the hills, never
           // off the bottom of the frame
           const ry = Math.max(6, Math.min(flockBox.h * 0.34 + 4, cy - (groundY + 2), H - 14 - cy));
-          const c = herdCircuit(opts.time, cx, cy, rx, ry);
-          return { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, running: c.running };
-        })();
+    const c = herdCircuit(opts.time, cx, cy, rx, ry);
+    return { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, running: c.running };
+  })();
 
   /*
    * Hit-test order matters: this list is searched front to back, so the
@@ -222,11 +225,15 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "croft", rects: [pad(croft, 4)], label: "The croft" },
     { id: "cart", rects: [pad(cart, 6)], label: "The cart" },
     { id: "shepherd", rects: [{ x: shepherd.x - 10, y: shepherd.y - 8, w: 34, h: 40 }], label: "Yourself" },
-    // she is listed above the flock so a tap on her is hers, not theirs
-    ...(st.owned.dog || st.owned.collie
-      // a generous box: she is a small sprite and she is usually moving
-      ? [{ id: "dog" as const, rects: [{ x: dogAt.x - 8, y: dogAt.y - 10, w: 36, h: 30 }], label: "The dog" }]
-      : []),
+    /*
+     * She has no tap target out here, on purpose.
+     *
+     * Every tap on the hill is a real action, so a target sitting among the
+     * flock and the ground invites mashing right where an unintended day's
+     * work could be spent — and out here she is working anyway: running the
+     * outside of the flock, a small sprite crossing the glen. She answers
+     * indoors, lying at the fire, where a tap costs nothing and she is still.
+     */
     { id: "flock", rects: flock.map((f) => ({ x: f.x - 4, y: f.y - 8, w: 24, h: 24 })), label: "The flock" },
     // the hills are the band between the skyline and the near ground; the sky
     // is everything above it. They must not overlap or the one listed first
@@ -279,6 +286,8 @@ export interface InteriorLayout {
   /** the depth band nearest the camera */
   frontY: number;
   table: Rect;
+  /** where the dog is in the room: at the fire, or on her own mark */
+  dogSpot: { x: number; y: number };
   /** where the man stands, top-left of his sprite */
   man: { x: number; y: number };
   hearth: Rect;
@@ -294,7 +303,7 @@ export interface InteriorLayout {
  * bought is on the walls: the point is that a purchase changes a room you
  * stand in rather than a line in a list.
  */
-export function layoutInterior(W: number, H: number): InteriorLayout {
+export function layoutInterior(W: number, H: number, st?: GameState): InteriorLayout {
   // a tall screen gets a lower floor line, or the room is all bare boards
   const portrait = H > W * 1.15;
   const floorY = Math.round(H * (portrait ? 0.72 : 0.62));
@@ -338,11 +347,18 @@ export function layoutInterior(W: number, H: number): InteriorLayout {
     h: 26,
   };
 
+  // where she is lying or standing, which the painter draws from too
+  const atFire = !!st && !!st.owned.collie && !!st.owned.hearth;
+  const dogSpot = atFire
+    ? { x: hearth.x + Math.round(hearth.w / 2) - 6, y: floorY + 3 }
+    : { x: Math.round(W * 0.3), y: midY - 11 };
+
   return {
     W,
     H,
     floorY,
     midY,
+    dogSpot,
     frontY,
     hearth,
     bed,
@@ -351,6 +367,15 @@ export function layoutInterior(W: number, H: number): InteriorLayout {
     man,
     shelf,
     hotspots: [
+      /*
+       * She can be tapped indoors as well. She had no target in the house at
+       * all, so asking a sheltie for her turn only worked out on the hill —
+       * and the hearth is exactly where you would stoop to say hello to her.
+       * Listed first so she wins over the hearth she is lying against.
+       */
+      ...(st && (st.owned.dog || st.owned.collie)
+        ? [{ id: "dog" as const, rects: [{ x: dogSpot.x - 8, y: dogSpot.y - 12, w: 36, h: 30 }], label: "The dog" }]
+        : []),
       { id: "bed", rects: [pad(bed, 6)], label: "The bed" },
       { id: "hearth", rects: [pad(hearth, 4)], label: "The hearth" },
       { id: "door", rects: [pad(door, 4)], label: "Out to the hill" },

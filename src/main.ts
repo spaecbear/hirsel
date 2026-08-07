@@ -54,12 +54,32 @@ world.onNote = (what) => tutorial.note(what);
 // the walkthrough locks everything except the thing it is teaching
 world.canInteract = (id) => tutorial.allows(id);
 world.onBlocked = () => tutorial.nudge();
+world.onBark = () => sfx.play("bark");
 
 /* ---------- opening ---------- */
-function openingLines(g: Game) {
+/**
+ * The first words of a run.
+ *
+ * `toldAlready` is the cutscene having said it: it captions "You handed in
+ * your notice" itself, and this used to say the same sentence again in the
+ * sky at the same moment, so the opening carried two cards telling you the
+ * same thing.
+ *
+ * The matting tip is held back while the walkthrough is running, because the
+ * walkthrough teaches matting properly at the shearing step, where it is
+ * about something the player is doing rather than a card over a cutscene.
+ */
+function openingLines(g: Game, opts: { toldAlready?: boolean; teaching?: boolean } = {}) {
   const lex = lexicon(settings.inverse);
-  g.say(`You handed in your notice. Six ${lex.beasts}, forty pounds, and a hill.`, "gold");
-  g.say(`${lex.woolCap} is worth most between the fourth and ninth day of growth. After that it mats.`, "hi");
+  g.say(
+    opts.toldAlready
+      ? `Six ${lex.beasts}, forty pounds, and a hill.`
+      : `You handed in your notice. Six ${lex.beasts}, forty pounds, and a hill.`,
+    "gold",
+  );
+  if (!opts.teaching) {
+    g.say(`${lex.woolCap} is worth most between the fourth and ninth day of growth. After that it mats.`, "hi");
+  }
 }
 
 function wire(g: Game) {
@@ -111,14 +131,24 @@ function startGame(state?: GameState, opts: { intro?: boolean } = {}) {
     tutorialSetup(game.state);
     game.freeTaps = true;
   }
-  if (!state) openingLines(game);
-  if (teaching) tutorial.start();
   view.goTab("day");
   lastDay = game.state.day;
-  // the day you walked out, before the first day on the hill
-  if (opts.intro && settings.ui === "glen" && !prefersReducedMotion(settings)) {
-    animator.play("quit");
-  }
+
+  /*
+   * The cutscene runs on its own, and the hill starts talking when it is
+   * over. All of this used to fire first: the opening lines were in the sky
+   * and the walkthrough's first card was up before the animation had begun,
+   * so the day you walked out was played behind a stack of notes about
+   * shearing.
+   */
+  const intro = opts.intro && settings.ui === "glen" && !prefersReducedMotion(settings);
+  const begin = () => {
+    if (!state) openingLines(game, { toldAlready: intro, teaching });
+    if (teaching) tutorial.start();
+    render();
+  };
+  if (intro) animator.play("quit", begin);
+  else begin();
   render();
 }
 
