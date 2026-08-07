@@ -328,42 +328,110 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
 
 /* ---------- the animals ---------- */
 
-/** tricolour sheltie — must stay readable at night */
-export function drawDog(g: Painter, x: number, y: number, run: number) {
+/**
+ * The sheltie. Tricolour: black saddle, tan points, and the white chest the
+ * breed is actually recognised by.
+ *
+ * `spin` (0→1) turns her right round on the spot, the way a collie does when
+ * she is pleased with herself. Four orientations — side, rear, the other
+ * side, front — because two would read as a flicker rather than a turn. Her
+ * body foreshortens to nothing when she is end-on, which is what sells it.
+ */
+export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0) {
   const leg = run ? (Math.sin(run * Math.PI * 12) > 0 ? 0 : 2) : 0;
-  g.a(x - 2, y + 11, 18, 2, 0, 0, 0, 0.22);
-  g.px(x + 1, y + 7, 2, 4, "#f2eee2");
-  g.px(x + 8, y + 7 - leg, 2, 4, "#f2eee2");
-  g.px(x + 4, y + 7 + leg, 2, 4, "#f2eee2");
-  g.px(x + 11, y + 7, 2, 4, "#f2eee2");
-  g.px(x + 1, y + 2, 13, 6, "#2a2320");
-  g.px(x + 1, y + 6, 13, 2, "#b07a3e");
-  /*
-   * The mane. A rough collie's chest is the thing you actually recognise her
-   * by — a white bib standing out well past the line of her shoulder — and
-   * she had a four-pixel smudge where it should be.
-   */
-  g.px(x + 11, y, 5, 4, "#f2eee2"); // the bib, up under her chin
-  g.px(x + 10, y + 2, 6, 5, "#f2eee2");
-  g.px(x + 12, y + 6, 4, 3, "#e2ded2"); // where it falls between her legs
-  g.px(x + 10, y + 1, 1, 6, "#d8d4c8"); // the shaded edge of it
-  g.px(x + 2, y + 1, 3, 2, "#f2eee2"); // and a little white at her shoulder
-  g.px(x + 13, y - 1, 6, 7, "#2a2320");
-  g.px(x + 15, y + 3, 5, 3, "#b07a3e");
-  g.px(x + 16, y, 2, 4, "#f2eee2"); // blaze
-  g.px(x + 18, y + 3, 1, 1, "#0d0d0b");
-  g.px(x + 13, y - 4, 2, 3, "#2a2320");
-  g.px(x + 17, y - 4, 2, 3, "#2a2320");
   const tail = run ? Math.sin(run * Math.PI * 8) * 3 : Math.sin(Date.now() / 500) * 1;
-  g.px(x - 4, y + tail, 5, 3, "#2a2320");
-  g.px(x - 7, y + 1 + tail, 3, 3, "#f2eee2");
+  g.a(x - 2, y + 11, 18, 2, 0, 0, 0, 0.22);
+
+  if (spin > 0) {
+    /*
+     * Rotation by foreshortening rather than by cutting between four poses.
+     * Her length across the screen is |cos| of the angle she has turned
+     * through, so she narrows into the end-on views and widens out of them;
+     * cutting straight between four fixed poses read as four poses, not a
+     * turn.
+     */
+    const angle = spin * Math.PI * 2;
+    const across = Math.cos(angle);
+    const hop = Math.round(Math.sin(spin * Math.PI * 2) * 2);
+    if (Math.abs(across) > 0.34) {
+      drawDogSide(g, x, y - hop, run, across > 0 ? 1 : -1, tail, leg, Math.abs(across));
+      return;
+    }
+    const quarter = Math.sin(angle) > 0 ? 1 : 3;
+    if (quarter === 1 || quarter === 3) {
+      // end-on: she is only as wide as her shoulders
+      const rear = quarter === 1;
+      const bx = x + 6;
+      const by = y - hop;
+      g.px(bx + 1, by + 7, 2, 4, "#f2eee2"); // her feet
+      g.px(bx + 4, by + 7, 2, 4, "#f2eee2");
+      g.px(bx, by + 2, 7, 6, "#2a2320"); // shoulders, foreshortened
+      if (rear) {
+        g.px(bx + 2, by + 4, 3, 4, "#b07a3e"); // tan under her tail
+        g.px(bx + 2, by - 2 + Math.round(tail), 3, 5, "#2a2320"); // tail up
+        g.px(bx + 2, by - 3 + Math.round(tail), 3, 2, "#f2eee2");
+      } else {
+        g.px(bx + 1, by + 2, 5, 5, "#f2eee2"); // the bib, straight at us
+        g.px(bx, by - 3, 7, 6, "#2a2320"); // her head
+        g.px(bx + 2, by - 1, 3, 4, "#b07a3e"); // muzzle
+        g.px(bx + 3, by, 1, 2, "#f2eee2"); // blaze
+        g.px(bx + 1, by, 1, 1, "#0d0d0b"); // both eyes on you
+        g.px(bx + 5, by, 1, 1, "#0d0d0b");
+        g.px(bx - 1, by - 5, 2, 3, "#2a2320"); // ears
+        g.px(bx + 6, by - 5, 2, 3, "#2a2320");
+      }
+      return;
+    }
+    return;
+  }
+
+  drawDogSide(g, x, y, run, 1, tail, leg, 1);
 }
 
-/**
- * The fox, which walks off the hill one way and back the other — so it needs
- * to turn round. Local coordinates run 0 (tail tip) to 29 (snout) and are
- * mirrored when it heads left; `x` is the trailing edge either way.
- */
+/** her side view, facing right by default and mirrored about her own length */
+function drawDogSide(
+  g: Painter,
+  x: number,
+  y: number,
+  run: number,
+  facing: 1 | -1,
+  tail: number,
+  leg: number,
+  squash = 1,
+) {
+  const SPAN = 20;
+  // `squash` foreshortens her along her length as she turns, and keeps her
+  // centred on the same spot while she does it
+  const k = Math.max(0.2, squash);
+  const originShift = Math.round((SPAN * (1 - k)) / 2);
+  const px = (dx: number, dy: number, w: number, h: number, c: string) => {
+    const sx = Math.round(dx * k);
+    const sw = Math.max(1, Math.round(w * k));
+    g.px((facing > 0 ? x + sx : x + Math.round(SPAN * k) - sx - sw) + originShift, y + dy, sw, h, c);
+  };
+  void run;
+
+  px(1, 7, 2, 4, "#f2eee2"); // socks
+  px(8, 7 - leg, 2, 4, "#f2eee2");
+  px(4, 7 + leg, 2, 4, "#f2eee2");
+  px(11, 7, 2, 4, "#f2eee2");
+  px(1, 2, 13, 6, "#2a2320"); // the black saddle
+  px(1, 6, 13, 2, "#b07a3e"); // tan along her belly
+  px(11, 0, 5, 4, "#f2eee2"); // the white chest, up under her chin
+  px(10, 2, 6, 5, "#f2eee2");
+  px(12, 6, 4, 3, "#e2ded2");
+  px(10, 1, 1, 6, "#d8d4c8");
+  px(2, 1, 3, 2, "#f2eee2"); // a little white at her shoulder
+  px(13, -1, 6, 7, "#2a2320"); // head
+  px(15, 3, 5, 3, "#b07a3e"); // muzzle
+  px(16, 0, 2, 4, "#f2eee2"); // blaze
+  px(18, 3, 1, 1, "#0d0d0b"); // eye
+  px(13, -4, 2, 3, "#2a2320"); // ears
+  px(17, -4, 2, 3, "#2a2320");
+  px(-4, Math.round(tail), 5, 3, "#2a2320"); // tail
+  px(-7, 1 + Math.round(tail), 3, 3, "#f2eee2");
+}
+
 export function drawFox(g: Painter, x: number, y: number, run: number, facing: 1 | -1 = 1) {
   const SPAN = 29;
   const leg = Math.sin(run * Math.PI * 16) > 0 ? 0 : 2;

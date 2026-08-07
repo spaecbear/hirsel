@@ -474,9 +474,12 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     if (k === "gather") drawDog(g, sx - 50 + ease(p) * 56, sy + 16, p);
     else if (k === "move") drawDog(g, sx - 30 + Math.sin(p * Math.PI * 4) * 8, sy + 16, p);
     else {
-      // she keeps station near him and mooches about while she waits
+      // she keeps station near him and mooches about while she waits, and
+      // every so often turns a full circle for the pleasure of it
       const d = driftFor(999, s.time, { dx: L.shepherd.x - 22 - L.dog.x, dy: L.shepherd.y + 14 - L.dog.y });
-      drawDog(g, L.dog.x + d.dx, L.dog.y + d.dy, d.moving ? s.time / 260 : 0);
+      const cycle = (s.time % 19000) / 19000;
+      const spin = cycle < 0.042 ? cycle / 0.042 : 0; // ~800ms, brisk enough to read as one turn
+      drawDog(g, L.dog.x + d.dx, L.dog.y + d.dy, d.moving && !spin ? s.time / 260 : 0, spin);
     }
   }
 
@@ -1135,11 +1138,25 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   }
   if (owns(st, "boots")) {
     put(() => {
-      for (const bx of [kx, kx + 6]) {
-        g.px(bx, sh.y + 13, 5, 9, "#2a2118"); // the leg
-        g.px(bx, sh.y + 12, 5, 2, "#3a2f22"); // its turned-over top
-        g.px(bx - 1, sh.y + 21, 7, 2, "#4a3a2a"); // the sole
-        g.px(bx - 1, sh.y + 23, 7, 1, "#6b5a44"); // tackets
+      /*
+       * Tackety boots in oiled leather rather than near-black. They were dark
+       * on dark panelling and the easiest thing on the wall to miss, which is
+       * poor for the purchase that buys a whole extra tap.
+       */
+      for (let i = 0; i < 2; i++) {
+        const bx = kx + i * 7;
+        const by = sh.y + 8 + i; // the back one stands a little higher
+        g.px(bx + 1, by, 5, 2, "#7a5f3e"); // the turned-over cuff
+        g.px(bx, by + 1, 1, 2, "#6a5236");
+        g.px(bx + 6, by + 1, 1, 2, "#6a5236");
+        g.px(bx + 1, by + 2, 5, 7, "#5e4a2f"); // the leg of it
+        g.px(bx + 1, by + 2, 2, 7, "#6d5738"); // lit down one side
+        g.px(bx + 2, by + 4, 3, 1, "#3a2f1e"); // laces
+        g.px(bx + 2, by + 6, 3, 1, "#3a2f1e");
+        g.px(bx + 1, by + 9, 7, 3, "#4a3a24"); // the foot, toe forward
+        g.px(bx + 1, by + 9, 7, 1, "#6d5738");
+        g.px(bx, by + 12, 9, 2, "#33291b"); // the sole
+        for (let t = 0; t < 4; t++) g.px(bx + 1 + t * 2, by + 13, 1, 1, "#8a7a5c"); // tackets
       }
     });
   }
