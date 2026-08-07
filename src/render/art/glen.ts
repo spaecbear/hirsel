@@ -797,12 +797,45 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
  * fixed sprite. The canvas has no fixed resolution, and a figure sized for a
  * desktop's short interior stood chest-deep in the floor on a phone.
  */
+/**
+ * A fire in a grate.
+ *
+ * The croft and the inn had drawn their fires differently — the house a set
+ * of nested blocks, the inn five separate tongues — so the same fire looked
+ * like two different fires depending on which room you were standing in.
+ * One function, both hearths.
+ */
+function drawHearthFire(g: Painter, x: number, y: number, w: number, h: number, time: number) {
+  const flick = Math.sin(time / 130) * 2;
+  /*
+   * The insets are a share of the height, not fixed pixels. Fixed, the pale
+   * core kept its size while the grate grew, so the inn's wider fire came out
+   * a flat yellow slab where the croft's was layered. At the croft's 16px
+   * these work out as the 4 and 9 it was drawn with by hand.
+   */
+  const i1 = Math.max(2, Math.round(h * 0.25));
+  const i2 = Math.max(4, Math.round(h * 0.56));
+  g.px(x, y, w, h, "#c07a24");
+  g.px(x + i1, y + i1 + flick, w - i1 * 2, h - i1, C.fire);
+  g.px(x + i2, y + i2 + flick, w - i2 * 2, h - i2, "#f0c86a");
+}
+
 function drawBackFigure(
   g: Painter,
   cx: number,
   headTop: number,
   footY: number,
-  o: { coat: string; coatLit: string; hair: string; hat?: string; skirt?: string; apron?: string; step?: number },
+  o: {
+    coat: string;
+    coatLit: string;
+    hair: string;
+    hat?: string;
+    skirt?: string;
+    apron?: string;
+    step?: number;
+    /** -1..1, how far a skirt is swinging this frame */
+    sway?: number;
+  },
 ) {
   /*
    * Proportioned rather than blocked out. The first version was three solid
@@ -828,10 +861,37 @@ function drawBackFigure(
   const headX = Math.round(cx - headW / 2);
   const step = o.step ?? 0;
 
+  // something to stand on, or they read as hanging in the room
+  g.a(bodyX - 2, footY - 1, bodyW + 4, 2, 0, 0, 0, 0.28);
+
   // legs, or a skirt to the floor
   if (o.skirt) {
-    g.px(bodyX, headTop + headH + bodyH, bodyW, legH, o.skirt);
-    g.px(bodyX - 1, footY - Math.round(legH * 0.25), bodyW + 2, Math.round(legH * 0.25), o.skirt);
+    /*
+     * A skirt cannot take a walk cycle, so it takes the sway instead: it
+     * flares from the waist to the hem and the hem swings furthest, with the
+     * shaded fold running down whichever side it is swinging away from. She
+     * floated across the room before this — a flat panel with nothing in it
+     * moving.
+     */
+    const skirtTop = headTop + headH + bodyH;
+    const hemW = bodyW + 4;
+    const swing = (o.sway ?? 0) * (hemW * 0.18);
+    for (let i = 0; i < legH; i++) {
+      const t = i / Math.max(1, legH - 1);
+      const w = Math.max(2, Math.round(bodyW + (hemW - bodyW) * t));
+      const off = Math.round(swing * t * t); // the hem moves, the waist does not
+      g.px(bodyX + Math.round((bodyW - w) / 2) + off, skirtTop + i, w, 1, o.skirt);
+    }
+    // the fold, on the trailing side, and the hem catching the firelight
+    const foldSide = swing >= 0 ? -1 : 1;
+    for (let i = Math.round(legH * 0.25); i < legH; i++) {
+      const t = i / Math.max(1, legH - 1);
+      const w = Math.max(2, Math.round(bodyW + (hemW - bodyW) * t));
+      const off = Math.round(swing * t * t);
+      const fx0 = bodyX + Math.round((bodyW - w) / 2) + off;
+      g.a(foldSide < 0 ? fx0 : fx0 + w - 2, skirtTop + i, 2, 1, 0, 0, 0, 0.22);
+    }
+    g.a(bodyX - 2, footY - 2, bodyW + 5, 1, 255, 240, 210, 0.12);
   } else {
     g.px(bodyX + 1, headTop + headH + bodyH, legW, legH, "#3a3226");
     g.px(bodyX + bodyW - legW - 1, headTop + headH + bodyH - step, legW, legH, "#3a3226");
@@ -853,7 +913,6 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
 
   const W = L.W;
   const H = L.H;
-  const flick = Math.sin(time / 130) * 2;
 
   /* ---- the room ---- */
   g.px(0, 0, W, H, "#2f2418");
@@ -902,14 +961,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   const fireH = Math.max(8, Math.round((floorY - fy) * 0.4));
   g.px(fx + 6, floorY - 5, fw - 12, 5, "#4a3a2a"); // logs
   g.px(fx + 9, floorY - 8, fw - 18, 3, "#3a2c20");
-  for (let i = 0; i < 5; i++) {
-    // tongues of it, each its own height
-    const tw = Math.round((fw - 20) / 5);
-    const th = fireH - Math.round(hash(i * 5) * 4) + (i % 2 ? Math.round(flick) : 0);
-    g.px(fx + 10 + i * tw, floorY - 6 - th, tw - 1, th, "#c07a24");
-    g.px(fx + 11 + i * tw, floorY - 6 - th + 2, tw - 3, th - 3, C.fire);
-    if (th > 6) g.px(fx + 12 + i * tw, floorY - 6 - th + 5, tw - 5, th - 8, "#f6d98a");
-  }
+  drawHearthFire(g, fx + 8, floorY - 6 - fireH, fw - 16, fireH, time);
   g.a(fx - 14, fy - 14, fw + 34, floorY - fy + 30, 240, 176, 80, 0.13 + Math.sin(time / 200) * 0.025);
 
   /* ---- the back-bar ---- */
@@ -931,12 +983,20 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   g.px(caskX + 20, shelfY + 39, 3, 3, "#c9a83c"); // its tap
 
   /* ---- the landlord, behind the bar, cut off at the counter ---- */
-  // the two on the near side are taller because they are nearer: the
-  // landlord stands further back, behind the counter
+  /*
+   * The near figures and the landlord had their heads at exactly the same
+   * height — he was shorter but stood higher up the floor by the same amount,
+   * so the two cancelled out. A smaller man whose head is level with yours
+   * does not read as further away, it reads as a small man, which is what he
+   * looked like. He is shorter *and* his head sits lower now, which is what
+   * distance actually does to a figure standing on the same floor.
+   */
   const nearH = Math.round(figH * 1.4);
+  const nearTop = floorY - 1 - nearH;
+  const landlordH = Math.round(nearH * 0.78);
   const lx = barX + Math.round(barW * 0.13);
-  const lTop = barY + 8 - figH;
-  const lm = drawBackFigure(g, lx, lTop, barY + 8, {
+  const lTop = nearTop + Math.max(5, Math.round(nearH * 0.13));
+  const lm = drawBackFigure(g, lx, lTop, lTop + landlordH, {
     coat: "#6a5a44",
     coatLit: "#7b6a52",
     hair: "#4a4038",
@@ -993,13 +1053,23 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   /* ---- the lass, come over with a tray ---- */
   const walk = clamp01((p - 0.18) / 0.32);
   const gxs = Math.round(W * 0.86 - walk * (W * 0.19));
-  const gTop = floorY - 1 - nearH;
+  // a little shorter than him, and standing on the same floor
+  const lassH = Math.round(nearH * 0.94);
+  const gTop = floorY - 1 - lassH;
+  /*
+   * The skirt swings while she is crossing the room and settles once she has
+   * arrived — one last small sway rather than stopping dead.
+   */
+  const swaying = walk > 0 && walk < 1;
+  const settle = walk >= 1 ? Math.max(0, 1 - (p - 0.5) * 3) : 1;
+  const sway = swaying || settle > 0 ? Math.sin(p * Math.PI * 14) * settle : 0;
   const gm = drawBackFigure(g, gxs, gTop, floorY - 1, {
     coat: "#e8e3d2", // her blouse
     coatLit: "#f2eee0",
     hair: "#7a3a24",
     skirt: "#3d5a4a",
     apron: "#c9c3ae",
+    sway,
   });
   // she is facing him, so she gets a face and hair down past her shoulders
   g.px(gm.headX, gTop + 1, gm.headW, gm.headH - 1, "#c9a583");
@@ -1138,10 +1208,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   g.px(hx - 2, hy - 3, I.hearth.w + 4, 4, hearthBuilt ? "#6d7263" : "#3a3226");
   if (hearthBuilt) {
     // a proper fire, and light thrown across the room
-    const flick = Math.sin(time / 130) * 2;
-    g.px(hx + 8, hy + I.hearth.h - 18, I.hearth.w - 16, 16, "#c07a24");
-    g.px(hx + 12, hy + I.hearth.h - 14 + flick, I.hearth.w - 24, 12, C.fire);
-    g.px(hx + 16, hy + I.hearth.h - 9 + flick, I.hearth.w - 32, 7, "#f0c86a");
+    drawHearthFire(g, hx + 8, hy + I.hearth.h - 18, I.hearth.w - 16, 16, time);
     g.a(hx - 12, hy - 10, I.hearth.w + 40, I.hearth.h + 30, 240, 180, 80, 0.1 + Math.sin(time / 200) * 0.02);
     // the sword goes above the fire, exactly as its description says.
     // A Highland broadsword is a basket hilt: the guard is the whole point
