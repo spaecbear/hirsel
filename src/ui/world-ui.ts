@@ -62,6 +62,8 @@ export class WorldUi {
   readonly walk = new Walk();
   private holdTimer = 0;
   private holdFrom: { x: number; y: number } | null = null;
+  /** the clock when the press began, so a moving target is tested where it was */
+  private holdAt = 0;
 
   constructor(
     private game: Game,
@@ -87,6 +89,7 @@ export class WorldUi {
     cv.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.holdFrom = { x: e.clientX, y: e.clientY };
+      this.holdAt = performance.now();
       window.clearTimeout(this.holdTimer);
       // a press that stays put on open ground sends him there instead of
       // opening anything; a quick tap still opens the sheet as before
@@ -101,7 +104,7 @@ export class WorldUi {
       if (!this.holdFrom) return; // the hold already sent him
       const moved = Math.hypot(e.clientX - this.holdFrom.x, e.clientY - this.holdFrom.y);
       this.holdFrom = null;
-      if (moved < 12) this.tap(e.clientX, e.clientY);
+      if (moved < 12) this.tap(e.clientX, e.clientY, this.holdAt);
     };
     cv.addEventListener("pointerup", endHold);
     cv.addEventListener("pointercancel", () => {
@@ -136,14 +139,24 @@ export class WorldUi {
     return this.anim.busy || this.game.busy;
   }
 
-  private spotAt(clientX: number, clientY: number) {
+  /**
+   * What is under a point — at the moment the player was *aiming*, not the
+   * moment their finger came up.
+   *
+   * The dog moves: she covers the best part of six hundred pixels in a lap,
+   * against a target a couple of dozen wide. Hit-testing her at pointer-up
+   * meant she had already run out from under the tap, and every attempt to
+   * tap her fell through to the flock behind. `at` is the pointer-down clock,
+   * which is where she was when the player decided to tap her.
+   */
+  private spotAt(clientX: number, clientY: number, at = performance.now()) {
     const { x, y } = this.screen.toLogical(clientX, clientY);
     if (this.interior) {
       return hitTest(layoutInterior(this.screen.W, this.screen.H), x, y);
     }
     const L = layoutWorld(this.screen.W, this.screen.H, this.game.state, {
       shepherdAt: this.walk.position,
-      time: performance.now(),
+      time: at,
     });
     return hitTest(L, x, y);
   }
@@ -167,9 +180,9 @@ export class WorldUi {
     return true;
   }
 
-  private tap(clientX: number, clientY: number) {
+  private tap(clientX: number, clientY: number, at = performance.now()) {
     if (this.game.state.over) return;
-    const spot = this.spotAt(clientX, clientY);
+    const spot = this.spotAt(clientX, clientY, at);
     if (!spot) {
       this.close();
       return;
@@ -187,25 +200,31 @@ export class WorldUi {
      * entirely — so you could walk in and sleep in the middle of the watch
      * running a recorded day.
      */
-    if (this.busy) return;
-
     /*
-     * The dog answers a tap herself rather than opening a sheet. A sheltie
-     * turns a circle because she is pleased to see you; a collie does not,
-     * she just looks up. Two turns in quick succession is the Arrow.
+     * The dog answers a tap herself rather than opening a sheet, and she
+     * answers it even while something else is playing.
+     *
+     * This sat below the busy gate, and tapping her starts a bark — which
+     * made the world busy for 900ms, longer than the 800ms window a second
+     * turn has to land in. The second tap of the pair was swallowed every
+     * time, so Arrow could not be asked for at all. She changes nothing in
+     * the world, so there is nothing here for the gate to protect; the bark
+     * is held back while something else is playing, but the turn is not.
      */
     if (spot.id === "dog") {
       const g = this.game.state;
       if (owns(g, "collie")) {
-        this.game.bark();
+        if (!this.busy) this.game.bark();
       } else {
         const quick = startSpin(performance.now());
-        this.game.bark();
+        if (!this.busy) this.game.bark();
         if (quick) this.game.markSpun();
       }
       this.close();
       return;
     }
+
+    if (this.busy) return;
 
     // stepping in and out of the house
     if (!this.interior && spot.id === "croft") {

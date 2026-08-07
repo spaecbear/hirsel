@@ -224,7 +224,8 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "shepherd", rects: [{ x: shepherd.x - 10, y: shepherd.y - 8, w: 34, h: 40 }], label: "Yourself" },
     // she is listed above the flock so a tap on her is hers, not theirs
     ...(st.owned.dog || st.owned.collie
-      ? [{ id: "dog" as const, rects: [{ x: dogAt.x - 4, y: dogAt.y - 6, w: 28, h: 24 }], label: "The dog" }]
+      // a generous box: she is a small sprite and she is usually moving
+      ? [{ id: "dog" as const, rects: [{ x: dogAt.x - 8, y: dogAt.y - 10, w: 36, h: 30 }], label: "The dog" }]
       : []),
     { id: "flock", rects: flock.map((f) => ({ x: f.x - 4, y: f.y - 8, w: 24, h: 24 })), label: "The flock" },
     // the hills are the band between the skyline and the near ground; the sky

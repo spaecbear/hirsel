@@ -34,6 +34,7 @@ import {
   C,
   SKY,
   drawDog,
+  drawDogCurled,
   drawDyke,
   drawFox,
   drawRam,
@@ -1270,17 +1271,31 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
    * gets up and crosses the room to it; if you walk in and it is already
    * built, she is simply there.
    */
-  const fireSpot = { x: hx + I.hearth.w + 1, y: I.floorY - 11 };
-  const dogHome = { x: Math.round(I.W * 0.44), y: I.midY - 11 };
+  /*
+   * Right in front of the fire, not beside it — she lies on the hearthstone
+   * with her back to the flames, which is the whole point of her. Squarely in
+   * the opening, a little forward of the wall so she is on the floor rather
+   * than in the grate.
+   */
+  const fireSpot = { x: hx + Math.round(I.hearth.w / 2) - 6, y: I.floorY + 3 };
+  // and the sheltie keeps well clear of him: at 0.44 of the room she was
+  // standing behind the man and disappearing into him
+  const dogHome = { x: Math.round(I.W * 0.3), y: I.midY - 11 };
   if (hasDog(st)) {
     const collieAtFire = owns(st, "collie") && hearthBuilt;
     const tip = tippyFrame(time, true, collieAtFire);
     if (collieAtFire) {
       const e = tip.there * tip.there * (3 - 2 * tip.there); // ease in and out
-      const x = Math.round(dogHome.x + (fireSpot.x - dogHome.x) * e);
-      const y = Math.round(dogHome.y + (fireSpot.y - dogHome.y) * e);
-      // she trots over facing the way she is going, then settles nose-to-fire
-      drawDog(g, x, y, tip.walking ? time / 200 : 0, 0, -1);
+      if (tip.walking) {
+        // on her way over, on her feet, facing the fire
+        const x = Math.round(dogHome.x + (fireSpot.x - dogHome.x) * e);
+        const y = Math.round(dogHome.y + (fireSpot.y - dogHome.y) * e);
+        drawDog(g, x, y, time / 200, 0, -1);
+      } else {
+        // on the boards in front of the grate, not in it: centred on the
+        // hearth she was lying on the flames and hiding them
+        drawDogCurled(g, fireSpot.x, fireSpot.y, time, 1);
+      }
     } else {
       drawDog(g, dogHome.x, dogHome.y, 0, 0, 1);
     }

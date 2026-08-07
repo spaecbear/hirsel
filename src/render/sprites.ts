@@ -414,6 +414,51 @@ const DOG_COATS = {
   collie: { dark: "#22201f", tan: "#3a3634", white: "#f6f4ec", shade: "#dcd9cf", soft: "#e8e5db" },
 };
 
+/**
+ * Curled up asleep, seen from the side — for the collie at the hearth.
+ *
+ * A dog in front of a fire is not standing at it. She was drawn with the
+ * walking sprite, which read as a dog waiting to be let out rather than one
+ * that has settled for the evening. Nose tucked to her flank, tail round to
+ * meet it, and the whole of her one low rounded mass; she breathes, because
+ * a perfectly still sprite next to a flickering fire looks dead.
+ */
+export function drawDogCurled(g: Painter, x: number, y: number, time: number, facing: 1 | -1 = 1) {
+  const SPAN = 22;
+  const coat = KIT.collie ? DOG_COATS.collie : DOG_COATS.sheltie;
+  // the slow rise and fall of her side
+  const breath = Math.sin(time / 900) > 0 ? 0 : 1;
+  const px = (dx: number, dy: number, w: number, h: number, c: string) =>
+    g.px(facing > 0 ? x + dx : x + SPAN - dx - w, y + dy, w, h, c);
+
+  g.a(x - 1, y + 9, SPAN + 2, 2, 0, 0, 0, 0.25); // her shadow on the boards
+
+  // the curl of her back, highest at the shoulder and falling away to the tail
+  px(3, 2 - breath, 16, 7 + breath, coat.dark);
+  px(2, 4, 18, 5, coat.dark);
+  px(5, 1 - breath, 11, 2, coat.dark);
+  px(6, 1 - breath, 8, 1, coat.shade); // light along her spine
+
+  // the tail, come round the front of her
+  px(1, 6, 6, 3, coat.dark);
+  px(0, 7, 4, 2, coat.white);
+
+  // her flank and the white of her chest, tucked under
+  px(4, 6, 12, 3, coat.tan);
+  px(9, 7, 8, 2, coat.white);
+
+  // the head, laid down along her side
+  px(14, 5 - breath, 7, 5, coat.dark);
+  px(16, 7 - breath, 5, 3, coat.white); // the blaze down her muzzle
+  px(19, 8 - breath, 3, 2, coat.tan); // her nose, on her paws
+  px(15, 6 - breath, 1, 1, "#0d0d0b"); // one eye, shut
+  px(13, 3 - breath, 3, 3, coat.dark); // an ear folded over
+  px(13, 3 - breath, 3, 1, coat.shade);
+
+  // front paws out in front of her nose
+  px(17, 9, 4, 2, coat.white);
+}
+
 export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0, facing: 1 | -1 = 1) {
   const leg = run ? (Math.sin(run * Math.PI * 12) > 0 ? 0 : 2) : 0;
   // a quicker, shorter wag: the old one swept far enough to read as a

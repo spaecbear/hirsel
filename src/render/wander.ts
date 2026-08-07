@@ -91,7 +91,11 @@ export interface Circuit {
  * looking the way she is running, and the lap starts and finishes at the same
  * point so the hold never teleports her.
  */
-const LAP_MS = 9000;
+/*
+ * A slower lap. At nine seconds she crossed the glen faster than a small
+ * sprite can reasonably be tapped, which made her spin impossible to ask for.
+ */
+const LAP_MS = 14000;
 const HOLD_MS = 6000;
 
 export function herdCircuit(time: number, cx: number, cy: number, rx: number, ry: number): Circuit {
