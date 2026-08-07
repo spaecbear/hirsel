@@ -46,9 +46,11 @@ export const TERRAIN: TerrainProfile[] = [
     far: "#4a5260",
   },
   {
-    // the tawny gold of high ground in late summer
-    grass: ["#7a6c3a", "#8e7e44", "#a89552"],
-    dry: ["#6e6238", "#807044", "#96854e"],
+    // the tawny gold of high ground in late summer, against the grey-brown
+    // of the same ground eaten down to its roots. These two were nearly the
+    // same colour, so there was no telling a fed corrie from a bare one.
+    grass: ["#7d7a3c", "#95924a", "#b0ab5c"],
+    dry: ["#5c5642", "#6a6350", "#78715d"],
     hill: "#6a6242",
     far: "#555c66",
   },
@@ -264,6 +266,32 @@ export function drawHeather(g: Painter, W: number, groundY: number, H: number, d
       // the odd taller sprig standing proud of the mat
       if (hash(b * 600 + i) > 0.93) g.px(x, y - 1, 1, 1, "#b98fc4");
     }
+  }
+}
+
+/**
+ * Bare ground showing through where the grass has been eaten down.
+ *
+ * Colour alone was not enough to tell a lush pasture from a bare one — worst
+ * on the High Corrie, where fed and bare were both tawny. Earth and stone
+ * appearing as the grass goes is a signal that reads at a glance whatever
+ * the palette is doing.
+ */
+export function drawBareGround(g: Painter, W: number, groundY: number, H: number, lush: number) {
+  const thin = 1 - Math.min(1, Math.max(0, lush));
+  if (thin < 0.15) return;
+  const span = H - groundY;
+  const patches = Math.round(thin * 26);
+  for (let i = 0; i < patches; i++) {
+    const x = Math.round(hash(i * 2.7) * (W - 16));
+    const y = groundY + 4 + Math.round(hash(i * 5.3) * (span - 8));
+    const w = 6 + Math.round(hash(i * 7.1) * 16 * thin);
+    const h = 2 + Math.round(hash(i * 9.3) * 3);
+    g.px(x, y, w, h, "#6a5c44"); // scraped earth
+    g.px(x, y, w, 1, "#7b6b50");
+    g.px(x + 1, y + h, Math.max(2, w - 3), 1, "#584c39");
+    // stones coming up through it once it is really bare
+    if (thin > 0.55 && hash(i * 11) > 0.6) g.px(x + 2, y - 1, 3, 2, C.rock);
   }
 }
 

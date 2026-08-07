@@ -200,78 +200,120 @@ export interface ShepherdOpts {
   sit?: boolean;
   /** seen from behind — for walking away from the camera */
   back?: boolean;
+  /**
+   * Which way he is turned: 1 right, -1 left, 0 square to the camera.
+   *
+   * He used to be square-on always, two eyes to the viewer, which read as
+   * "facing you" whatever he was doing — squaring up to a wolf coming down
+   * the hill at him, or striding across the field away from it. In profile
+   * he shows one eye and the bunnet's peak leads the way he is going.
+   */
+  facing?: 1 | -1 | 0;
 }
 
 /** 12 wide, 26 tall from `y` (the top of his head) to the soles */
 export const SHEPHERD_W = 12;
 export const SHEPHERD_H = 26;
 
+/** how wide he is, crook and all, for mirroring him about his own middle */
+const SHEPHERD_SPAN = 15;
+
 export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts = {}) {
   const step = o.walk ? (Math.sin(o.walk * Math.PI * 8) > 0 ? 1 : 0) : 0;
+  const profile = (o.facing ?? 0) !== 0;
+  const flip = o.facing === -1;
+
+  /*
+   * He is drawn facing right and mirrored about his own width when he turns,
+   * so there is one set of coordinates to keep true rather than two that
+   * drift apart.
+   */
+  const px = (dx: number, dy: number, w: number, h: number, c: string) =>
+    g.px(flip ? x + SHEPHERD_SPAN - dx - w : x + dx, y + dy, w, h, c);
+  const al = (dx: number, dy: number, w: number, h: number, r: number, gr: number, b: number, a: number) =>
+    g.a(flip ? x + SHEPHERD_SPAN - dx - w : x + dx, y + dy, w, h, r, gr, b, a);
+
   g.a(x - 1, y + 26, 14, 2, 0, 0, 0, 0.25);
+
   // boots: tackety ones once he has bought a pair, taller and nailed
   if (KIT.boots) {
-    g.px(x, y + 20, 5, 6, "#2a2118");
-    g.px(x + 6, y + 20 - step, 5, 6, "#2a2118");
-    g.px(x, y + 25, 5, 1, "#6b5a44");
-    g.px(x + 6, y + 25 - step, 5, 1, "#6b5a44");
+    px(0, 20, 5, 6, "#2a2118");
+    px(6, 20 - step, 5, 6, "#2a2118");
+    px(0, 25, 5, 1, "#6b5a44");
+    px(6, 25 - step, 5, 1, "#6b5a44");
   } else {
-    g.px(x + 1, y + 22, 4, 4, "#33291f");
-    g.px(x + 7, y + 22 - step, 4, 4, "#33291f");
+    px(1, 22, 4, 4, "#33291f");
+    px(7, 22 - step, 4, 4, "#33291f");
   }
-  g.px(x + 1, y + 15, 10, 8, "#4b4632"); // breeks
+  px(1, 15, 10, 8, "#4b4632"); // breeks
+
   // coat — the waxed oilskin is longer, darker and has a sheen on it
   if (KIT.oilskin) {
-    g.px(x, y + 6, 12, 15, "#2f3a35");
-    g.px(x, y + 6, 12, 2, "#43524a");
-    g.px(x + 11, y + 8, 1, 11, "#54655c"); // wax catching the light
-    g.px(x + 5, y + 8, 2, 12, "#26302c");
-    g.px(x, y + 5, 12, 2, "#3a4a42"); // collar up
+    px(0, 6, 12, 15, "#2f3a35");
+    px(0, 6, 12, 2, "#43524a");
+    px(11, 8, 1, 11, "#54655c"); // wax catching the light
+    px(5, 8, 2, 12, "#26302c");
+    px(0, 5, 12, 2, "#3a4a42"); // collar up
   } else {
-    g.px(x, y + 6, 12, 11, "#4a5540");
-    g.px(x, y + 6, 12, 2, "#5a6650");
-    g.px(x + 5, y + 8, 2, 9, "#3b4433"); // buttoned seam
-    g.px(x + 1, y + 5, 10, 2, "#8a4a3c"); // scarf
+    px(0, 6, 12, 11, "#4a5540");
+    px(0, 6, 12, 2, "#5a6650");
+    px(5, 8, 2, 9, "#3b4433"); // buttoned seam
+    px(1, 5, 10, 2, "#8a4a3c"); // scarf
   }
   if (KIT.shears && o.arm === undefined) {
-    g.px(x - 2, y + 15, 4, 2, "#b9bcae"); // shears on the belt
-    g.px(x - 3, y + 16, 2, 3, "#6b5433");
+    px(-2, 15, 4, 2, "#b9bcae"); // shears on the belt
+    px(-3, 16, 2, 3, "#6b5433");
   }
   if (KIT.watch) {
-    g.px(x + 2, y + 11, 5, 1, "#c9a83c"); // watch chain
-    g.px(x + 7, y + 10, 1, 2, "#e0c34c");
+    px(2, 11, 5, 1, "#c9a83c"); // watch chain
+    px(7, 10, 1, 2, "#e0c34c");
   }
+
   if (o.back) {
-    // the back of his head: no face, and the bunnet's peak points away from
-    // us rather than off to one side
-    g.px(x + 2, y, 8, 6, "#8a6b4c"); // hair
-    g.px(x + 3, y + 4, 6, 2, "#c9a583"); // his neck below it
-    g.px(x + 2, y - 3, 9, 4, "#2f3327");
-    g.px(x + 3, y - 4, 7, 1, "#3a3f31");
+    // the back of his head: no face, and the bunnet's peak points away
+    px(2, 0, 8, 6, "#8a6b4c"); // hair
+    px(3, 4, 6, 2, "#c9a583"); // his neck below it
+    px(2, -3, 9, 4, "#2f3327");
+    px(3, -4, 7, 1, "#3a3f31");
+  } else if (profile) {
+    // side on: one eye, the ear behind it, and the peak leading the way
+    px(2, 0, 8, 6, "#c9a583");
+    px(2, 0, 3, 5, "#b8926f"); // the shaded side of his face
+    /*
+     * The eye sits at 8 rather than 7 on purpose. The sprite mirrors about
+     * SHEPHERD_SPAN/2 = 7.5, so anything at 7 lands back on itself and he
+     * looked identical turned either way.
+     */
+    px(8, 2, 1, 1, "#26201a"); // the one eye you can see
+    px(3, 3, 2, 1, "#a8825f"); // ear, behind it
+    px(2, -3, 9, 4, "#2f3327"); // bunnet
+    px(10, -2, 4, 2, "#2f3327"); // peak, out over his nose
   } else {
-    g.px(x + 2, y, 8, 6, "#c9a583"); // head
-    g.px(x + 3, y + 2, 1, 1, "#26201a");
-    g.px(x + 7, y + 2, 1, 1, "#26201a");
-    g.px(x + 2, y - 3, 9, 4, "#2f3327"); // bunnet
-    g.px(x + 9, y - 2, 3, 2, "#2f3327");
+    px(2, 0, 8, 6, "#c9a583"); // head
+    px(3, 2, 1, 1, "#26201a");
+    px(7, 2, 1, 1, "#26201a");
+    px(2, -3, 9, 4, "#2f3327"); // bunnet
+    px(9, -2, 3, 2, "#2f3327");
   }
-  if (KIT.pelt) drawPelt(g, x, y);
-  if (o.arm !== undefined) g.px(x + 10, y + 8 + o.arm, 4, 3, "#c9a583");
+
+  if (KIT.pelt) drawPelt(g, flip ? x + SHEPHERD_SPAN - 12 : x, y);
+  if (o.arm !== undefined) px(10, 8 + o.arm, 4, 3, "#c9a583");
+
   if (KIT.lamp) {
     // storm lantern in the free hand, burning brighter the darker it gets
-    const lx = x - 7;
-    const ly = y + 12;
+    const lx = -7;
+    const ly = 12;
     const glow = 0.35 + NIGHT * 0.55;
-    g.a(lx - 5, ly - 5, 14, 15, 240, 190, 90, 0.05 + NIGHT * 0.26);
-    g.a(lx - 2, ly - 2, 8, 9, 240, 200, 110, 0.08 + NIGHT * 0.34);
-    g.px(lx + 1, ly - 4, 2, 3, "#6d7263"); // bail
-    g.px(lx, ly - 1, 5, 6, "#8a8f88"); // body
-    g.a(lx + 1, ly, 3, 4, 255, 214, 120, glow); // the flame
-    g.px(lx, ly + 5, 5, 1, "#5a5f58");
+    al(lx - 5, ly - 5, 14, 15, 240, 190, 90, 0.05 + NIGHT * 0.26);
+    al(lx - 2, ly - 2, 8, 9, 240, 200, 110, 0.08 + NIGHT * 0.34);
+    px(lx + 1, ly - 4, 2, 3, "#6d7263"); // bail
+    px(lx, ly - 1, 5, 6, "#8a8f88"); // body
+    al(lx + 1, ly, 3, 4, 255, 214, 120, glow); // the flame
+    px(lx, ly + 5, 5, 1, "#5a5f58");
   }
   if (o.crook && KIT.crook) {
-    for (let i = 0; i < 11; i++) g.px(x + 13, y + 1 + i * 2, 2, 2, "#6b5433");
-    g.px(x + 11, y - 1, 4, 2, "#6b5433");
+    for (let i = 0; i < 11; i++) px(13, 1 + i * 2, 2, 2, "#6b5433");
+    px(11, -1, 4, 2, "#6b5433");
   }
 }
 

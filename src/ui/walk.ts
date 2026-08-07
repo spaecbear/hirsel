@@ -50,6 +50,12 @@ export class Walk {
     return this.to !== null;
   }
 
+  /** which way he is headed, for turning the sprite to face it */
+  get facing(): 1 | -1 {
+    if (!this.to || !this.from) return 1;
+    return this.to.x >= this.from.x ? 1 : -1;
+  }
+
   get position() {
     return this.current;
   }

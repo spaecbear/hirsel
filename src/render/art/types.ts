@@ -30,6 +30,8 @@ export interface Scene {
   shepherdAt?: { x: number; y: number } | null;
   /** true while he is on his way there, so he walks rather than stands */
   walking?: boolean;
+  /** which way he is turned while walking */
+  facing?: 1 | -1;
   /** ZEN: the day never runs out, so the HUD shows a count that never falls */
   zen?: boolean;
   /** true when the player has gone inside the croft */

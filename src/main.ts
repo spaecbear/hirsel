@@ -432,6 +432,7 @@ function frame(now: number) {
     active: settings.ui === "glen" ? world.active : null,
     shepherdAt: settings.ui === "glen" ? shepherdAt : null,
     walking: settings.ui === "glen" && world.walk.walking,
+    facing: world.walk.facing,
     zen: settings.zen,
     interior: settings.ui === "glen" && world.interior,
     spotlight: settings.ui === "glen" && !world.interior ? tutorial.spotlight : null,

@@ -234,6 +234,28 @@ Marrying reveals a cheat code you did not have, for the next run — one per win
 is held back until every other code is known, since it is the only one that gives the wolf
 away. `revealNextCheat` is tested for exactly that ordering.
 
+### The hill is alive
+
+`render/wander.ts`. Sheep and the dog drift around their marks and edge towards the shepherd
+when he is near — each on its own rhythm, from a hash of its id, so the flock does not sway in
+unison. It is computed from the clock and needs no state, so it survives a reload and cannot
+desync from the simulation, which never sees it.
+
+**Nothing here touches the sim.** If a future change wants animals to actually move between
+pastures, that belongs in `sim/`, not in this file.
+
+### Facing
+
+`drawShepherd` takes `facing` (1, -1 or 0) and mirrors the whole sprite about its own width.
+Square-on he shows two eyes, which read as "looking at you" whatever he was doing — including
+squaring up to a wolf coming down the hill. In profile he shows one eye and the bunnet's peak
+leads. `back` is a third view, used for the intro's climb.
+
+One trap worth knowing: the sprite mirrors about `SHEPHERD_SPAN / 2`, so **anything drawn at
+that midpoint lands back on itself**. The profile eye sat there at first and he looked
+identical turned either way. Verified by rendering the sprite offscreen and reading the eye
+pixel's x, not by eye.
+
 ### Design invariants
 
 Things that are easy to break by accident:

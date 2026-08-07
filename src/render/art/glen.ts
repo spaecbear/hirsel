@@ -13,11 +13,13 @@
 import { clamp01, ease, type Painter } from "../painter";
 import { drawMoonDisc, moonPos } from "../moon";
 import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldLayout } from "../layout";
+import { driftFor } from "../wander";
 import {
   TERRAIN,
   mix,
   drawBurn,
   drawCloudCap,
+  drawBareGround,
   drawMottle,
   drawPools,
   drawHeather,
@@ -209,6 +211,9 @@ function drawGround(g: Painter, L: WorldLayout, st: GameState, time: number) {
   g.px(0, L.groundY - 1, L.W, 1, shade(pal[0], -20));
 
   drawMottle(g, L.W, L.groundY, L.H, pal);
+  // the ground shows its bones as it is eaten down — the clearest signal
+  // there is that a pasture needs mucking or leaving alone
+  drawBareGround(g, L.W, L.groundY, L.H, lush);
 
   // the general scatter of the turf, before anything specific to the place
   for (let x = 0; x < L.W; x += 3) {
@@ -409,10 +414,21 @@ function drawFlock(g: Painter, L: WorldLayout, s: Scene) {
   st.flock.slice(0, 24).forEach((sh, i) => {
     const home = L.flock[i];
     if (!home) return;
-    let { x, y } = home;
+    /*
+     * A standing flock read as furniture. Each beast wanders round its own
+     * mark, and drifts a little towards him when he is near — they know who
+     * brings the feed. It is presentation only: the sim never sees it.
+     */
+    const drift = driftFor(sh.id + 1, s.time, {
+      dx: L.shepherd.x - home.x,
+      dy: L.shepherd.y + 10 - home.y,
+    });
+    let x = home.x + drift.dx;
+    let y = home.y + drift.dy;
     let shorn = false;
-    let run = 0;
-    let graze = Math.sin(s.time / 1400 + i * 2) > 0;
+    let run = drift.moving ? s.time / 320 : 0;
+    let graze = !drift.moving && Math.sin(s.time / 1400 + i * 2) > 0;
+    let flip = drift.flip;
 
     if (k === "gather") {
       const e = ease(clamp01(p * 1.3));
@@ -437,7 +453,8 @@ function drawFlock(g: Painter, L: WorldLayout, s: Scene) {
       graze = false;
     }
     if (k === "tend") graze = false;
-    drawSheep(g, x, y, sh, { shorn, graze, run, flip: i % 4 === 0 });
+    if (k !== null) flip = i % 4 === 0; // set pieces stage them their own way
+    drawSheep(g, x, y, sh, { shorn, graze, run, flip });
   });
 }
 
@@ -456,7 +473,11 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   if (owns(st, "dog")) {
     if (k === "gather") drawDog(g, sx - 50 + ease(p) * 56, sy + 16, p);
     else if (k === "move") drawDog(g, sx - 30 + Math.sin(p * Math.PI * 4) * 8, sy + 16, p);
-    else drawDog(g, L.dog.x, L.dog.y + (Math.sin(s.time / 700) > 0 ? 0 : 1), 0);
+    else {
+      // she keeps station near him and mooches about while she waits
+      const d = driftFor(999, s.time, { dx: L.shepherd.x - 22 - L.dog.x, dy: L.shepherd.y + 14 - L.dog.y });
+      drawDog(g, L.dog.x + d.dx, L.dog.y + d.dy, d.moving ? s.time / 260 : 0);
+    }
   }
 
   switch (k) {
@@ -510,7 +531,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     }
     case "muck": {
       const x = L.W * 0.1 + ease(p) * (L.W * 0.7);
-      drawShepherd(g, sx, sy, { walk: p });
+      drawShepherd(g, sx, sy, { walk: p, facing: 1 });
       g.px(x, sy + 10, 22, 9, "#5b4a30");
       g.px(x + 3, sy + 3, 16, 8, "#3f3324");
       g.px(x + 2, sy + 19, 7, 7, "#3f3527");
@@ -528,7 +549,8 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       g.px(cx + 3, L.cart.y + 16, 8, 8, "#3f3527");
       g.px(cx + 20, L.cart.y + 16, 8, 8, "#3f3527");
       drawWoolSacks(g, cx + 4, L.cart.y - 2, p < 0.5 ? 40 : 0);
-      drawShepherd(g, sx, sy, { crook: true, walk: p });
+      // away to town, then back again
+      drawShepherd(g, sx, sy, { crook: true, walk: p, facing: p < 0.5 ? 1 : -1 });
       if (p > 0.6) {
         for (let i = 0; i < 8; i++) {
           const t = (p - 0.6) / 0.4;
@@ -551,14 +573,15 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       drawShepherd(g, sx, sy + (Math.sin(p * Math.PI * 4) > 0 ? 0 : 1), { crook: true, walk: p });
       break;
     case "move":
-      drawShepherd(g, sx, sy, { crook: true, walk: p });
+      // driving them onto new ground: he comes in behind the flock
+      drawShepherd(g, sx, sy, { crook: true, walk: p, facing: -1 });
       break;
     case "sleep":
       drawShepherd(g, sx, sy, {});
       break;
     default:
       // walking to a spot he was sent to, or standing at his mark
-      if (s.walking) drawShepherd(g, sx, sy, { crook: true, walk: s.time / 90 });
+      if (s.walking) drawShepherd(g, sx, sy, { crook: true, walk: s.time / 90, facing: s.facing ?? 1 });
       else drawShepherd(g, sx, sy + (Math.sin(s.time / 1600) > 0 ? 0 : 1), { crook: true });
   }
 }
@@ -627,7 +650,7 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
     }
     if (p > 0.6) drawSheep(g, L.W * 0.2, sy + 16, { id: -1, fleece: 6, breed: "blackface", age: 0 }, {});
     drawWolfBeast(g, wolfX, sy + 4, p, bodyAlpha, eyeGlow);
-    drawShepherd(g, sx + Math.sin(p * Math.PI * 6) * 2, sy, { crook: true });
+    drawShepherd(g, sx + Math.sin(p * Math.PI * 6) * 2, sy, { crook: true, facing: 1 });
     if (p > 0.75) g.a(0, 0, L.W, L.H, 180, 71, 44, 0.22 * Math.sin(((p - 0.75) / 0.25) * Math.PI));
     return;
   }
@@ -638,7 +661,7 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
 
   if (stage === 3) {
     setSpriteState({ kit: { pelt: true } });
-    drawShepherd(g, sx, sy, {});
+    drawShepherd(g, sx, sy, { facing: 1 });
     setSpriteState({ kit: { pelt: false } });
     const t = (p - 0.62) / 0.38;
     for (let i = 0; i < 12; i++) {
@@ -646,7 +669,7 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
       g.a(sx - 16 + i * 7, sy + 4 - q * 34, 3, 3, 138, 106, 156, 0.55 * (1 - q));
     }
   } else {
-    drawShepherd(g, sx, sy, {});
+    drawShepherd(g, sx, sy, { facing: 1 }); // turned to face him, not the camera
     if (stage < 2) {
       g.px(sx + 13, sy - 18, 3, 24, "#cdd3d8");
       g.px(sx + 13, sy - 18, 1, 24, "#f0f4f6");
