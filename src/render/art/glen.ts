@@ -664,24 +664,119 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     }
     case "build": {
       /*
-       * Working on the croft: he stands at the house with his back to us,
-       * and what he is putting up rises a course at a time. Drawn at the
-       * croft rather than at his mark, because that is where the work is.
+       * A day's work on the croft, and it is a different day's work for each
+       * piece of it. One generic hammering shot covered all four, so slating
+       * a roof, building a hearth, raising a byre and walking to Inverness
+       * for a ring all looked identical — and the thing you are working
+       * towards is the whole point of the run.
        */
-      const bx = L.croft.x + L.croft.w + 2;
-      const by = L.croft.y + 10;
-      drawShepherd(g, bx, by, { arm: Math.sin(p * Math.PI * 12) > 0 ? 0 : 3, facing: -1 });
-      // the hammer, and the stone or slate going on
+      const what = st.building?.id ?? "roof";
+      const cx0 = L.croft.x;
+      const cy0 = L.croft.y;
+      const cw = L.croft.w;
       const swing = Math.sin(p * Math.PI * 12) > 0 ? 0 : 3;
-      g.px(bx - 5, by + 6 + swing, 5, 2, "#6b5433");
-      g.px(bx - 7, by + 5 + swing, 3, 4, "#8a8f88");
-      const courses = Math.min(4, Math.floor(p * 5));
-      for (let i = 0; i < courses; i++) {
-        g.px(L.croft.x + 6, L.croft.y + 8 - i * 3, L.croft.w - 12, 2, i % 2 ? "#6d7263" : "#5c6154");
-      }
-      for (let i = 0; i < 5; i++) {
-        const t = (p * 1.4 + i / 5) % 1;
-        g.a(bx - 2 + i * 3, by + 4 - t * 14, 2, 2, 198, 190, 170, 0.5 * (1 - t)); // stone dust
+      /** dust and chips coming off whatever he is hitting */
+      const dust = (x: number, y: number) => {
+        for (let i = 0; i < 5; i++) {
+          const t = (p * 1.4 + i / 5) % 1;
+          g.a(x - 2 + i * 3, y - t * 14, 2, 2, 198, 190, 170, 0.5 * (1 - t));
+        }
+      };
+
+      if (what === "roof") {
+        /*
+         * Slate laid on the croft's own roof, course by course from the eaves
+         * up to the ridge. Drawn above the rect it hung in the air over the
+         * house with a man standing on nothing.
+         */
+        const eave = cy0 + 6; // where the roof meets the wall head
+        const ridge = cy0 - 6;
+        const rows = Math.min(6, Math.floor(p * 7));
+        for (let i = 0; i < rows; i++) {
+          const y = eave - i * 2;
+          const inset = Math.round(i * (cw * 0.06));
+          if (y < ridge) break;
+          g.px(cx0 + 1 + inset, y, cw - 2 - inset * 2, 2, i % 2 ? "#5a606c" : "#4a4e58");
+          g.px(cx0 + 1 + inset, y, cw - 2 - inset * 2, 1, "#6d7484");
+        }
+        // him on the roof, at the courses he has reached
+        const wx = cx0 + Math.round(cw * 0.5);
+        const wy = eave - rows * 2 - SHEPHERD_H + 2;
+        drawShepherd(g, wx, wy, { arm: swing ? 0 : 3, facing: -1 });
+        g.px(wx - 5, wy + 12 + swing, 5, 2, "#5a606c"); // the slate in his hands
+        dust(wx - 4, wy + 12);
+        // the stack waiting at the gable end
+        g.px(cx0 + cw + 1, cy0 + 18, 7, 5, "#4a4e58");
+        g.px(cx0 + cw + 1, cy0 + 18, 7, 1, "#6d7484");
+      } else if (what === "hearth") {
+        /*
+         * The hearth is inside, so what you see from the hill is the chimney
+         * going up the gable, course by course, and the first smoke out of it
+         * once it draws.
+         */
+        const stack = Math.min(7, Math.floor(p * 8));
+        const chx = cx0 + cw - 10;
+        for (let i = 0; i < stack; i++) {
+          g.px(chx, cy0 - 2 - i * 2, 7, 2, i % 2 ? "#6a5c48" : "#5c5040");
+          g.px(chx, cy0 - 2 - i * 2, 7, 1, "#7c6e58");
+        }
+        drawShepherd(g, chx - 16, cy0 + 4, { arm: swing ? 0 : 3, facing: 1 });
+        g.px(chx - 6, cy0 - 2 - stack * 2 + swing, 5, 2, "#6a5c48"); // the stone going on
+        dust(chx - 4, cy0 - stack * 2);
+        // his hod of mortar at his feet
+        g.px(chx - 20, cy0 + 22, 6, 4, "#4a3a26");
+        if (p > 0.82) {
+          for (let i = 0; i < 4; i++) {
+            const t = ((p - 0.82) / 0.18 + i / 4) % 1;
+            g.a(chx + 2, cy0 - 4 - stack * 2 - t * 18, 2, 2, 220, 214, 204, 0.4 * (1 - t));
+          }
+        }
+      } else if (what === "byre") {
+        /*
+         * Raised on the byre's own mark in the layout, so what goes up here
+         * is where the finished byre will stand rather than somewhere else
+         * on the grass.
+         */
+        const b = L.byre;
+        const courses = Math.min(7, Math.floor(p * 8));
+        const base = b.y + b.h;
+        for (let i = 0; i < courses; i++) {
+          const y = base - 3 - i * 3;
+          for (let x = 0; x < b.w; x += 6) {
+            g.px(b.x + x, y, 5, 3, (x / 6 + i) % 2 ? "#6d7263" : "#5c6154");
+          }
+          g.px(b.x, y, b.w, 1, "#7f8478");
+        }
+        const wallTop = base - 3 - courses * 3;
+        drawShepherd(g, b.x - 16, base - SHEPHERD_H, { arm: swing ? 0 : 3, facing: 1 });
+        g.px(b.x - 6, wallTop + swing, 5, 3, "#6d7263"); // the stone in his hands
+        dust(b.x - 4, wallTop);
+        // the heap he is working from
+        g.px(b.x + b.w + 3, base - 4, 9, 4, "#5c6154");
+        g.px(b.x + b.w + 5, base - 7, 5, 3, "#6d7263");
+      } else {
+        /*
+         * The ring is not built. It is a walk to Inverness and back, so this
+         * is the road: him going away down it with the glen behind him.
+         */
+        const t = ease(clamp01(p));
+        const wx = Math.round(L.shepherd.x + t * (L.W * 0.55));
+        const wy = Math.round(L.shepherd.y - t * (L.H * 0.1));
+        // the track he is on, running away over the shoulder of the hill
+        for (let i = 0; i < 26; i++) {
+          const u = i / 26;
+          g.a(
+            Math.round(L.shepherd.x + 6 + u * L.W * 0.62),
+            Math.round(L.shepherd.y + 22 - u * L.H * 0.12),
+            Math.max(1, Math.round(4 - u * 3)),
+            2,
+            120,
+            104,
+            72,
+            0.5 - u * 0.3,
+          );
+        }
+        drawShepherd(g, wx, wy, { crook: true, walk: p * 2, back: true });
       }
       break;
     }
