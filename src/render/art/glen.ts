@@ -1177,7 +1177,15 @@ function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
 
   /* ---- the two of them ---- */
   const figH = Math.max(30, Math.min(58, Math.round(H * 0.26)));
-  const hisX = Math.round(W * 0.52);
+  /*
+   * Close enough to reach her. At 0.52 against her 0.72 the gap was a fifth
+   * of the room, so offering the ring meant an arm stretched most of the way
+   * across it — a man proposing from the far side of the floor. Standing in
+   * to about a seventh puts the ring within a hand's reach of her, which is
+   * where it should be asked from, while leaving enough air between them
+   * that he is not kneeling on her skirt.
+   */
+  const hisX = Math.round(W * 0.585);
   const herX = Math.round(W * 0.72);
 
   // she is there the whole time, facing him
