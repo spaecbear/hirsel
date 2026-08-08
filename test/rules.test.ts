@@ -349,3 +349,52 @@ describe("the broadsword wants a wall to hang on", () => {
     expect(locked.toLowerCase()).not.toContain("fox");
   });
 });
+
+describe("Tippy is given for watching, and only for the right dog", () => {
+  /*
+   * Player report: the achievement did not arrive on walking into the room.
+   * The check used to live in the world UI's refresh(), which only runs when
+   * the game state changes — and walking through your own front door changes
+   * nothing, so it sat waiting for whatever the player did next. It runs off
+   * the clock now. These pin the conditions themselves.
+   */
+  const room = (owned: Partial<Record<string, boolean>>) => {
+    const game = new Game(newGame({ seed: 11 }));
+    game.onAnim = (_a, after) => after?.();
+    Object.assign(game.state.owned, owned);
+    return game;
+  };
+
+  it("is given to a collie with a hearth to lie at", () => {
+    const game = room({ collie: true, hearth: true });
+    game.markTippy();
+    expect(game.state.stats.sawTippy).toBe(true);
+  });
+
+  it("is not given to the sheltie, however warm the room", () => {
+    const game = room({ dog: true, hearth: true });
+    game.markTippy();
+    expect(game.state.stats.sawTippy).toBe(false);
+  });
+
+  it("is not given before the hearth is built", () => {
+    const game = room({ collie: true });
+    game.markTippy();
+    expect(game.state.stats.sawTippy).toBe(false);
+  });
+
+  it("is given once and then left alone", () => {
+    const game = room({ collie: true, hearth: true });
+    // count Tippy alone: owning the hearth earns "A fire in it" at the same
+    // moment, so counting every callback counts that one too
+    let awards = 0;
+    game.onAchievement = (a) => {
+      if (a.id === "tippy") awards++;
+    };
+    game.markTippy();
+    game.markTippy();
+    game.markTippy();
+    expect(game.state.stats.sawTippy).toBe(true);
+    expect(awards).toBe(1);
+  });
+});

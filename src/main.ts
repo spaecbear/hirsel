@@ -645,6 +645,7 @@ function frame(now: number) {
   updateSkyLog(now);
   updateHint();
   const shepherdAt = world.walk.tick(now);
+  world.tick(now); // things earned by standing still and watching
 
   screen.painter.cx.save();
   if (rolling) {

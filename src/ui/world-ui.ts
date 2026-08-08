@@ -270,17 +270,26 @@ export class WorldUi {
   }
 
   /** rebuild the open sheet in place, so a purchase updates what's on screen */
-  refresh() {
-    /*
-     * Tippy is earned by being in the room and watching her settle, not by
-     * owning a collie and a hearth at the same moment — the point of it is
-     * seeing where she chooses to lie. The painter runs her walk; this waits
-     * until she is down before the achievement lands.
-     */
+  /**
+   * Checked every frame, off the clock.
+   *
+   * Tippy is earned by being in the room and watching the collie settle at
+   * the fire. This used to live in refresh(), which only runs when the game
+   * state changes — and walking through your own front door changes nothing,
+   * so the award sat waiting until the next thing the player happened to do.
+   * The same gap swallowed the other route in: if the hearth was finished
+   * while you stood there, she takes a second and a half to cross the room,
+   * and nothing re-checked once she had arrived.
+   */
+  tick(now: number) {
     const g = this.game.state;
-    if (this.interior && owns(g, "collie") && owns(g, "hearth") && !g.stats.sawTippy) {
-      if (!tippyWalking(performance.now())) this.game.markTippy();
-    }
+    if (!this.interior || g.stats.sawTippy) return;
+    if (!owns(g, "collie") || !owns(g, "hearth")) return;
+    if (tippyWalking(now)) return; // let her get there first
+    this.game.markTippy();
+  }
+
+  refresh() {
     this.drawHud();
     if (this.active && this.sheet.classList.contains("on")) this.open(this.active);
   }
