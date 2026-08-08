@@ -3,6 +3,8 @@ import { ACHIEVEMENTS, clearEarned, loadEarned } from "../sim/achievements";
 import { CHEATS, findCheat, type CheatContext } from "../sim/cheats";
 import { buffGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
 import type { Settings } from "../sim/settings";
+import { DIFFICULTY } from "../sim/config";
+import type { Difficulty } from "../sim/types";
 
 export interface SettingsApi {
   settings: Settings;
@@ -15,6 +17,8 @@ export interface SettingsApi {
   deleteSave: () => void;
   hasSave: () => boolean;
   replayTutorial: () => void;
+  /** the scale the run on the hill just now is being played on */
+  runDifficulty: () => Difficulty;
   cheatContext: () => CheatContext;
 }
 
@@ -65,6 +69,47 @@ export function buildSettings(api: SettingsApi) {
       ),
     );
     box.appendChild(look);
+
+    /* ---- the scale ---- */
+    /*
+     * The scale is fixed into a run when it starts, so this sets what the
+     * next one will be played on. It lives here as well as on the title
+     * because the title is skipped once a run is under way, and both "Start
+     * again" and "New run" used to go straight onto a fresh hill — so after
+     * finishing a game there was no way to pick a different one.
+     */
+    const scale = group("The scale");
+    scale.appendChild(
+      seg(
+        "Next run",
+        (["gentle", "steady", "hard"] as Difficulty[]).map((id) => [DIFFICULTY[id].name, s.difficulty === id] as [string, boolean]),
+        (i) => {
+          api.apply({ difficulty: (["gentle", "steady", "hard"] as Difficulty[])[i] });
+          draw(); // the blurb and the note below describe the pick, so they redraw with it
+        },
+      ),
+    );
+    scale.appendChild(el("div", { class: "note" }, DIFFICULTY[s.difficulty].blurb));
+    const running = api.runDifficulty();
+    scale.appendChild(
+      el(
+        "div",
+        { class: "note" },
+        running === s.difficulty
+          ? `The run on the hill just now is on ${DIFFICULTY[running].name}. A run keeps the scale it was started on.`
+          : `This takes effect on the next run — the one on the hill just now stays on ${DIFFICULTY[running].name}.`,
+      ),
+    );
+    scale.appendChild(
+      el(
+        "div",
+        { class: "note" },
+        s.beatHard
+          ? "You have taken it on Hard. The glen has told you what it knows."
+          : "Only a run finished on Hard is given a cheat code.",
+      ),
+    );
+    box.appendChild(scale);
 
     /* ---- the game ---- */
     const game = group("The game");

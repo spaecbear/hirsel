@@ -222,6 +222,7 @@ const settingsUi = buildSettings({
     settingsUi.draw();
   },
   hasSave,
+  runDifficulty: () => game.state.difficulty,
   replayTutorial: () => {
     // clearing the flag is what makes startGame teach it again
     applySettings({ tutorialSeen: false });
@@ -256,8 +257,16 @@ $("btn-settings").addEventListener("click", openSettings);
 $("settings-close").addEventListener("click", closeSettings);
 soundBtn.addEventListener("click", () => applySettings({ muted: !settings.muted }));
 $("over-again").addEventListener("click", () => {
+  /*
+   * Back to the title, not straight onto a fresh hill.
+   *
+   * This used to start the next run immediately, and the scale is chosen on
+   * the title — so after finishing a run there was no way to play the next
+   * one on a different one. The title is the only place that asks, and
+   * finishing a run is exactly when a player wants to be asked.
+   */
   $("over").classList.remove("on");
-  startGame(undefined, { intro: true });
+  showTitle();
 });
 addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeSettings();
