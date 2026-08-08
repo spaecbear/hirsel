@@ -136,7 +136,7 @@ export class Game {
   rng: Rng;
   private listeners: Listener[] = [];
   /** the UI hands this in: play an animation, call back when it finishes */
-  onAnim: (anim: AnimId, after?: () => void, payload?: { breed?: string }) => void = (_a, after) => after?.();
+  onAnim: (anim: AnimId, after?: () => void, payload?: { breed?: string; croft?: CroftId }) => void = (_a, after) => after?.();
   onAchievement: (a: Achievement) => void = () => {};
   /** true while an animation-driven sequence owns the buttons */
   busy = false;
@@ -212,11 +212,18 @@ export class Game {
     const cost = this.costOf(act);
     if (g.taps < cost || !act.can(g)) return;
     if (g.recording) g.draft.push({ kind: "act", act: id });
+    /*
+     * What is being worked on, taken before the work is done. run() finishes
+     * the milestone on its last day and clears g.building, so an animation
+     * that read the state afterwards showed the wrong piece — the final day
+     * of every roof, hearth and byre played as the walk to Inverness.
+     */
+    const croft = g.building?.id;
     act.run(this);
     // what was done, recorded at the point of doing it
     g.didToday[id] = (g.didToday[id] ?? 0) + 1;
     if (id === "muck" && !g.muckedToday.includes(g.at)) g.muckedToday.push(g.at);
-    this.onAnim(act.anim, id === "ask" ? () => this.win() : undefined);
+    this.onAnim(act.anim, id === "ask" ? () => this.win() : undefined, croft ? { croft } : undefined);
     this.spend(cost);
   }
 

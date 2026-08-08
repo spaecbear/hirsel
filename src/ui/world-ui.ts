@@ -546,7 +546,17 @@ export class WorldUi {
         detail: build.desc(g, this.lexicon),
         disabled: g.taps < this.game.costOf(build),
         tone: "gold",
-        onPick: () => this.game.doAction("build"),
+        onPick: () => {
+          /*
+           * Out onto the hill first. The croft sheet is only reachable from
+           * inside the house, and the painter draws the room and returns
+           * before it ever reaches an animation — so a day's work on the
+           * roof, the chimney or the byre played entirely behind a closed
+           * door and nobody ever saw one. The work is outside anyway.
+           */
+          this.interior = false;
+          this.game.doAction("build");
+        },
       });
       rows.push({
         label: m.name,

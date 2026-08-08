@@ -670,7 +670,9 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
        * for a ring all looked identical — and the thing you are working
        * towards is the whole point of the run.
        */
-      const what = st.building?.id ?? "roof";
+      // from the payload, not the state: the last day of a piece clears
+      // g.building before this ever runs
+      const what = s.payload?.croft ?? st.building?.id ?? "roof";
       const cx0 = L.croft.x;
       const cy0 = L.croft.y;
       const cw = L.croft.w;

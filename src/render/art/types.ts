@@ -21,7 +21,7 @@ export interface Scene {
   /** TOD cheat: the flock is foxes and the raider is a ram */
   inverse: boolean;
   /** for animations about something not yet in the state — the bought ewe */
-  payload?: { breed?: string };
+  payload?: { breed?: string; croft?: string };
   /** what the pointer is over, so it can be picked out of the scene */
   hover?: HotspotId | null;
   /** the thing the player last tapped, pulsing while its sheet is open */
