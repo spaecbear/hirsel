@@ -830,7 +830,7 @@ export const ACTIONS: ActionDef[] = [
   {
     id: "ask",
     name: "Walk down and ask her",
-    anim: "pub",
+    anim: "propose",
     cozy: true,
     cost: one,
     desc: (g) => {

@@ -344,5 +344,7 @@ export const ANIM_MS: Record<string, number> = {
   wolf: 6000,
   wolflost: 5000,
   quit: 7000,
+  // the one moment the whole run has been for: let it breathe
+  propose: 7600,
   bark: 900,
 };

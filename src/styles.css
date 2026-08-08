@@ -504,6 +504,23 @@ body.no-motion .tutorial.nudge {
  * the overlay itself is clear and only carries enough of a scrim to keep the
  * text off the bright part of the sunset.
  */
+/* the end screen dissolving into the credits, rather than cutting to them */
+.over.fading {
+  opacity: 0;
+  transition: opacity 900ms linear;
+}
+.over.credits.on {
+  animation: credits-in 1100ms ease both;
+}
+@keyframes credits-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* .over is declared further down with a near-opaque backdrop and the same
  * specificity, so it won over this and buried the picture. */
 .over.credits {

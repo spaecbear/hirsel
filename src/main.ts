@@ -490,14 +490,32 @@ function showEnd() {
       box.innerHTML = `<div class="reward-label">You have them all now. There is nothing left to tell you.</div>`;
     }
   }
+  /*
+   * A run that finished with nothing left to find goes on to the credits, and
+   * it has to be impossible to miss them.
+   *
+   * "Start again" used to sit there through the wait and then the screen cut
+   * hard to the picture — so a player could tap it before the credits had
+   * begun and skip the whole ending by accident, which is a poor reward for
+   * having found everything in the game. The button is taken away for that
+   * one ending, the words are left up long enough to read, and the two
+   * screens cross-fade rather than cut.
+   */
+  const rolling = wonHard && everythingFound();
+  const again = $("over-again");
+  again.style.display = rolling ? "none" : "";
   $("over").classList.add("on");
 
-  // and for a run that finished with nothing left to find
-  if (wonHard && everythingFound()) {
+  if (rolling) {
     setTimeout(() => {
-      $("over").classList.remove("on");
-      showCredits();
-    }, 2600);
+      const over = $("over");
+      over.classList.add("fading");
+      setTimeout(() => {
+        over.classList.remove("on", "fading");
+        again.style.display = "";
+        showCredits();
+      }, 900);
+    }, 3800);
   }
 }
 

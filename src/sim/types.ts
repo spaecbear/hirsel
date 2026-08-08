@@ -107,7 +107,8 @@ export type AnimId =
   /** the dog seeing something off in the dark */
   | "bark"
   /** the day you walked out, played once at the start of a run */
-  | "quit";
+  | "quit"
+  | "propose";
 
 export interface GameState {
   day: number;

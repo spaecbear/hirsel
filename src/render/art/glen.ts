@@ -973,6 +973,185 @@ function drawBackFigure(
   return { bodyX, bodyW, headX, headW, headH, bodyH };
 }
 
+
+/**
+ * Her face and hair, for any scene she appears in.
+ *
+ * It was a cap two pixels deep with a single pixel down either side, which
+ * read as a headband rather than as hair. Hair has bulk: it stands off the
+ * crown, it is wider than the head at the jaw, and it falls well past the
+ * shoulder. Drawn as a mass first with the face cut out of the front of it,
+ * which is the only way it reads at this size.
+ *
+ * Pulled out of the pub so the proposal draws exactly the same woman.
+ */
+function drawLassHead(
+  g: Painter,
+  m: { headX: number; headW: number; headH: number },
+  top: number,
+) {
+  const hair = "#7a3a24";
+  const hairLit = "#9c4e2f";
+  const hairDark = "#5c2a19";
+  const fall = Math.round(m.headH * 1.5); // how far down her back it goes
+  // the mass: off the crown, out past the jaw, and down her back
+  g.px(m.headX - 2, top - 1, m.headW + 4, m.headH + 2, hair);
+  g.px(m.headX - 2, top + m.headH - 1, 3, fall, hair);
+  g.px(m.headX + m.headW - 1, top + m.headH - 1, 3, fall, hair);
+  // it widens as it falls, and the ends are not a ruled line
+  g.px(m.headX - 3, top + m.headH + 1, 2, fall - 3, hair);
+  g.px(m.headX + m.headW + 1, top + m.headH + 1, 2, fall - 3, hair);
+  g.px(m.headX - 2, top + m.headH + fall - 1, 3, 1, hairDark);
+  g.px(m.headX + m.headW - 1, top + m.headH + fall - 2, 3, 1, hairDark);
+  // the light on the crown and down one side, so it is not a flat shape
+  g.px(m.headX - 1, top - 1, m.headW + 2, 1, hairLit);
+  g.px(m.headX + m.headW, top + m.headH, 1, Math.round(fall * 0.7), hairLit);
+  g.px(m.headX - 2, top + 1, 1, Math.round(fall * 0.5), hairDark);
+  // and her face, out of the front of it
+  g.px(m.headX, top + 1, m.headW, m.headH - 1, "#c9a583");
+  g.px(m.headX, top + 1, 1, m.headH - 1, "#b8926f"); // the shaded side of it
+  const eye = Math.max(1, Math.round(m.headH * 0.22));
+  g.px(m.headX + 1, top + Math.round(m.headH * 0.35), eye, eye, "#26201a");
+  g.px(m.headX + m.headW - 1 - eye, top + Math.round(m.headH * 0.35), eye, eye, "#26201a");
+}
+
+/**
+ * The proposal.
+ *
+ * The one moment the whole run is for, and it used to reuse the ordinary
+ * evening at the inn — the same scene as buying a pint, with the ending
+ * quietly bolted on after it. It gets its own.
+ *
+ * Three beats by the fire, wordless bar the captions: he takes the ring out
+ * of his coat, he asks, and she says aye. It is drawn close and low, with
+ * everything but the two of them and the firelight dropped away, because at
+ * this size a wide room would put them at four pixels each.
+ */
+function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
+  const W = L.W;
+  const H = L.H;
+  const inRoom = clamp01(p < 0.08 ? p / 0.08 : p > 0.94 ? (1 - p) / 0.06 : 1);
+
+  /* ---- the room, closer in than the bar ---- */
+  g.px(0, 0, W, H, "#2b2015");
+  for (let y = 0; y < H; y += 3) {
+    const lit = 1 - Math.min(1, y / (H * 0.85));
+    g.a(0, y, W, 1, 96, 68, 40, 0.07 + lit * 0.1);
+  }
+  for (let x = 0; x < W; x += 26) g.px(x, 0, 2, H, "#211810");
+  g.px(0, 0, W, 6, "#211810"); // the beam over them
+
+  const floorY = Math.round(H * 0.86);
+  g.px(0, floorY, W, H - floorY, "#4a3826");
+  for (let x = 0; x < W; x += 13) {
+    for (let y = floorY; y < H; y += 7) {
+      if (((x / 13 + y / 7) | 0) % 2) g.a(x, y, 12, 6, 0, 0, 0, 0.12);
+    }
+  }
+  g.px(0, floorY, W, 1, "#5b4a30");
+
+  /* ---- the fire, off to one side and doing all the lighting ---- */
+  const fw = Math.max(50, Math.round(W * 0.26));
+  const fx = Math.round(W * 0.04);
+  const fy = floorY - Math.max(30, Math.round(H * 0.22));
+  g.px(fx - 4, fy - 6, fw + 8, 6, "#6d7263");
+  g.px(fx - 4, fy - 6, fw + 8, 2, "#8a8f88");
+  g.px(fx, fy, fw, floorY - fy, "#3a2c1e");
+  g.px(fx + 4, fy + 6, fw - 8, floorY - fy - 6, "#1d1610");
+  const fireH = Math.max(10, Math.round((floorY - fy) * 0.42));
+  g.px(fx + 6, floorY - 5, fw - 12, 5, "#4a3a2a");
+  drawHearthFire(g, fx + 8, floorY - 6 - fireH, fw - 16, fireH, time);
+  // the fire swells as she answers
+  const swell = p > 0.72 ? ease(clamp01((p - 0.72) / 0.28)) : 0;
+  g.a(fx - 16, fy - 16, fw + 40, floorY - fy + 34, 240, 176, 80, 0.14 + swell * 0.16 + Math.sin(time / 200) * 0.02);
+
+  /* ---- the two of them ---- */
+  const figH = Math.max(30, Math.min(58, Math.round(H * 0.26)));
+  const hisX = Math.round(W * 0.52);
+  const herX = Math.round(W * 0.72);
+
+  // she is there the whole time, facing him
+  const herTop = floorY - 1 - figH + 2;
+  const hm = drawBackFigure(g, herX, herTop, floorY - 1, {
+    coat: "#e8e3d2",
+    coatLit: "#f2eee0",
+    hair: "#7a3a24",
+    skirt: "#3d5a4a",
+    sway: Math.sin(time / 900) * 0.2,
+  });
+  drawLassHead(g, hm, herTop);
+  // her hands come up to her face when he asks
+  if (p > 0.42 && p < 0.78) {
+    g.px(hm.headX - 1, herTop + hm.headH - 1, 3, 4, "#c9a583");
+    g.px(hm.headX + hm.headW - 2, herTop + hm.headH - 1, 3, 4, "#c9a583");
+  }
+
+  /*
+   * Him. He stands, then goes down on one knee — the knee is the whole
+   * picture, so it is a real change of height rather than a pose swap.
+   */
+  const kneel = p < 0.34 ? 0 : p < 0.5 ? ease((p - 0.34) / 0.16) : p < 0.82 ? 1 : 1 - ease(clamp01((p - 0.82) / 0.18));
+  /*
+   * A modest drop, and the knee on the flags does the rest of the telling.
+   * drawBackFigure works its proportions out from crown to foot, so lowering
+   * his head shrinks all of him — head included. At a third he stopped
+   * reading as a man kneeling and started reading as a smaller man.
+   */
+  const drop = Math.round(figH * 0.16 * kneel);
+  const hisTop = floorY - 1 - figH + drop;
+  const gm = drawBackFigure(g, hisX, hisTop, floorY - 1, {
+    coat: "#4a5540",
+    coatLit: "#5a6650",
+    hair: "#8a6b4c",
+    hat: "#2f3327",
+  });
+  // the knee and the shin down on the flags, which is what actually says he
+  // is kneeling rather than standing a little shorter
+  if (kneel > 0.35) {
+    const kh = Math.max(3, Math.round(figH * 0.1));
+    g.px(gm.bodyX - 1, floorY - 1 - kh, gm.bodyW + 2, kh, "#4b4632");
+    g.px(gm.bodyX - 1, floorY - 1 - kh, gm.bodyW + 2, 1, "#5b5640");
+    // the forward foot, flat on the floor in front of him
+    g.px(gm.bodyX + gm.bodyW, floorY - 3, Math.round(gm.bodyW * 0.5), 3, "#2a2118");
+  }
+
+  /*
+   * The ring: out of his coat, held up between them, and once she has it,
+   * on her hand. It is two pixels and a spark, which at this size is as much
+   * ring as there is room for — the light on it does the work.
+   */
+  const ringY = hisTop + gm.headH + 2;
+  if (p > 0.2 && p < 0.78) {
+    const out = clamp01((p - 0.2) / 0.14);
+    const rx = Math.round(gm.bodyX + gm.bodyW + out * (herX - gm.bodyX - gm.bodyW) * 0.4);
+    g.px(gm.bodyX + gm.bodyW - 1, ringY, 3, 3, "#c9a583"); // his hand
+    g.px(rx + 2, ringY, 2, 2, "#e8d27a");
+    g.a(rx + 1, ringY - 1, 4, 4, 255, 236, 170, 0.5 + Math.sin(time / 120) * 0.3);
+  } else if (p >= 0.78) {
+    // on her hand now, and she is looking at it
+    g.px(hm.bodyX - 3, herTop + hm.headH + Math.round(hm.bodyH * 0.5), 3, 3, "#c9a583");
+    g.px(hm.bodyX - 3, herTop + hm.headH + Math.round(hm.bodyH * 0.5), 2, 2, "#e8d27a");
+    g.a(hm.bodyX - 4, herTop + hm.headH + Math.round(hm.bodyH * 0.5) - 1, 4, 4, 255, 236, 170, 0.7);
+  }
+
+  /* ---- and the room lifts its glass ---- */
+  if (p > 0.8) {
+    const t = ease(clamp01((p - 0.8) / 0.2));
+    // raised at the far end of the room, clear of the fire — at the near end
+    // all three glasses were floating in the middle of the grate
+    for (let i = 0; i < 3; i++) {
+      const bx = Math.round(W * (0.86 + i * 0.045));
+      const by = floorY - Math.round(figH * 0.7) - Math.round(t * 6);
+      g.px(bx, by, 4, 6, "#9aa3a5");
+      g.px(bx + 1, by + 2, 2, 4, "#c98a2e");
+      g.a(bx, by, 4, 2, 242, 237, 219, 0.8);
+    }
+  }
+
+  // the whole thing fades up out of the dark and back down into it
+  if (inRoom < 1) g.a(0, 0, W, H, 20, 23, 15, 1 - inRoom);
+}
+
 function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
   const inRoom = clamp01(p < 0.12 ? p / 0.12 : p > 0.88 ? (1 - p) / 0.12 : 1);
   g.a(0, 0, L.W, L.H, 20, 23, 15, inRoom);
@@ -1138,38 +1317,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
     apron: "#c9c3ae",
     sway,
   });
-  /*
-   * She is facing him, so she gets a face — and proper hair.
-   *
-   * It was a cap two pixels deep with a single pixel down either side, which
-   * read as a headband rather than as hair. Hair has bulk: it stands off the
-   * crown, it is wider than the head at the jaw, and it falls well past the
-   * shoulder. Drawn as a mass first, then the face cut out of the front of
-   * it, which is the only way it reads at this size.
-   */
-  const hair = "#7a3a24";
-  const hairLit = "#9c4e2f";
-  const hairDark = "#5c2a19";
-  const fall = Math.round(gm.headH * 1.5); // how far down her back it goes
-  // the mass: off the crown, out past the jaw, and down her back
-  g.px(gm.headX - 2, gTop - 1, gm.headW + 4, gm.headH + 2, hair);
-  g.px(gm.headX - 2, gTop + gm.headH - 1, 3, fall, hair);
-  g.px(gm.headX + gm.headW - 1, gTop + gm.headH - 1, 3, fall, hair);
-  // it widens as it falls, and the ends are not a ruled line
-  g.px(gm.headX - 3, gTop + gm.headH + 1, 2, fall - 3, hair);
-  g.px(gm.headX + gm.headW + 1, gTop + gm.headH + 1, 2, fall - 3, hair);
-  g.px(gm.headX - 2, gTop + gm.headH + fall - 1, 3, 1, hairDark);
-  g.px(gm.headX + gm.headW - 1, gTop + gm.headH + fall - 2, 3, 1, hairDark);
-  // the light on the crown and down one side, so it is not a flat shape
-  g.px(gm.headX - 1, gTop - 1, gm.headW + 2, 1, hairLit);
-  g.px(gm.headX + gm.headW, gTop + gm.headH, 1, Math.round(fall * 0.7), hairLit);
-  g.px(gm.headX - 2, gTop + 1, 1, Math.round(fall * 0.5), hairDark);
-  // and her face, out of the front of it
-  g.px(gm.headX, gTop + 1, gm.headW, gm.headH - 1, "#c9a583");
-  g.px(gm.headX, gTop + 1, 1, gm.headH - 1, "#b8926f"); // the shaded side of it
-  const ge = Math.max(1, Math.round(gm.headH * 0.22));
-  g.px(gm.headX + 1, gTop + Math.round(gm.headH * 0.35), ge, ge, "#26201a");
-  g.px(gm.headX + gm.headW - 1 - ge, gTop + Math.round(gm.headH * 0.35), ge, ge, "#26201a");
+  drawLassHead(g, gm, gTop);
   // the tray she is carrying, with the same glasses on it
   const trayY = gTop + gm.headH + Math.round(gm.bodyH * 0.55);
   const trayW = glassW * 2 + 5;
@@ -1643,6 +1791,7 @@ export const GLEN_ART: ArtPack = {
 
     // the ones that take the screen off the hill entirely
     if (k === "quit") return quitScene(g, L, p, s.time);
+    if (k === "propose") return proposeScene(g, L, p, s.time);
     if (k === "wolf") return wolfScene(g, L, s, true);
     if (k === "wolflost") return wolfScene(g, L, s, false);
 
