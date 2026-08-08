@@ -469,7 +469,14 @@ export function drawDogCurled(g: Painter, x: number, y: number, time: number, fa
   px(17, 9, 4, 2, coat.white);
 }
 
-export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0, facing: 1 | -1 = 1, wag = false) {
+/**
+ * `wag` is the clock while her tail is going, and 0 while it is not — the
+ * same shape as `run` and `spin` above it. It read Date.now() itself before,
+ * which made it the only motion in the renderer not driven by the scene's
+ * own time, so it could not be frozen or stepped for testing the way
+ * everything else can.
+ */
+export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0, facing: 1 | -1 = 1, wag = 0) {
   const leg = run ? (Math.sin(run * Math.PI * 12) > 0 ? 0 : 2) : 0;
   /*
    * The tail is told when to wag rather than deciding for itself. It used to
@@ -481,7 +488,7 @@ export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0,
    * closer to twice a second, and it is the speed rather than the distance
    * that reads as pleased.
    */
-  const tail = wag ? Math.sin(Date.now() / 78) * 2 : 0;
+  const tail = wag ? Math.sin(wag / 78) * 2 : 0;
   g.a(x - 2, y + 11, 18, 2, 0, 0, 0, 0.22);
 
   const coat = KIT.collie ? DOG_COATS.collie : DOG_COATS.sheltie;

@@ -527,7 +527,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
 
   /** her idle lap, hoisted so it can be sorted in among everything else */
   const paintDog = () =>
-    drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging);
+    drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging ? s.time : 0);
 
   /*
    * On a quiet hill the whole cast is painted in depth order — sheep, dog and
@@ -1657,7 +1657,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
        * and stood still where they did. Only the sheltie turns.
        */
       const spin = owns(st, "collie") ? 0 : spinNow(time);
-      drawDog(g, dogHome.x, dogHome.y, spin ? time / 200 : 0, spin, 1, !spin);
+      drawDog(g, dogHome.x, dogHome.y, spin ? time / 200 : 0, spin, 1, spin ? 0 : time);
     }
   }
 

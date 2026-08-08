@@ -341,9 +341,9 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
     const lift = beat.barking ? (Math.sin(time / 90) > 0 ? 1 : 0) : 0;
 
     setSpriteState({ kit: { collie: false } });
-    drawDog(g, sx, nearY(sx) - 12 - lift, 0, 0, beat.barking ? foxSide : 1, sheltieWag);
+    drawDog(g, sx, nearY(sx) - 12 - lift, 0, 0, beat.barking ? foxSide : 1, sheltieWag ? time : 0);
     setSpriteState({ kit: { collie: true } });
-    drawDog(g, cxd, nearY(cxd) - 12 - lift, 0, 0, beat.barking ? foxSide : -1, collieWag);
+    drawDog(g, cxd, nearY(cxd) - 12 - lift, 0, 0, beat.barking ? foxSide : -1, collieWag ? time : 0);
     setSpriteState({ kit: { collie: wasCollie } });
 
     /*
