@@ -420,19 +420,42 @@ function farRidge(
  * the smoke comes away in whorls and drifts off on the evening. The draw is
  * the short part of it; a man sitting with a pipe is mostly not smoking it.
  */
-const PIPE_CYCLE = 15000;
+const PIPE_CYCLE = 16000;
+/** it starts to come up off his knee */
 const PIPE_UP = 5200;
-const PIPE_DRAW = 6600;
-const PIPE_DOWN = 9000;
+/** and reaches his mouth */
+const PIPE_MOUTH = 6600;
+/** he draws on it for this long, ember bright */
+const PIPE_DRAW_FOR = 1300;
+/*
+ * And keeps it there a moment after the draw.
+ *
+ * `raised` used to hit 1 at the mouth and start falling on the very same
+ * frame, so the pipe was already on its way back down through the whole
+ * draw — he never held it there at all. A man takes a pull and sits with it
+ * a second before he lowers it.
+ */
+const PIPE_HOLD = 2600;
+const PIPE_LOWER = 1900;
 
 function pipeBeat(time: number) {
   const t = time % PIPE_CYCLE;
   const ramp = (a: number, b: number) => Math.max(0, Math.min(1, (t - a) / (b - a)));
+  const holdEnd = PIPE_MOUTH + PIPE_HOLD;
   // 0 on his knee, 1 at his mouth
-  const raised = t < PIPE_UP ? 0 : t < PIPE_DRAW ? ramp(PIPE_UP, PIPE_DRAW) : t < PIPE_DOWN ? 1 - ramp(PIPE_DRAW, PIPE_DOWN) : 0;
-  const drawing = t >= PIPE_DRAW && t < PIPE_DRAW + 900;
+  const raised =
+    t < PIPE_UP
+      ? 0
+      : t < PIPE_MOUTH
+        ? ramp(PIPE_UP, PIPE_MOUTH)
+        : t < holdEnd
+          ? 1 // held there
+          : t < holdEnd + PIPE_LOWER
+            ? 1 - ramp(holdEnd, holdEnd + PIPE_LOWER)
+            : 0;
+  const drawing = t >= PIPE_MOUTH && t < PIPE_MOUTH + PIPE_DRAW_FOR;
   // the puff hangs about long after the draw that made it
-  const since = t - PIPE_DRAW;
+  const since = t - PIPE_MOUTH;
   const puff = since >= 0 && since < 5000 ? since / 5000 : -1;
   return { raised, drawing, puff };
 }
