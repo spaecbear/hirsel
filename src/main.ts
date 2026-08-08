@@ -333,16 +333,51 @@ function showCredits() {
   score.setTune(LONG_ROAD_HOME);
   document.body.classList.add("rolling");
   $("credits").classList.add("on");
-  // when the roll runs out, go back to the menu rather than dropping the
-  // player onto a hill whose run is already over
-  scroll.addEventListener("animationend", closeCredits, { once: true });
+  // when the roll runs out, the last beat plays and then it goes to the menu
+  scroll.addEventListener("animationend", creditsOutro, { once: true });
+  /*
+   * Reduced motion turns the roll into a still list, so no animation ever
+   * ends and nothing would ever call the outro. It gets a plain timer.
+   */
+  if (prefersReducedMotion(settings)) outroTimers.push(window.setTimeout(creditsOutro, 9000));
+}
+
+/** timers for the closing beat, so leaving early can cancel them */
+let outroTimers: number[] = [];
+
+/**
+ * The last beat.
+ *
+ * The roll runs out, the quote comes up to rest in the middle of the screen,
+ * the hill behind it goes dark, and the words are left on their own for a
+ * moment before anything else happens. It is the end of the whole game, so
+ * nothing here is in a hurry.
+ */
+function creditsOutro() {
+  const quote = $("credits-quote");
+  const at = (ms: number, fn: () => void) => outroTimers.push(window.setTimeout(fn, ms));
+
+  $("credits-scroll").style.opacity = "0";
+  quote.classList.add("on"); // rises into the middle and fades up
+
+  // the hill goes out behind it, once the words have arrived
+  at(2600, () => $("credits").classList.add("dimming"));
+  // and it is left alone a while — this is the last thing anyone reads
+  at(7200, () => quote.classList.add("out"));
+  at(8800, closeCredits);
 }
 
 /** the credits end at the menu, not back on a finished hill */
 function closeCredits() {
+  for (const t of outroTimers) window.clearTimeout(t);
+  outroTimers = [];
   rolling = false;
   score.setTune(settings.inverse ? TOD_JIG : HIRSEL_AIR);
-  $("credits").classList.remove("on");
+  const credits = $("credits");
+  credits.classList.remove("on", "dimming");
+  const quote = $("credits-quote");
+  quote.classList.remove("on", "out");
+  $("credits-scroll").style.opacity = "";
   document.body.classList.remove("rolling");
   $("over").classList.remove("on");
   showTitle();
