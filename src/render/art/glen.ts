@@ -1897,7 +1897,16 @@ export const GLEN_ART: ArtPack = {
     drawHills(g, L, st);
     drawGround(g, L, st, s.time);
     drawCroft(g, L, st, night, s.time);
-    drawCart(g, L, st, s.time);
+    /*
+     * Not while it is away at market — that animation draws the cart rolling
+     * off down the road, and the parked one stayed sitting on its mark
+     * beside it, so selling wool showed you two carts and left one behind.
+     * The retro build has always guarded this; the glen build never did.
+     *
+     * Only "market" takes it away. The bought ewe walks off the back of the
+     * cart where it stands, so that one still wants it drawn.
+     */
+    if (k !== "market") drawCart(g, L, st, s.time);
 
     if (k === "pub") {
       pubScene(g, L, p, s.time);
