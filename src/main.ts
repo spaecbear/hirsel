@@ -128,6 +128,9 @@ function startGame(state?: GameState, opts: { intro?: boolean } = {}) {
 
   // a brand new run, by a player who has never had one: walk them through it
   const teaching = !state && !settings.tutorialSeen && settings.ui === "glen";
+  // a first run cannot be skipped; a replay asked for from Settings can
+  tutorial.canSkip = replayingTutorial;
+  replayingTutorial = false;
   if (teaching) {
     tutorialSetup(game.state);
     game.freeTaps = true;
@@ -226,6 +229,7 @@ const settingsUi = buildSettings({
   replayTutorial: () => {
     // clearing the flag is what makes startGame teach it again
     applySettings({ tutorialSeen: false });
+    replayingTutorial = true;
     startGame(undefined, { intro: true });
     closeSettings();
     hideTitle();
@@ -446,6 +450,8 @@ animator.onIdle = () => {
 let endShown = false;
 /** the credits are rolling, and the canvas is showing the last picture */
 let rolling = false;
+/** the walkthrough was asked for again, rather than being a player's first */
+let replayingTutorial = false;
 /** the previous frame's clock, so the credits beat can spot the moment it turns */
 let lastFrame = 0;
 function showEnd() {

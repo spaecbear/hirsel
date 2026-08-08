@@ -21,6 +21,13 @@ export class TutorialUi {
   /** held back while a cutscene has the screen */
   private suspended = false;
   onFinish: () => void = () => {};
+  /**
+   * Whether a way out is offered.
+   *
+   * False on a player's first run — that one is the point of the thing —
+   * and true when they have asked to see it again from Settings.
+   */
+  canSkip = false;
 
   constructor(private game: Game) {
     this.banner = $("tutorial");
@@ -108,12 +115,24 @@ export class TutorialUi {
       );
       row.appendChild(go);
     }
-    const skip = el("button", { class: "tut-skip", type: "button" }, "Skip the walkthrough") as HTMLButtonElement;
-    skip.addEventListener("click", () => {
-      this.stop();
-      this.onFinish();
-    });
-    row.appendChild(skip);
+    /*
+     * The way out is only offered to someone who has been here before.
+     *
+     * It was on every step of every run, including a player's very first
+     * one — a single tap on their first minute in the game, and the
+     * walkthrough was gone for good, since finishing and skipping both set
+     * the same flag. That is exactly how a new player ends up on a hill with
+     * no idea what shearing is. A first run teaches; a replay, which is
+     * asked for deliberately from Settings, can be left at any time.
+     */
+    if (this.canSkip) {
+      const skip = el("button", { class: "tut-skip", type: "button" }, "Skip the walkthrough") as HTMLButtonElement;
+      skip.addEventListener("click", () => {
+        this.stop();
+        this.onFinish();
+      });
+      row.appendChild(skip);
+    }
     this.banner.appendChild(row);
     this.banner.classList.add("on");
   }
