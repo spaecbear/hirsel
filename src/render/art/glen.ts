@@ -999,6 +999,17 @@ function drawBackFigure(
     step?: number;
     /** -1..1, how far a skirt is swinging this frame */
     sway?: number;
+    /**
+     * Take the proportions from this height rather than from crown-to-foot.
+     *
+     * Everything here is sized off how tall the figure is on screen, which
+     * is right for someone standing and wrong for someone kneeling: drop the
+     * crown to kneel and the head, the shoulders and all of him shrink with
+     * it, so he stops reading as a man on one knee and starts reading as a
+     * smaller man. Passing the standing height keeps him the size he was and
+     * takes the difference out of his legs, which is where it belongs.
+     */
+    standH?: number;
   },
 ) {
   /*
@@ -1008,7 +1019,8 @@ function drawBackFigure(
    * is small: roughly 18% head, 42% body, 40% leg, and never more than about
    * a third as wide as they are tall.
    */
-  const h = Math.max(20, footY - headTop);
+  const span = Math.max(20, footY - headTop);
+  const h = Math.max(20, o.standH ?? span);
   /*
    * Matched to the shepherd's own proportions rather than to life. His head
    * is about a fifth of him and nearly as wide as his shoulders; drawn to
@@ -1017,7 +1029,8 @@ function drawBackFigure(
    */
   const headH = Math.round(h * 0.22);
   const bodyH = Math.round(h * 0.4);
-  const legH = h - headH - bodyH;
+  // what is left of him below the body, which kneeling eats into
+  const legH = Math.max(2, span - headH - bodyH);
   const headW = Math.max(5, Math.round(h * 0.26));
   const bodyW = Math.max(6, Math.round(h * 0.32));
   const legW = Math.max(2, Math.round(h * 0.11));
@@ -1189,41 +1202,53 @@ function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
    */
   const kneel = p < 0.34 ? 0 : p < 0.5 ? ease((p - 0.34) / 0.16) : p < 0.82 ? 1 : 1 - ease(clamp01((p - 0.82) / 0.18));
   /*
-   * A modest drop, and the knee on the flags does the rest of the telling.
-   * drawBackFigure works its proportions out from crown to foot, so lowering
-   * his head shrinks all of him — head included. At a third he stopped
-   * reading as a man kneeling and started reading as a smaller man.
+   * He goes down a full third of himself, and stays the size he was: the
+   * figure is told what height to take its proportions from, so the drop
+   * comes out of his legs instead of shrinking his head. Held to a token
+   * drop he read as a man standing slightly lower with a pair of knees
+   * floating on the floor in front of him.
    */
-  const drop = Math.round(figH * 0.16 * kneel);
+  const drop = Math.round(figH * 0.32 * kneel);
   const hisTop = floorY - 1 - figH + drop;
   const gm = drawBackFigure(g, hisX, hisTop, floorY - 1, {
     coat: "#4a5540",
     coatLit: "#5a6650",
     hair: "#8a6b4c",
     hat: "#2f3327",
+    standH: figH,
   });
-  // the knee and the shin down on the flags, which is what actually says he
-  // is kneeling rather than standing a little shorter
+  // the knee and the shin down on the flags, under him rather than in front
   if (kneel > 0.35) {
-    const kh = Math.max(3, Math.round(figH * 0.1));
-    g.px(gm.bodyX - 1, floorY - 1 - kh, gm.bodyW + 2, kh, "#4b4632");
-    g.px(gm.bodyX - 1, floorY - 1 - kh, gm.bodyW + 2, 1, "#5b5640");
+    const kh = Math.max(3, Math.round(figH * 0.09));
+    g.px(gm.bodyX, floorY - 1 - kh, gm.bodyW, kh, "#4b4632");
+    g.px(gm.bodyX, floorY - 1 - kh, gm.bodyW, 1, "#5b5640");
     // the forward foot, flat on the floor in front of him
-    g.px(gm.bodyX + gm.bodyW, floorY - 3, Math.round(gm.bodyW * 0.5), 3, "#2a2118");
+    g.px(gm.bodyX + gm.bodyW, floorY - 3, Math.round(gm.bodyW * 0.55), 3, "#2a2118");
   }
 
   /*
-   * The ring: out of his coat, held up between them, and once she has it,
-   * on her hand. It is two pixels and a spark, which at this size is as much
-   * ring as there is room for — the light on it does the work.
+   * The ring, and the arm that holds it out.
+   *
+   * It used to travel to her on its own with him sat still behind it, which
+   * read as a ring floating across the room. His arm goes with it: shoulder
+   * to hand, so the ring is on the end of something.
    */
-  const ringY = hisTop + gm.headH + 2;
+  const shoulderY = hisTop + gm.headH + 2;
   if (p > 0.2 && p < 0.78) {
-    const out = clamp01((p - 0.2) / 0.14);
-    const rx = Math.round(gm.bodyX + gm.bodyW + out * (herX - gm.bodyX - gm.bodyW) * 0.4);
-    g.px(gm.bodyX + gm.bodyW - 1, ringY, 3, 3, "#c9a583"); // his hand
-    g.px(rx + 2, ringY, 2, 2, "#e8d27a");
-    g.a(rx + 1, ringY - 1, 4, 4, 255, 236, 170, 0.5 + Math.sin(time / 120) * 0.3);
+    const out = ease(clamp01((p - 0.2) / 0.16));
+    const handX = Math.round(gm.bodyX + gm.bodyW + out * (herX - gm.bodyX - gm.bodyW) * 0.45);
+    const handY = Math.round(shoulderY + (1 - out) * gm.bodyH * 0.4);
+    // the sleeve, from his shoulder out to his hand
+    const armLen = Math.max(2, handX - (gm.bodyX + gm.bodyW) + 2);
+    for (let i = 0; i < armLen; i++) {
+      const t = armLen > 1 ? i / (armLen - 1) : 0;
+      const y = Math.round(shoulderY + (handY - shoulderY) * t);
+      g.px(gm.bodyX + gm.bodyW - 2 + i, y, 1, 3, "#4a5540");
+      g.px(gm.bodyX + gm.bodyW - 2 + i, y, 1, 1, "#5a6650");
+    }
+    g.px(handX, handY - 1, 3, 3, "#c9a583"); // his hand, open
+    g.px(handX + 3, handY, 2, 2, "#e8d27a"); // and the ring in it
+    g.a(handX + 2, handY - 1, 4, 4, 255, 236, 170, 0.5 + Math.sin(time / 120) * 0.3);
   } else if (p >= 0.78) {
     // on her hand now, and she is looking at it
     g.px(hm.bodyX - 3, herTop + hm.headH + Math.round(hm.bodyH * 0.5), 3, 3, "#c9a583");
@@ -1231,19 +1256,12 @@ function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
     g.a(hm.bodyX - 4, herTop + hm.headH + Math.round(hm.bodyH * 0.5) - 1, 4, 4, 255, 236, 170, 0.7);
   }
 
-  /* ---- and the room lifts its glass ---- */
-  if (p > 0.8) {
-    const t = ease(clamp01((p - 0.8) / 0.2));
-    // raised at the far end of the room, clear of the fire — at the near end
-    // all three glasses were floating in the middle of the grate
-    for (let i = 0; i < 3; i++) {
-      const bx = Math.round(W * (0.86 + i * 0.045));
-      const by = floorY - Math.round(figH * 0.7) - Math.round(t * 6);
-      g.px(bx, by, 4, 6, "#9aa3a5");
-      g.px(bx + 1, by + 2, 2, 4, "#c98a2e");
-      g.a(bx, by, 4, 2, 242, 237, 219, 0.8);
-    }
-  }
+  /*
+   * There were three glasses raised in the background here, and with nobody
+   * holding them they simply hung in the air. Drawing the drinkers as well
+   * would crowd a scene whose whole point is that there are two people in
+   * it, so the room stays empty and the fire does the celebrating.
+   */
 
   // the whole thing fades up out of the dark and back down into it
   if (inRoom < 1) g.a(0, 0, W, H, 20, 23, 15, 1 - inRoom);
