@@ -330,7 +330,22 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
     px(3, 2, 1, 1, "#26201a");
     px(7, 2, 1, 1, "#26201a");
     if (!hatOff) drawBunnet(px, 2, -3);
-    else px(3, -1, 7, 2, "#8a6b4c"); // his hair, flattened where it sat
+    else {
+      /*
+       * A head of hair, not a fringe.
+       *
+       * With the bunnet off he had a two-pixel strip of brown over an
+       * otherwise all-skin head, which read as a bald man holding a hat —
+       * and it disagreed with every other view of him, since from behind
+       * his whole head is hair. It sits down to just above his eyes now,
+       * with the temples filled in and a lighter crown, and it is still
+       * flattened where the bunnet has been on it all day.
+       */
+      px(2, -1, 8, 3, "#8a6b4c"); // the mass of it
+      px(3, -2, 6, 1, "#9c7a58"); // pressed flat on top, catching the light
+      px(2, 2, 1, 2, "#7a5e42"); // and down past his temples
+      px(9, 2, 1, 2, "#7a5e42");
+    }
   }
 
   if (KIT.pelt) drawPelt(g, flip ? x + SHEPHERD_SPAN - 12 : x, y);
