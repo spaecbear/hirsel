@@ -501,6 +501,17 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
      */
     const pw = shoulderW + 5;
     const px0 = manX - Math.round(pw / 2);
+    // his upper arm, before the skin goes on over it
+    const armTop = shoulderY + 2;
+    const armCol = manX + Math.round(shoulderW * 0.62) - 2;
+    /*
+     * A sleeve, not a strut. Lit down one edge it read as a pale pole
+     * standing against him — the arm hangs at his side in the same green as
+     * the coat, and only its outer edge is shaded so it separates.
+     */
+    g.px(armCol, armTop, 3, Math.round(hh * 0.24), "#4a5540");
+    g.px(armCol + 2, armTop, 1, Math.round(hh * 0.24), "#3b4433"); // the shaded outside of it
+
     // the skin across his shoulders, in a grey light enough to tell from the
     // coat under it — at #3a3d47 it was the same value as the green and the
     // whole nod to the wolf disappeared into his back
@@ -528,23 +539,30 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
      * and the smoke goes off over the glen.
      */
     const pipe = pipeBeat(time);
-    const kneeX = manX + Math.round(hipW * 0.42);
+    /*
+     * The pipe travels straight up the outside of him, never across him.
+     *
+     * It used to run from the middle of his knee in to his mouth, which took
+     * the stem, the bowl and his whole forearm diagonally over the wolf skin
+     * and the green coat under it — a lit pipe sliding across his back. A man
+     * raising a pipe lifts it up the side of his face, so the path is now a
+     * single x clear of his shoulder and only the height changes.
+     */
+    const outX = manX + Math.round(shoulderW * 0.62);
     const kneeY = hipsY - 1;
-    const mouthX = manX + headR - 1;
     const mouthY = headCy + Math.round(headR * 0.5);
-    const px1 = Math.round(kneeX + (mouthX - kneeX) * pipe.raised);
+    const px1 = outX;
     const py1 = Math.round(kneeY + (mouthY - kneeY) * pipe.raised);
     /*
-     * His arm to it: upper arm down from the shoulder, forearm across to
-     * whatever the pipe is. Drawn as one tall column before, it was a pale
-     * pole standing beside him rather than a sleeve.
+     * His arm to it: upper arm down from the shoulder, forearm up the
+     * outside to meet the pipe. The shoulder end is drawn before the pelt so
+     * the skin lies over it, which is the way a pelt actually sits.
      */
     const elbowY = shoulderY + Math.round(hh * 0.24);
-    const armX = manX + Math.round(shoulderW * 0.34);
-    g.px(armX, shoulderY + 2, 3, Math.max(2, elbowY - shoulderY), "#4a5540"); // upper arm
-    g.px(armX, shoulderY + 2, 1, Math.max(2, elbowY - shoulderY), "#5a6650"); // lit down its edge
-    const reach = Math.max(2, Math.abs(py1 - elbowY));
-    g.px(armX, Math.min(elbowY, py1), 2, reach, "#4a5540"); // forearm, up to the pipe
+    const armX = outX - 2;
+    g.px(armX, Math.min(elbowY, py1), 3, Math.max(2, Math.abs(py1 - elbowY)), "#4a5540"); // forearm
+    g.px(armX + 2, Math.min(elbowY, py1), 1, Math.max(2, Math.abs(py1 - elbowY)), "#3b4433");
+    g.px(armX, py1 - 2, 3, 1, "#5a6650"); // the cuff at his wrist
     g.px(px1 - 1, py1 - 1, 2, 3, "#c9a583"); // his hand round it
     g.px(px1, py1, 4, 2, "#4a3524"); // the stem
     g.px(px1 + 3, py1 - 2, 3, 3, "#3a2a1c"); // the bowl
@@ -577,38 +595,46 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
         );
       }
     }
-    g.px(manX - headR, headCy - headR, headR * 2, Math.max(2, Math.round(headR * 0.9)), "#2f3327"); // bunnet
-
     /*
-     * The wolf's head, with the hood down — hanging at his shoulder rather
-     * than pulled up over his own.
+     * The wolf's head, worn up.
      *
-     * Worn up it covered his head completely: no bunnet, no hair, nothing of
-     * him left, so the one figure the whole game is about became a grey shape
-     * with ears. Down at his shoulder both read at once — his bunnet on top,
-     * the wolf's head beside it, and the ears clear of both against the
-     * ground behind.
+     * Hung down at his shoulder it read as a pelt that had slipped off him,
+     * which is not the same picture as a man wearing one. It sits on his
+     * crown instead — a skull cap over the top two thirds of his head with
+     * the ears standing clear above it, and his own hair showing at the nape
+     * underneath. Seen from behind there is no muzzle to draw: what you get
+     * is the back of the skull and the ears, which is all it needs.
+     *
+     * It takes the bunnet's place rather than sitting on top of one. A man
+     * with a wolf's head over his does not also have a hat on.
      */
-    const hoodW = headR * 2;
-    const hoodX = manX - Math.round(shoulderW * 0.62) - 1;
-    const hoodY = shoulderY - headR;
-    const hoodH = headR + 1;
-    g.px(hoodX, hoodY, hoodW, hoodH, "#5e646f");
-    g.px(hoodX + 1, hoodY, hoodW - 2, 1, "#9aa2b0"); // the sun over its crown
-    g.px(hoodX - 2, hoodY + 2, 3, Math.max(2, hoodH - 2), "#5e646f"); // the muzzle, hanging down
-    g.px(hoodX - 2, hoodY + 3, 1, 1, "#22252f"); // its nose
-    g.px(hoodX + 1, hoodY + 2, 1, 1, "#22252f"); // and the dark socket of an eye
-    // the ears, standing clear of everything
-    for (const ex of [hoodX + 1, hoodX + hoodW - 3]) {
-      g.px(ex, hoodY - 4, 2, 5, "#4a505c");
-      g.px(ex, hoodY - 3, 1, 3, "#22252f"); // the dark inside them
-      g.px(ex, hoodY - 4, 2, 1, "#b6bec9"); // and the sun on the tips
+    const skullW = headR * 2 + 2;
+    const skullX = manX - headR - 1;
+    const skullY = headCy - headR - 1;
+    const skullH = headR + 2;
+    g.px(skullX, skullY, skullW, skullH, "#5e646f");
+    g.px(skullX + 1, skullY, skullW - 2, 1, "#9aa2b0"); // the sun over its crown
+    g.px(skullX, skullY + skullH - 1, skullW, 1, "#4a505c"); // where it meets his hair
+    // his own hair at the nape, below the skull — otherwise he is all wolf
+    g.px(manX - headR + 1, skullY + skullH, headR * 2 - 2, 2, "#8a6b4c");
+    g.px(manX - headR + 1, skullY + skullH + 1, headR * 2 - 2, 1, "#6f5539");
+    // the ears, standing clear of his outline
+    for (const ex of [skullX + 1, skullX + skullW - 4]) {
+      g.px(ex, skullY - 4, 3, 5, "#4a505c");
+      g.px(ex + 1, skullY - 3, 1, 3, "#22252f"); // the dark inside them
+      g.px(ex, skullY - 4, 2, 1, "#b6bec9"); // and the sun on the tips
     }
 
-    // the sun down the side of him. Full-length and full-strength it was a
-    // bright pole standing against him rather than light on a shoulder
-    g.px(manX + headR - 1, headCy - headR + 2, 1, headR * 2 - 2, rim);
-    g.px(manX + Math.round(shoulderW / 2) - 1, shoulderY + 2, 1, Math.round(torsoH * 0.5), "#c9903f");
+    /*
+     * The sun down the side of him.
+     *
+     * A gold line at the head and a second down the torso stacked into one
+     * bright unbroken stripe running from his ears to his hip — which read
+     * as a pole standing against him, not as light. The rim belongs on the
+     * outermost edge, which is his sleeve, and it is short and dim: enough
+     * to lift him off the hill behind, no more.
+     */
+    g.px(manX + Math.round(shoulderW / 2) + 1, shoulderY + 2, 1, Math.round(hh * 0.2), "#a8763a");
   }
 
   /* ---- her: leaning in, in the blouse and skirt from the inn ---- */
