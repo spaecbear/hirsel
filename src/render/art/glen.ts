@@ -35,6 +35,7 @@ import {
   SKY,
   drawDog,
   DOG_FEET,
+  SHEEP_FEET,
   drawDogCurled,
   drawDyke,
   drawFox,
@@ -412,10 +413,26 @@ function drawHighlight(g: Painter, L: WorldLayout, id: string, pulse: number) {
  * actors
  * ================================================================== */
 
-function drawFlock(g: Painter, L: WorldLayout, s: Scene) {
+/** one thing to paint, and how far down the screen its feet are */
+interface Actor {
+  /** the screen y of whatever it stands on — bigger is nearer the camera */
+  feet: number;
+  paint: () => void;
+}
+
+/**
+ * The flock, as a list of painters rather than paint on the canvas.
+ *
+ * Handing the sheep back undrawn is what lets the dog and the man be sorted
+ * in among them. Painted here and there in the order the array happens to be
+ * in, the dog came out on top of every sheep in the field, including the ones
+ * standing nearer the camera than she was.
+ */
+function flockActors(g: Painter, L: WorldLayout, s: Scene): Actor[] {
   const st = s.state;
   const k = s.anim;
   const p = s.p;
+  const out: Actor[] = [];
   st.flock.slice(0, 24).forEach((sh, i) => {
     const home = L.flock[i];
     if (!home) return;
@@ -469,7 +486,31 @@ function drawFlock(g: Painter, L: WorldLayout, s: Scene) {
     // standing still in a set piece: stagger which way they look so the flock
     // does not read as a row of identical cut-outs
     if (k !== null && k !== "gather" && k !== "move") flip = i % 4 === 0;
-    drawSheep(g, x, y, sh, { shorn, graze, run, flip });
+    // SHEEP_FEET below the draw origin is where her hooves land
+    out.push({ feet: y + SHEEP_FEET, paint: () => drawSheep(g, x, y, sh, { shorn, graze, run, flip }) });
+  });
+  return out;
+}
+
+/**
+ * Him with no animation running: walking to a spot he was sent to, or stood
+ * at his mark doing the small things a person does with their hands.
+ *
+ * Pulled out of the switch so it can be handed to the depth sort as one
+ * painter among the sheep and the dog.
+ */
+function paintShepherdIdle(g: Painter, L: WorldLayout, s: Scene) {
+  const sx = L.shepherd.x;
+  const sy = L.shepherd.y;
+  if (s.walking) {
+    drawShepherd(g, sx, sy, { crook: true, walk: s.time / 90, facing: s.facing ?? 1 });
+    return;
+  }
+  const tick = idleTick(s.time);
+  drawShepherd(g, sx, sy + (Math.sin(s.time / 1600) > 0 ? 0 : 1), {
+    crook: true,
+    tick: tick ? { kind: tick.kind, t: tick.t } : undefined,
+    facing: tick?.kind === "look" ? tick.facing : 0,
   });
 }
 
@@ -482,11 +523,31 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
 
   if (owns(st, "saltlick")) drawSaltLick(g, L.saltlick.x, L.saltlick.y);
 
-  drawFlock(g, L, s);
+  const sheep = flockActors(g, L, s);
 
-  /** her idle lap, hoisted so it can be painted on either side of him */
+  /** her idle lap, hoisted so it can be sorted in among everything else */
   const paintDog = () =>
     drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging);
+
+  /*
+   * On a quiet hill the whole cast is painted in depth order — sheep, dog and
+   * man together, nearest the camera last. Sorting the dog against the man
+   * alone still left her crossing over the top of every sheep in the field,
+   * including the ones standing closer to us than she was.
+   *
+   * The set pieces keep their own order: there the choreography decides who
+   * passes in front of whom, and it is deliberate.
+   */
+  if (k === null) {
+    const cast: Actor[] = [...sheep];
+    if (hasDog(st)) cast.push({ feet: L.dogAt.y + DOG_FEET, paint: paintDog });
+    cast.push({ feet: sy + SHEPHERD_H, paint: () => paintShepherdIdle(g, L, s) });
+    cast.sort((a, b) => a.feet - b.feet);
+    for (const a of cast) a.paint();
+    return;
+  }
+
+  for (const a of sheep) a.paint();
   let dogAfter = false;
 
   // the dog works the ground when there is work on
@@ -674,21 +735,9 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     case "sleep":
       drawShepherd(g, sx, sy, {});
       break;
-    default: {
-      // walking to a spot he was sent to, or standing at his mark
-      if (s.walking) {
-        drawShepherd(g, sx, sy, { crook: true, walk: s.time / 90, facing: s.facing ?? 1 });
-        break;
-      }
-      // and between chores, the small things a person does with their hands
-      const tick = idleTick(s.time);
-      drawShepherd(g, sx, sy + (Math.sin(s.time / 1600) > 0 ? 0 : 1), {
-        crook: true,
-        tick: tick ? { kind: tick.kind, t: tick.t } : undefined,
-        facing: tick?.kind === "look" ? tick.facing : 0,
-      });
+    default:
+      paintShepherdIdle(g, L, s);
       break;
-    }
   }
 
   // she was in front of him: she goes on top

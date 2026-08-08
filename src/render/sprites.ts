@@ -232,6 +232,13 @@ export const SHEPHERD_H = 26;
 /** how far below her draw origin the dog's feet land, for depth sorting */
 export const DOG_FEET = 11;
 
+/*
+ * And a sheep's. Her body height varies with how much fleece is on her, so
+ * this is the middle of the range — near enough for sorting, and it keeps the
+ * comparison a plain number rather than a re-derivation of the sprite.
+ */
+export const SHEEP_FEET = 14;
+
 /** how wide he is, crook and all, for mirroring him about his own middle */
 const SHEPHERD_SPAN = 15;
 
