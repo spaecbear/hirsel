@@ -509,6 +509,13 @@ body.no-motion .tutorial.nudge {
  * of the screen, the hill behind it goes dark, and it is left alone for a
  * moment before everything goes.
  */
+/* a note that is telling you why something is not happening */
+.note.warn {
+  color: var(--gorse);
+  border-left: 2px solid var(--gorse);
+  padding-left: 8px;
+}
+
 .credits-quote {
   position: absolute;
   left: 50%;

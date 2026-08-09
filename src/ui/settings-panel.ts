@@ -2,6 +2,7 @@ import { $, el, toast } from "./dom";
 import { ACHIEVEMENTS, clearEarned, loadEarned } from "../sim/achievements";
 import { CHEATS, findCheat, type CheatContext } from "../sim/cheats";
 import { buffGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
+import { prefersReducedMotion } from "../sim/settings";
 import type { Settings } from "../sim/settings";
 import { DIFFICULTY } from "../sim/config";
 import type { Difficulty } from "../sim/types";
@@ -57,7 +58,10 @@ export function buildSettings(api: SettingsApi) {
           ["Full", s.motion === "full"],
           ["Reduced", s.motion === "reduced"],
         ],
-        (i) => api.apply({ motion: (["auto", "full", "reduced"] as const)[i] }),
+        (i) => {
+          api.apply({ motion: (["auto", "full", "reduced"] as const)[i] });
+          draw(); // the note below reports the effect, so it redraws with it
+        },
       ),
     );
     look.appendChild(
@@ -68,6 +72,27 @@ export function buildSettings(api: SettingsApi) {
           "panelled build, kept as it was. Reduced motion collapses every animation to instant.",
       ),
     );
+    /*
+     * Say so when animations are off, and say why.
+     *
+     * On "System" the game follows the operating system's own reduce-motion
+     * setting, which means a player can have every animation collapsed to a
+     * single frame without ever having chosen that here — and with nothing on
+     * screen to explain it, the game simply looks broken. Reported as exactly
+     * that: "I'm not seeing any animations any more."
+     */
+    if (prefersReducedMotion(s)) {
+      look.appendChild(
+        el(
+          "div",
+          { class: "note warn" },
+          s.motion === "reduced"
+            ? "Animations are instant just now, because Motion is set to Reduced. Choose Full to see them."
+            : "Animations are instant just now: your system is asking for reduced motion. " +
+                "Choose Full above to override it for this game.",
+        ),
+      );
+    }
     box.appendChild(look);
 
     /* ---- the scale ---- */
