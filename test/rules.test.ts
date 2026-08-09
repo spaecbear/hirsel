@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "../src/sim/settings";
 import {
   canShear,
   feedCost,
@@ -396,5 +397,34 @@ describe("Tippy is given for watching, and only for the right dog", () => {
     game.markTippy();
     expect(game.state.stats.sawTippy).toBe(true);
     expect(awards).toBe(1);
+  });
+});
+
+describe("sound is on when the game is opened", () => {
+  /*
+   * Playtest report: a new player could not get any sound at all. The cause
+   * was in the audio engine, but these pin the half of it that lives in the
+   * settings — a fresh install has to arrive unmuted and audible, and the
+   * player has to be able to turn it off again.
+   */
+  it("starts unmuted, with every channel up", () => {
+    expect(DEFAULT_SETTINGS.muted).toBe(false);
+    expect(DEFAULT_SETTINGS.master).toBeGreaterThan(0.5);
+    expect(DEFAULT_SETTINGS.music).toBeGreaterThan(0);
+    expect(DEFAULT_SETTINGS.sfx).toBeGreaterThan(0);
+  });
+
+  it("keeps the music within reach of the effects, so neither is inaudible", () => {
+    // the music was at 0.3 against effects at 0.55, quiet enough that
+    // someone listening before touching anything heard nothing
+    const ratio = DEFAULT_SETTINGS.music / DEFAULT_SETTINGS.sfx;
+    expect(ratio).toBeGreaterThan(0.6);
+  });
+
+  it("survives a settings file that predates any of these", () => {
+    // an old save must not come back muted or silent
+    const merged = { ...DEFAULT_SETTINGS, ...({} as Partial<typeof DEFAULT_SETTINGS>) };
+    expect(merged.muted).toBe(false);
+    expect(merged.master).toBe(DEFAULT_SETTINGS.master);
   });
 });

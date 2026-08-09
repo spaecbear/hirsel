@@ -43,8 +43,16 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  /*
+   * Sound on, and audible, out of the box.
+   *
+   * The music sat at 0.3, which is a long way under the effects — a player
+   * who loads the game and listens before touching anything could easily
+   * decide there was no sound at all. It is still a background air, just one
+   * you can actually hear.
+   */
   master: 0.85,
-  music: 0.3,
+  music: 0.45,
   sfx: 0.55,
   muted: false,
   ui: "glen",

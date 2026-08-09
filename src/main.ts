@@ -292,7 +292,7 @@ function everythingFound(): boolean {
 
 const CREDITS: [string, string][] = [
   ["Design", "Joseph Ceccarelli"],
-  ["Code", "Joseph Ceccarelli"],
+  ["Developed", "Joseph Ceccarelli"],
   ["Pixel art", "Joseph Ceccarelli"],
   ["Animation", "Joseph Ceccarelli"],
   ["Music", "Joseph Ceccarelli"],
@@ -443,7 +443,18 @@ $("title-settings").addEventListener("click", () => {
 
 /* ---------- audio starts on the first gesture ---------- */
 function firstGesture() {
-  if (audio.started) return;
+  /*
+   * Every gesture gets a go at the audio, not just the first one.
+   *
+   * This used to return the moment `started` was set, so if the context came
+   * up suspended — which is what Safari always does — there was no way back
+   * and the game stayed silent for the whole run. Resuming an already
+   * running context costs nothing.
+   */
+  if (audio.started) {
+    audio.resume();
+    return;
+  }
   if (audio.start()) {
     audio.setLevels({ master: settings.master, music: settings.music, sfx: settings.sfx, muted: settings.muted });
     score.start();
@@ -453,6 +464,10 @@ function firstGesture() {
 for (const evt of ["pointerdown", "keydown", "touchstart"]) {
   addEventListener(evt, firstGesture, { passive: true });
 }
+// coming back to a tab the browser put to sleep, which suspends the context
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) audio.resume();
+});
 
 /* ---------- night bookkeeping the UI owns ---------- */
 let lastDay = 1;

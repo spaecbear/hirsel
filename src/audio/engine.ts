@@ -15,7 +15,8 @@ export class AudioEngine {
   private verbGain!: GainNode;
   private bed: AudioBufferSourceNode | null = null;
   started = false;
-  levels = { master: 0.85, music: 0.3, sfx: 0.55, muted: false };
+  /** matched to DEFAULT_SETTINGS, for the moments before settings load */
+  levels = { master: 0.85, music: 0.45, sfx: 0.55, muted: false };
 
   start(): boolean {
     if (this.ac) {
@@ -56,7 +57,30 @@ export class AudioEngine {
 
     this.applyLevels();
     this.started = true;
+    /*
+     * A newly built context does not start running on its own.
+     *
+     * Safari always hands one back suspended, and Chrome does too whenever
+     * it was constructed outside a real user gesture. Only the early-return
+     * path above ever called resume(), so the very first context — the one
+     * every player gets — was left suspended and silent. `started` was then
+     * true, so the gesture handler bailed out on every tap afterwards and it
+     * never got a second chance.
+     */
+    this.resume();
     return true;
+  }
+
+  /**
+   * Nudge the context back into running, wherever we are.
+   *
+   * Cheap and safe to call on every gesture: a context that is already
+   * running ignores it. Browsers suspend audio for reasons of their own —
+   * a backgrounded tab, a phone call, an iOS interruption — so this is the
+   * way back from all of them, not only from the first start.
+   */
+  resume() {
+    if (this.ac && this.ac.state !== "running") void this.ac.resume();
   }
 
   setLevels(l: Partial<typeof this.levels>) {
