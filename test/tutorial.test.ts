@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { TUTORIAL, TUTORIAL_START_FLOCK, TUTORIAL_TARGET_PAY, allowsInteraction, currentStep, latchDone, tutorialSetup } from "../src/sim/tutorial";
 import { Game, newGame } from "../src/sim/game";
-import { BALANCE, BREEDS, START_MONEY } from "../src/sim/config";
+import { BALANCE, BREEDS, CROFT, START_MONEY } from "../src/sim/config";
 import { canShear, readyToShear } from "../src/sim/rules";
-
+import {
+  TUTORIAL,
+  TUTORIAL_START_FLOCK,
+  TUTORIAL_TARGET_PAY,
+  allowsInteraction,
+  currentStep,
+  latchDone,
+  tutorialSetup,
+} from "../src/sim/tutorial";
 describe("the first day's setup", () => {
   it("starts a beast short, at the ordinary starting purse — the ewe is earned, not given", () => {
     const g = newGame({ seed: 4 });
@@ -75,6 +82,10 @@ describe("the walkthrough", () => {
     seen.add("tools");
     expect(currentStep(g, seen)?.id).toBe("croft");
     seen.add("went-inside");
+    // entering the house used to go straight to the bed, so a player was shown
+    // how to end the day before ever being told what the house is for
+    expect(currentStep(g, seen)?.id).toBe("croft-work");
+    seen.add("croft-work");
     expect(currentStep(g, seen)?.id).toBe("sleep");
     seen.add("sleep-warned");
     expect(currentStep(g, seen)?.id).toBe("loss");
@@ -151,11 +162,21 @@ describe("the walkthrough", () => {
   });
 
   it("gives away no secret and no win condition", () => {
-    // the tutorial is for stopping confusion, not for handing over the story
+    /*
+     * The tutorial is for stopping confusion, not for handing over the story.
+     *
+     * The croft used to be on this list with everything else, on the grounds
+     * that it leads to the ending. That went too far: a player who is never
+     * told what the house is for has no goal at all, and entering it jumped
+     * straight to "here is how you end the day". Naming the roof, the hearth
+     * and the byre is telling someone what their work is for. The ending
+     * those pieces add up to — the ring, and who it is for — is the secret,
+     * and that stays out.
+     */
     const text = TUTORIAL.map((s) => s.text).join(" ").toLowerCase();
     const forbidden = [
       "wolf", "sword", "broadsword", "pelt", "full moon", "corrie",
-      "ring", "marry", "married", "wife", "ask her", "win", "croft", "byre", "hearth",
+      "ring", "marry", "married", "wife", "ask her", "win",
     ];
     for (const word of forbidden) {
       // whole words only: "bring it back" is not a mention of the ring
@@ -206,5 +227,70 @@ describe("locking the walkthrough to its lesson", () => {
     for (const id of ["cart", "flock", "croft", "hills", "ground", "shepherd", "sky"]) {
       expect(allowsInteraction(null, id), id).toBe(true);
     }
+  });
+});
+
+describe("the walkthrough teaches the croft", () => {
+  /*
+   * It pointed at the house, called it "yours to fix up", and stopped there —
+   * so a new player had no idea the croft was what the run is for, nor that
+   * paying for a piece of it buys the materials and nothing else. Buy the
+   * roof, watch £240 leave the purse and no roof appear, and the only
+   * explanation was buried in the cart's own text.
+   */
+  const step = TUTORIAL.find((s) => s.id === "croft-work")!;
+
+  it("has a step about the work, pointing at the hearth", () => {
+    expect(step).toBeDefined();
+    expect(step.target).toBe("hearth");
+  });
+
+  it("says the money is only the materials, and the work comes after", () => {
+    expect(step.text).toMatch(/materials/i);
+    expect(step.text).toMatch(/work/i);
+  });
+
+  it("is read, not done — the first piece costs six times a first day's purse", () => {
+    // £240 for the roof against £40 to your name: there is nothing here a
+    // player could be asked to try on day one
+    expect(step.readOnly).toBe(true);
+    expect(CROFT[0].cost).toBeGreaterThan(START_MONEY * 4);
+  });
+
+  it("comes after going inside and before being told to sleep", () => {
+    const ids = TUTORIAL.map((s) => s.id);
+    expect(ids.indexOf("croft-work")).toBeGreaterThan(ids.indexOf("croft"));
+    expect(ids.indexOf("croft-work")).toBeLessThan(ids.indexOf("sleep"));
+  });
+
+  it("leaves no step in the walkthrough unreachable", () => {
+    /*
+     * Walk the whole thing the way a player would and check every step
+     * actually surfaces. A step can be defined and never shown — its `done`
+     * already true when the walkthrough arrives at it — and nothing else
+     * would catch that.
+     */
+    const g = newGame({ seed: 3 });
+    tutorialSetup(g);
+    const game = new Game(g);
+    game.onAnim = (_a, after) => after?.();
+    const seen = new Set<string>();
+    const shown: string[] = [];
+
+    for (let i = 0; i < 40; i++) {
+      latchDone(g, seen);
+      const s = currentStep(g, seen);
+      if (!s) break;
+      shown.push(s.id);
+      // satisfy it however the player would, then retire it
+      if (s.id === "flock") game.doAction("gather");
+      else if (s.id === "shear") game.doAction("shear");
+      else if (s.id === "market") game.doAction("market");
+      else if (s.id === "buy") game.buyEwe("blackface");
+      else if (s.id === "hills") game.moveTo(1);
+      else if (s.id === "loss") game.sleep();
+      seen.add(s.id);
+    }
+    for (const s of TUTORIAL) expect(shown, `step "${s.id}" is never shown`).toContain(s.id);
   });
 });

@@ -122,6 +122,29 @@ export const TUTORIAL: TutorialStep[] = [
     done: (_g, seen) => seen.has("went-inside"),
   },
   {
+    /*
+     * The one thing the walkthrough never said.
+     *
+     * It pointed at the house and called it "yours to fix up" and left it
+     * there — so a new player had no idea the croft was the thing the run is
+     * actually for, and no idea that paying for a piece of it buys the
+     * materials and nothing else. Buy the roof, watch £240 leave the purse,
+     * see no roof: the only explanation was buried in the cart's own text.
+     *
+     * It has to be read rather than done. The first piece is £240 and the
+     * player has forty pounds on day one, so there is nothing here they could
+     * be asked to try.
+     */
+    id: "croft-work",
+    text:
+      "The hearth in here is where you take the place in hand — a roof that keeps the rain out, a fire worth the name, " +
+      "a byre to bring them into. None of it is cheap, and the money is only the materials: once a piece is paid for it " +
+      "wants days of your own work on top, a tap at a time. It is the slowest thing you will do, and it is what all the rest is for.",
+    target: "hearth",
+    readOnly: true,
+    done: (_g, seen) => seen.has("croft-work"),
+  },
+  {
     id: "sleep",
     text: "The bed ends the day. Night is when it all happens: the grass grows, the fleece grows, foxes come, and the feed comes out of your purse.",
     target: "interior-bed",
