@@ -40,6 +40,8 @@ export interface Scene {
   spotlight?: HotspotId | null;
   /** the tutorial is pointing at the bed, which is only inside */
   spotlightBed?: boolean;
+  /** where the controller's cursor rests, outside or in; drawn only when keys or a pad are in use */
+  focus?: HotspotId | null;
 }
 
 export interface ArtPack {

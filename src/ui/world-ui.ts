@@ -40,7 +40,9 @@ import {
   readyToShear,
   tapsPerDay,
 } from "../sim/rules";
-import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
+import { boundsOf, hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
+import { nearestInDirection, type Box } from "./spatial";
+import type { Dir } from "./controls";
 import { Walk } from "./walk";
 import type { Screen } from "../render/screen";
 import type { Animator } from "../render/animator";
@@ -62,6 +64,12 @@ interface Row {
    * off down the road — on a phone the sheet covered both of them.
    */
   closes?: boolean;
+  /**
+   * Never where a controller's selection lands when the sheet opens. Selling
+   * a beast is one press away from a second press; it has to be gone to on
+   * purpose, not arrived at.
+   */
+  noLanding?: boolean;
   onPick: () => void;
 }
 
@@ -143,9 +151,7 @@ export class WorldUi {
       if (e.target === cv) return; // the canvas handler decides for itself
       this.close();
     });
-    addEventListener("keydown", (e) => {
-      if (e.key === "Escape") this.close();
-    });
+    // Escape is ui/nav.ts's: it knows whether a sheet, Settings or nothing is open
   }
 
   setGame(game: Game) {
@@ -207,7 +213,16 @@ export class WorldUi {
 
   private tap(clientX: number, clientY: number, at = performance.now()) {
     if (this.game.state.over) return;
-    const spot = this.spotAt(clientX, clientY, at);
+    this.activate(this.spotAt(clientX, clientY, at));
+  }
+
+  /**
+   * Act on a target, however it was chosen — a tap on it, or a controller's
+   * cursor resting on it and A pressed. Everything the tap used to decide
+   * lives here, so the two can never disagree about what a target does.
+   */
+  private activate(spot: { id: HotspotId } | null) {
+    if (this.game.state.over) return;
     if (!spot) {
       this.close();
       return;
@@ -342,6 +357,14 @@ export class WorldUi {
   open(id: HotspotId) {
     const rows = this.rowsFor(id);
     if (!rows.length) return;
+    /*
+     * A trade rebuilds the sheet in place, which throws away whatever had
+     * focus. With a controller that is the whole selection gone after every
+     * purchase, so remember which button it was and put it back.
+     */
+    const buttons = () => [...this.sheet.querySelectorAll<HTMLButtonElement>(".sheet-body button")];
+    const had = this.sheet.contains(document.activeElement) ? buttons().indexOf(document.activeElement as HTMLButtonElement) : -1;
+    const sameSheet = this.active === id;
     this.active = id;
     this.sheet.innerHTML = "";
 
@@ -360,7 +383,7 @@ export class WorldUi {
         );
         continue;
       }
-      body.appendChild(
+      const b = body.appendChild(
         button(
           `act${r.tone ? ` ${r.tone}` : ""}${r.done ? " done" : ""}`,
           `<span class="n">${r.label}</span><span class="d">${r.detail}</span>`,
@@ -378,9 +401,105 @@ export class WorldUi {
           r.disabled || this.busy,
         ),
       );
+      if (r.noLanding) b.dataset.noLanding = "1";
     }
     this.sheet.appendChild(body);
     this.sheet.classList.add("on");
+
+    if (this.focusSheets) {
+      const all = buttons();
+      const live = all.filter((b) => !b.disabled && !b.dataset.noLanding);
+      const again = sameSheet && had >= 0 ? all[Math.min(had, all.length - 1)] : null;
+      const target = again && !again.disabled ? again : live[0] ?? (this.sheet.querySelector(".sheet-x") as HTMLButtonElement | null);
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  /* ---------- a cursor on the hill, for keys and a controller ---------- */
+
+  /** the target the controller's cursor rests on */
+  focusId: HotspotId | null = null;
+  /** a sheet opened by keys or a pad takes focus, so the selection lands in it */
+  focusSheets = false;
+
+  /**
+   * Where each target on screen is, as a box to navigate between.
+   *
+   * Most are their own tap rectangle. Three are not, because their rectangle
+   * is not where the eye puts them: the flock is many small targets (one box
+   * round all of them), and the ground and the hills are bands the width of
+   * the screen — navigating by their centres put the ground's anchor in the
+   * middle of the flock. The ground's box is the open grass near the bottom,
+   * the hills' is the middle of their band.
+   */
+  targets(now = performance.now()): { id: HotspotId; box: Box }[] {
+    const { W, H } = this.screen;
+    if (this.interior) {
+      const I = layoutInterior(W, H, this.game.state);
+      return I.hotspots.map((h) => ({ id: h.id, box: boundsOf(h) }));
+    }
+    const L = layoutWorld(W, H, this.game.state, { shepherdAt: this.walk.position, time: now });
+    const out: { id: HotspotId; box: Box }[] = [];
+    for (const h of L.hotspots) {
+      if (h.id === "flock" && !h.rects.length) continue;
+      if (h.id === "ground") out.push({ id: h.id, box: { x: W * 0.5 - 20, y: H - 26, w: 40, h: 20 } });
+      else if (h.id === "hills") out.push({ id: h.id, box: { x: W * 0.35, y: L.horizonY, w: W * 0.3, h: Math.max(8, L.groundY - L.horizonY) } });
+      else if (h.id === "sky") out.push({ id: h.id, box: { x: W * 0.3, y: 4, w: W * 0.4, h: Math.max(8, L.horizonY * 0.5) } });
+      else out.push({ id: h.id, box: boundsOf(h) });
+    }
+    return out;
+  }
+
+  /** put the cursor somewhere sensible: where it was, else the walkthrough's target, else him */
+  ensureFocus(prefer: HotspotId | null = null) {
+    const ids = this.targets().map((t) => t.id);
+    if (prefer && ids.includes(prefer)) this.focusId = prefer;
+    else if (!this.focusId || !ids.includes(this.focusId)) {
+      this.focusId = this.interior ? (ids.includes("bed") ? "bed" : ids[0]) : "shepherd";
+    }
+    this.hover = this.focusId;
+  }
+
+  moveFocus(dir: Dir) {
+    this.ensureFocus();
+    const all = this.targets();
+    const from = all.find((t) => t.id === this.focusId);
+    if (!from) return;
+    const next = nearestInDirection(from.box, all, dir);
+    if (next) this.focusId = next.id;
+    this.hover = this.focusId;
+  }
+
+  /** A on the hill: the same as tapping whatever the cursor is on */
+  confirmFocus() {
+    this.ensureFocus();
+    if (this.focusId) this.activate({ id: this.focusId });
+  }
+
+  /** B inside the house: back out of the door */
+  leaveHouse(): boolean {
+    if (!this.interior) return false;
+    this.activate({ id: "door" });
+    return true;
+  }
+
+  /**
+   * The right stick walks him — the same walk a held finger sets off, a
+   * stride at a time in the direction pushed. Only out on the open ground,
+   * and not while the walkthrough is teaching something else.
+   */
+  private nextStride = 0;
+  stride(dx: number, dy: number, now: number) {
+    if (this.interior || this.game.state.over || this.busy || now < this.nextStride) return;
+    if (!this.canInteract("ground")) return;
+    const L = layoutWorld(this.screen.W, this.screen.H, this.game.state, { shepherdAt: this.walk.position, time: now });
+    const len = Math.hypot(dx, dy) || 1;
+    const step = 18;
+    const tx = Math.max(4, Math.min(this.screen.W - 18, L.shepherd.x + (dx / len) * step));
+    const ty = Math.max(L.groundY + 4, Math.min(this.screen.H - 30, L.shepherd.y + (dy / len) * step));
+    this.walk.go(L.shepherd.x, L.shepherd.y, tx, ty, now);
+    this.nextStride = now + 160;
   }
 
   private titleFor(id: HotspotId): string {
@@ -727,10 +846,15 @@ export class WorldUi {
       onPick: () => this.game.doAction("market"),
     });
 
-    // hay for the winter: money instead of the summer's taps
+    /*
+     * Hay for the winter: money instead of the summer's taps. Not in spring —
+     * nobody sells hay with the grass coming, and the first day's walkthrough
+     * is rigged to pay for exactly one ewe, which a hay row at the top of the
+     * cart could quietly spend first.
+     */
     const lot = hayLotCost(g);
     const short = Math.max(0, hayNeeded(g) - g.hay);
-    rows.push({
+    if (season(g).id !== "spring") rows.push({
       label: `Buy ${BALANCE.hayLot} bales of ${lex.hay} · £${lot}`,
       detail:
         `${g.hay ? `${g.hay} in the barn, about ${hayNights(g)} nights for the ${lex.flock}` : "The barn is empty"}` +
@@ -751,6 +875,7 @@ export class WorldUi {
       rows.push({
         label: `Sell a ${lex.breeds[breed]} · £${price}`,
         detail: `${held.length} in the ${lex.flock}. The cart pays under what she cost.`,
+        noLanding: true,
         onPick: () => this.game.sellEwe(worst.id),
       });
     }
@@ -768,6 +893,7 @@ export class WorldUi {
           (season(g).id === "autumn"
             ? "The autumn sales are on: the best price of the year."
             : `Kept, ${lambs.length === 1 ? "she grows" : "they grow"} into the ${lex.flock} by the winter. The autumn sales pay best.`),
+        noLanding: true,
         onPick: () => this.game.sellEwe(one.id),
       });
     }

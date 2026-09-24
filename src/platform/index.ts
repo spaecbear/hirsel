@@ -24,6 +24,12 @@ export interface Platform {
   /** desktop only */
   setFullscreen?(on: boolean): void;
   isFullscreen?(): boolean;
+  /**
+   * desktop only: ask for a line of text without a keyboard — Steam's
+   * on-screen keyboard on the Deck. Resolves null if it was cancelled or
+   * could not be shown.
+   */
+  textInput?(prompt: string, max: number, current: string): Promise<string | null>;
 }
 
 /**

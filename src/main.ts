@@ -8,6 +8,7 @@ import { lexicon } from "./sim/lexicon";
 import { CHEATS, revealNextCheat } from "./sim/cheats";
 import { ACHIEVEMENTS, loadEarned, syncAchievements } from "./sim/achievements";
 import { platform } from "./platform";
+import { Nav } from "./ui/nav";
 import { tutorialSetup } from "./sim/tutorial";
 import type { Difficulty, GameState } from "./sim/types";
 import { DIFFICULTY } from "./sim/config";
@@ -275,9 +276,7 @@ $("over-again").addEventListener("click", () => {
   $("over").classList.remove("on");
   showTitle();
 });
-addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeSettings();
-});
+// Escape, and every other key and button, is ui/nav.ts's
 
 /* ---------- the credits ---------- */
 
@@ -654,9 +653,74 @@ function updateCaption(anim: string | null, p: number) {
   captionEl.classList.toggle("on", want !== "");
 }
 
+/* ---------- keys and a controller ---------- */
+const nav = new Nav({
+  world,
+  isRetro: () => settings.ui === "retro",
+  openSettings: () => {
+    firstGesture();
+    openSettings();
+  },
+  closeSettings,
+  closeCredits,
+  spotlight: () => (tutorial.pointingAtBed ? "bed" : tutorial.spotlight),
+  // the Deck has no keyboard: a text field chosen with the pad asks Steam for its on-screen one
+  textInput: platform.textInput
+    ? (field) => {
+        void platform.textInput!(field.getAttribute("aria-label") ?? "", 24, field.value).then((text) => {
+          // no Steam keyboard to be had (a pad on a desktop): the field takes a real keyboard
+          if (text === null) return field.focus();
+          field.value = text;
+          field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+        });
+      }
+    : undefined,
+});
+nav.controls.onIntent = ((inner) => (i, native) => {
+  firstGesture(); // a pad press is a gesture too, as far as the sound is concerned
+  inner(i, native);
+})(nav.controls.onIntent);
+
+/**
+ * What the buttons do, along the bottom — only while keys or a pad are in
+ * use, and only the ones that do something where you are.
+ */
+const promptsEl = $("prompts");
+let promptsKey = "";
+function updatePrompts() {
+  const d = nav.device;
+  const L = nav.layer().kind;
+  const key = `${d}:${L}:${world.interior}`;
+  if (key === promptsKey) return;
+  promptsKey = key;
+  if (d === "pointer") {
+    promptsEl.innerHTML = "";
+    promptsEl.classList.remove("on");
+    return;
+  }
+  const pad = d === "pad";
+  const b = (padLabel: string, keyLabel: string, what: string) =>
+    `<span><kbd>${pad ? padLabel : keyLabel}</kbd>${what}</span>`;
+  const parts: string[] = [];
+  const move = pad ? "✥" : "arrows";
+  if (L === "hill") {
+    parts.push(b(move, "arrows", "look"), b("A", "Enter", "choose"));
+    parts.push(world.interior ? b("B", "Esc", "outside") : b("B", "Esc", "menu"));
+    if (!world.interior) parts.push(b("View", "F", "the sky"), pad ? b("R", "", "walk") : "");
+  } else {
+    parts.push(b(move, "arrows", "move"), b("A", "Enter", "choose"));
+    if (L === "sheet" || L === "settings" || L === "credits") parts.push(b("B", "Esc", "back"));
+    if (L !== "settings" && L !== "credits") parts.push(b("Start", "Esc", "settings"));
+  }
+  promptsEl.innerHTML = parts.filter(Boolean).join("");
+  promptsEl.classList.add("on");
+}
+
 /* ---------- the frame loop ---------- */
 function frame(now: number) {
   animator.tick(now);
+  nav.tick(now);
+  updatePrompts();
   updateCaption(animator.current, animator.p);
   const g = game.state;
   const isRaining = g.forecast[0] === "rain";
@@ -699,6 +763,7 @@ function frame(now: number) {
     interior: settings.ui === "glen" && world.interior,
     spotlight: settings.ui === "glen" && !world.interior ? tutorial.spotlight : null,
     spotlightBed: settings.ui === "glen" && world.interior && tutorial.pointingAtBed,
+    focus: settings.ui === "glen" && nav.device !== "pointer" && !world.active ? world.focusId : null,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);

@@ -212,6 +212,21 @@ function createWindow() {
 
 ipcMain.on("app:quit", () => app.quit());
 
+/*
+ * Steam's on-screen keyboard, for the one text field in the game (the cheat
+ * codes) when it is chosen with a pad. Only Big Picture and the Deck can show
+ * it; anywhere else it resolves null and the game falls back to the field.
+ */
+ipcMain.handle("steam:text-input", async (_e, prompt: string, max: number, current: string) => {
+  if (!steam) return null;
+  try {
+    // 0, 0: a normal, single-line field (steamworks.js's const enums do not survive compilation)
+    return await steam.utils.showGamepadTextInput(0 as never, 0 as never, String(prompt), Number(max) || 24, String(current ?? ""));
+  } catch {
+    return null;
+  }
+});
+
 // one copy of the game at a time: a second launch focuses the first
 if (!app.requestSingleInstanceLock()) {
   app.quit();

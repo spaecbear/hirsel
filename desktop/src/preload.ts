@@ -28,4 +28,6 @@ contextBridge.exposeInMainWorld("hirselPlatform", {
   quit: () => ipcRenderer.send("app:quit"),
   setFullscreen: (on: boolean) => ipcRenderer.send("window:fullscreen", on),
   isFullscreen: () => call<boolean>("window:is-fullscreen"),
+  textInput: (prompt: string, max: number, current: string) =>
+    ipcRenderer.invoke("steam:text-input", prompt, max, current) as Promise<string | null>,
 });

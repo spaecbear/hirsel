@@ -397,7 +397,7 @@ function drawNight(g: Painter, L: WorldLayout, st: GameState, amount: number, ti
  * ================================================================== */
 
 /** outline the thing you are about to act on */
-function drawHighlight(g: Painter, L: WorldLayout, id: string, pulse: number) {
+function drawHighlight(g: Painter, L: { hotspots: WorldLayout["hotspots"] }, id: string, pulse: number) {
   const spot = L.hotspots.find((h) => h.id === id);
   if (!spot) return;
   const { x, y, w, h } = boundsOf(spot);
@@ -1974,6 +1974,7 @@ export const GLEN_ART: ArtPack = {
     if (s.interior) {
       const I = layoutInterior(g.W, g.H, st);
       drawInterior(g, I, st, s.time, k === "sleep", !!s.spotlightBed);
+      if (s.focus && !k) drawHighlight(g, I, s.focus, s.time);
         return;
     }
 
@@ -2016,6 +2017,7 @@ export const GLEN_ART: ArtPack = {
     if (night > 0) drawNight(g, L, st, night, s.time);
 
     if (s.active) drawHighlight(g, L, s.active, s.time);
+    else if (s.focus && !k) drawHighlight(g, L, s.focus, s.time);
     if (s.spotlight) drawHighlight(g, L, s.spotlight, s.time * 2.2);
   },
 };

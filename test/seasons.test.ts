@@ -176,6 +176,13 @@ describe("hay", () => {
     expect(g.hay).toBe(BALANCE.hayLot * 2);
   });
 
+  it("is not sold in spring — and so cannot spend the first day's ewe money", () => {
+    const { game, g } = harness({ day: 1, money: 30 });
+    game.buyHay();
+    expect(g.hay).toBe(0);
+    expect(g.money).toBe(30);
+  });
+
   it("is only fed out in winter, and only what the ground falls short of", () => {
     const summer = harness({ day: dayOf("summer", 3), flock: flockOf(10), hay: 50, forecast: ["sun", "sun", "sun"] }).g;
     summer.pastures[summer.at].grass = 0;

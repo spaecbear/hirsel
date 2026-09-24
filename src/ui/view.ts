@@ -259,9 +259,10 @@ export class View {
       );
     });
 
-    sh.appendChild(el("div", { class: "shead" }, "Hay — for the winter"));
+    // not in spring: see the cart's note in world-ui.ts
     const lot = hayLotCost(g);
-    sh.appendChild(
+    if (season(g).id !== "spring") sh.appendChild(el("div", { class: "shead" }, "Hay — for the winter"));
+    if (season(g).id !== "spring") sh.appendChild(
       button(
         "act buy",
         `<span class="n">${BALANCE.hayLot} bales of hay · £${lot}</span>` +

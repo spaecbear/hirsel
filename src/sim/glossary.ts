@@ -84,7 +84,7 @@ export function workGlossary(): GlossaryEntry[] {
     {
       id: "hay",
       name: "Hay",
-      meta: `Cut hay (summer, a dry day): ${BALANCE.hayCutBales} bales · the cart: ${BALANCE.hayLot} for £${BALANCE.hayLotCost}, £${BALANCE.hayLotCostWinter} in winter`,
+      meta: `Cut hay (summer, a dry day): ${BALANCE.hayCutBales} bales · the cart, summer to winter: ${BALANCE.hayLot} for £${BALANCE.hayLotCost}, £${BALANCE.hayLotCostWinter} in winter`,
       effect: `Fed out at night in winter only, when the ground falls short. A bale stands in for ${BALANCE.hayGrass} grass. On a day of snow the grass is buried and hay is all they have.`,
     },
   ];

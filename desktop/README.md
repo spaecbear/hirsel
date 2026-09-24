@@ -108,9 +108,18 @@ Each needs a 64×64 icon, earned and unearned.
 A run that used a code which changes the game earns none of these — see "Cheat codes" in
 the root README.
 
+### Steam Input
+
+The game reads a standard gamepad (A/B/Start/View, d-pad, both sticks) through the browser's
+Gamepad API, which is what Steam Input presents. In the partner site, under **Steam Input**,
+choose the **Gamepad** template as the default configuration and mark the game as supporting
+full controller play. Nothing in the game needs to know Steam Input is there. The cheat-code
+field asks for Steam's on-screen keyboard (`steam:text-input` in `src/main.ts`); it only
+appears in Big Picture and on the Deck.
+
 ## Still to do
 
-Tracked in `prototype/steam-plan.md`. The big one is §1.5, keyboard and controller play,
-which Steam Deck Verified requires. Also: pause and duck the audio when the window loses
-focus; the Steam on-screen keyboard for the cheat-code field on the Deck; a default Steam
-Input configuration; icons for the achievements and the executable.
+Tracked in `prototype/steam-plan.md`. Keyboard and controller play is built; it needs
+trying on a real Deck, and the Steam Input default set in the partner site once there is an
+app id. Also: pause and duck the audio when the window loses focus; icons for the
+achievements and the executable.

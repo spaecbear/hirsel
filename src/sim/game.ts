@@ -436,6 +436,8 @@ export class Game {
   buyHay() {
     const g = this.state;
     if (g.over) return;
+    // the cart has none in spring, with the grass coming
+    if (season(g).id === "spring") return;
     const cost = hayLotCost(g);
     if (g.money < cost) return;
     g.money -= cost;

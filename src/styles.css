@@ -1529,3 +1529,49 @@ body.no-motion * {
   transition: none !important;
   animation: none !important;
 }
+
+/* ---------- keys and a controller ----------
+   The focus ring shows only while a key or a pad is what is being used; a
+   mouse or a finger never sees it. The prompts say what the buttons do where
+   you are, along the bottom, and go away the moment the pointer is back. */
+body.input-keys :focus,
+body.input-pad :focus {
+  outline: 2px solid var(--gorse);
+  outline-offset: 2px;
+}
+body.input-pointer :focus {
+  outline: none;
+}
+body.input-pad,
+body.input-pad * {
+  cursor: none;
+}
+.prompts {
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  max-width: calc(100vw - 32px);
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--wool);
+  background: rgba(11, 13, 8, 0.82);
+  border: 1px solid var(--moss);
+  z-index: 95;
+  pointer-events: none;
+}
+.prompts.on {
+  display: flex;
+}
+.prompts kbd {
+  font: inherit;
+  color: var(--gorse);
+  border: 1px solid var(--gorse);
+  padding: 0 4px;
+  margin-right: 6px;
+}

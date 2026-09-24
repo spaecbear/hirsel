@@ -141,25 +141,30 @@ The good news is the seam already exists: `render/layout.ts` hands back every ta
 a `Hotspot` list, and the art and the hit-testing both read it. Focus navigation can be
 built on the same list.
 
-- [ ] **Focus model** (`ui/focus.ts`): a current hotspot; direction input picks
-      the nearest hotspot in that direction from the current one's centre. Sheep are many
-      small targets — treat the flock as one stop that expands into per-sheep focus on
-      confirm, or the d-pad becomes a slog across twenty animals
-- [ ] A visible focus ring drawn over the focused hotspot, only while keyboard/pad is the
-      last-used input (mouse and touch look exactly as today)
-- [ ] Sheets, the settings panel and the title screen: real `<button>`s already, so
-      standard DOM focus plus arrow-key handling
-- [ ] **Keyboard:** arrows/WASD to move focus, Enter/Space to confirm, Escape to back out,
-      and a few direct keys (`S` sleep, `M` market, `Tab` cycle pasture) for players who
-      learn them
-- [ ] **Gamepad:** the Gamepad API works in Electron. D-pad/left stick = focus, A = confirm,
-      B = back, Start = settings. "Hold to walk" becomes the right stick moving him directly
-- [ ] Button prompts in the UI switch between mouse, keyboard and Xbox/Deck glyphs by last
-      input
-- [ ] Steam Input: ship a default controller configuration so the Deck needs no setup
-- [ ] Deck checks: text legible at 1280×800 (the DOM-text decision helps a lot here),
-      the on-screen keyboard appears for the cheat-code field
-      (`steamworks.js` can show it), suspend/resume does not lose a day
+> **Built** — see "Keys and a controller" in the README. What is left is Steam's side of it
+> and a real Deck in the hand.
+
+- [x] **Focus model** (`ui/nav.ts`, `ui/spatial.ts`): a cursor on the hill and in the house,
+      moved to the nearest target in the direction pressed. The flock is one stop — its sheet
+      is about the whole flock, so per-sheep focus was never needed
+- [x] A focus ring over the focused target (the tap highlight), and on DOM buttons, only
+      while keys or a pad were used last; mouse and touch look exactly as before
+- [x] Sheets, Settings, the title, the end screen, the walkthrough card and the credits:
+      spatial navigation over their buttons; sliders take left/right; a sheet that is only
+      for reading scrolls
+- [x] **Keyboard:** arrows/WASD, Enter/Space, Escape/Backspace, F for the sky. The direct
+      keys (sleep, market) are not built
+- [x] **Gamepad:** d-pad/left stick move (with repeat), A choose, B back (out of the house;
+      the menu on the hill), Start settings, View the sky, right stick walks him
+- [x] Button prompts along the bottom, for keys or pad, saying what does something where
+      you are. Plain letters (A, B, Start, View) rather than drawn glyphs
+- [ ] Steam Input: a default controller configuration in the partner site (see
+      desktop/README.md) — needs the app id
+- [x] The on-screen keyboard for the cheat-code field (Steam's, through `platform.textInput`)
+- [ ] Deck checks on real hardware: legibility at 1280×800, suspend/resume
+
+The whole first-day walkthrough and a day's work were driven with the keyboard alone and with
+a simulated pad in a browser. A full run to the croft has not been played that way yet.
 
 **Done when:** a full run — title to croft — can be played on a controller alone, and on a
 keyboard alone.

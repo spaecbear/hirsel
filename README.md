@@ -505,6 +505,45 @@ never a surprise. `state.cheated` holds it, and `hydrate` back-fills old saves a
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
 The simulation is untouched — only the words and the sprites swap.
 
+### Keys and a controller
+
+The game was built for a finger and a mouse; a Steam Deck needs it to be playable with a pad
+alone, and a desktop player may want the keys. `ui/controls.ts` reduces both to a handful of
+intents — move, choose, back, menu, the sky — and `ui/nav.ts` decides what each does in
+whichever **layer** is on top: the credits, Settings, the end of a run, the title, a sheet, a
+walkthrough card waiting on "Go on", the retro panels, or the hill.
+
+| | keys | pad |
+| --- | --- | --- |
+| move | arrows / WASD | d-pad / left stick (repeats when held) |
+| choose | Enter / Space | A |
+| back | Escape / Backspace | B |
+| settings | Escape on the hill | Start |
+| the sky | F | View |
+| walk | — | right stick |
+
+**In a DOM layer** a direction moves focus to the nearest button that way
+(`ui/spatial.ts` — distance along the direction counts once, drift across it twice, so down
+means the thing under you). Sliders take left and right. A sheet that is only for reading
+scrolls when there is nothing further to move to. Each layer lands focus on the obvious
+choice when it opens — "Go back to it" on the title, "Start again" at the end, the first live
+row of a sheet — and **never on selling stock**: a sale is one press from a second press, so
+those rows are reached on purpose, not arrived at.
+
+**On the hill** a cursor moves between the things you can tap, drawn with the same outline the
+tap highlight uses, and the hint line names it. The flock is one stop; the ground and the
+hills, which are bands the width of the screen, navigate by a box in the open grass and the
+middle of the band rather than their centres. Choosing is a tap on that target — `WorldUi`'s
+`activate` is the one path for both, so they cannot disagree. Indoors B goes back out of the
+door. The cursor follows the walkthrough's target as it moves on, so the first day can be
+played with nothing but Enter.
+
+The pointer is never switched off. The last device used decides whether the focus ring and
+the prompts along the bottom show; a click or a touch hides them again.
+
+The one text field (the cheat codes) asks Steam for its on-screen keyboard when chosen with a
+pad on the desktop build (`platform.textInput`), and falls back to the field itself.
+
 ### Seasons
 
 `SEASON_DAYS` (24) a season, spring first: three turns of the moon each, so every season has
