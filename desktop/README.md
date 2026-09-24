@@ -97,6 +97,8 @@ Each needs a 64×64 icon, earned and unearned.
 | `MADE_HAY` | Made hay | Cut hay while the sun shone. |  |
 | `FIRST_WINTER` | Through the winter | See the flock through a winter to the spring. |  |
 | `FIRST_LAMB` | On its feet | A lamb born on your own ground, and alive in the morning. |  |
+| `ROSETTE` | A red rosette | Take a prize at the Highland show, or the trial. |  |
+| `NEIGHBOUR` | Good neighbours | Have a kindness paid back from over the burn. |  |
 | `OLD_DOG` | Earned the fire | See a dog through her working life to the fireside. |  |
 | `CLEAN` | No fox got in | Reach day 20 without losing a sheep to a fox. |  |
 | `AYE` | She said aye | Finish the croft and ask her. |  |

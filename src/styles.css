@@ -1594,3 +1594,48 @@ body.input-keys .toast,
 body.input-pad .toast {
   bottom: calc(52px + env(safe-area-inset-bottom));
 }
+
+/* ---------- something at the door ----------
+   A card over the hill, under Settings and the title (.over is 40) and over
+   the sheets. It waits on a choice: there is no close button, because every
+   event offers a choice that costs nothing. */
+.event-card {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(11, 13, 8, 0.55);
+  z-index: 30;
+}
+.event-card.on {
+  display: flex;
+}
+.event-box {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--peat-2);
+  border: 2px solid var(--gorse);
+  padding: 16px;
+}
+.event-box h3 {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gorse);
+  font-weight: 400;
+  margin-bottom: 10px;
+}
+.event-box p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--wool);
+  margin-bottom: 14px;
+}
+.event-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

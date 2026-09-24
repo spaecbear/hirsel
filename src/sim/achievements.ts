@@ -41,6 +41,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     hint: "A lamb born on your own ground, and alive in the morning.",
     won: (g) => g.stats.lambsBorn > 0,
   },
+  { id: "rosette", name: "A red rosette", hint: "Take a prize at the Highland show, or the trial.", won: (g) => g.stats.rosettes > 0 },
+  { id: "neighbour", name: "Good neighbours", hint: "Have a kindness paid back from over the burn.", won: (g) => g.stats.neighbourGifts > 0 },
   {
     id: "old-dog",
     name: "Earned the fire",

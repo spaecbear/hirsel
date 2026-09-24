@@ -84,6 +84,21 @@ function play(seed: number, difficulty: Difficulty): Result {
     const hayShort = hayNeeded ? Math.max(0, hayNeeded(g) - (g as GameState & { hay: number }).hay) : 0;
     const winterReserve = nightsToSpring * rules.feedCost(g) + (s && s.id !== "winter" ? Math.ceil(hayShort / 10) * 5 : 0);
 
+    /*
+     * Something at the door: help Callum, walk his stray back, show a ewe,
+     * go to the dance and walk out with her — and buy off the dealer only
+     * with money to spare. Older builds have no events; skip if so.
+     */
+    const ev = (g as GameState & { event?: { id: string; data: Record<string, string | number> } | null }).event;
+    const choices = (game as unknown as { eventChoices?: () => { choice: { id: string; fallback?: boolean }; ok: boolean }[] }).eventChoices;
+    if (ev && choices) {
+      const opts = choices.call(game);
+      let pick = opts.find((o) => o.ok && !o.choice.fallback) ?? opts.find((o) => o.choice.fallback);
+      if (ev.id === "dealer" && g.money < Number(ev.data.price) + 60 + winterReserve) pick = opts.find((o) => o.choice.fallback);
+      if (ev.id === "stray") pick = opts.find((o) => o.choice.id === "return" && o.ok) ?? pick;
+      if (pick) (game as unknown as { answerEvent: (id: string) => void }).answerEvent(pick.choice.id);
+    }
+
     /* ---- the steading: money, never taps ---- */
     for (const t of TOOL_ORDER) {
       const cost = { crook: 18, dog: 58, boots: 26, tup: 48, shears: 32, cart: 74, lamp: 44, saltlick: 28 }[t as string] ?? 999;

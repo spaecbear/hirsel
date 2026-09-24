@@ -31,7 +31,8 @@ import { WorldUi } from "./ui/world-ui";
 import { SkyFeed } from "./ui/sky-feed";
 import { TutorialUi } from "./ui/tutorial-ui";
 import { buildSettings } from "./ui/settings-panel";
-import { $, el, toast } from "./ui/dom";
+import { $, button, el, toast } from "./ui/dom";
+import { eventDef } from "./sim/events";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
@@ -117,6 +118,48 @@ function render() {
    */
   if (game.state.over && !animator.busy) showEnd();
   tutorial.refresh();
+  updateEvent();
+}
+
+/**
+ * Something at the door. Shown once the night has played out — never over
+ * the dark or the dawn — and built afresh only when the event or what can be
+ * afforded changes, so a controller's selection is not thrown away every
+ * render.
+ */
+const eventEl = $("event");
+let eventKey = "";
+function updateEvent() {
+  const g = game.state;
+  const show = !!g.event && !g.over && !animator.busy && !rolling;
+  const choices = show ? game.eventChoices() : [];
+  const key = show ? `${g.event!.id}:${g.event!.day}:${choices.map((c) => (c.ok ? 1 : 0)).join("")}:${settings.inverse}` : "";
+  if (key === eventKey) return;
+  eventKey = key;
+  if (!show) {
+    eventEl.classList.remove("on");
+    return;
+  }
+  world.close(); // the card is the thing to look at
+  const ev = eventDef(g.event!.id);
+  const lex = game.lex;
+  $("event-title").textContent = ev.title(g, g.event!.data, lex);
+  $("event-body").textContent = ev.body(g, g.event!.data, lex);
+  const box = $("event-choices");
+  box.innerHTML = "";
+  for (const { choice: c, ok } of choices) {
+    const costs = [c.taps ? `${c.taps} tap${c.taps > 1 ? "s" : ""}` : "", c.money ? `£${c.money}` : ""].filter(Boolean).join(" · ");
+    const why = !ok && (c.money ?? 0) > g.money ? " — you have not the money" : !ok && c.taps ? " — no taps left today" : "";
+    box.appendChild(
+      button(
+        "act",
+        `<span class="n">${c.label}${costs ? ` · ${costs}` : ""}</span>${c.detail || why ? `<span class="d">${c.detail ?? ""}${why}</span>` : ""}`,
+        () => game.answerEvent(c.id),
+        !ok,
+      ),
+    );
+  }
+  eventEl.classList.add("on");
 }
 
 function startGame(state?: GameState, opts: { intro?: boolean } = {}) {

@@ -18,7 +18,7 @@ import { toast } from "./dom";
 import { nearestInDirection, type Box } from "./spatial";
 import type { WorldUi } from "./world-ui";
 
-type LayerKind = "credits" | "settings" | "over" | "title" | "sheet" | "tutorial" | "retro" | "hill";
+type LayerKind = "credits" | "settings" | "over" | "title" | "event" | "sheet" | "tutorial" | "retro" | "hill";
 
 interface Layer {
   kind: LayerKind;
@@ -96,6 +96,7 @@ export class Nav {
     if (isOn("settings")) return { kind: "settings", root: byId("settings") };
     if (isOn("over")) return { kind: "over", root: byId("over") };
     if (isOn("title")) return { kind: "title", root: byId("title") };
+    if (isOn("event")) return { kind: "event", root: byId("event") };
     if (isOn("sheet")) return { kind: "sheet", root: byId("sheet") };
     const tut = byId("tutorial");
     if (tut?.classList.contains("on") && tut.querySelector(".tut-go")) return { kind: "tutorial", root: tut };
@@ -141,6 +142,7 @@ export class Nav {
       over: ["#over-again"],
       tutorial: [".tut-go"],
       credits: ["#credits-close"],
+      event: [".event-choices button:not([disabled])"],
       sheet: [".sheet-body button:not([disabled]):not([data-no-landing])", ".sheet-x"],
     };
     let pick: HTMLElement | null = null;

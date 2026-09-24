@@ -85,6 +85,26 @@ export type ToolId =
 
 export type CroftId = "roof" | "hearth" | "byre" | "ring";
 
+export type EventId =
+  | "letter-boss"
+  | "letter-mother"
+  | "letter-friend"
+  | "letter-sister"
+  | "dealer"
+  | "neighbour"
+  | "neighbour-gift"
+  | "stray"
+  | "show"
+  | "visit"
+  | "ceilidh";
+
+export interface PendingEvent {
+  id: EventId;
+  day: number;
+  /** what this one is about, fixed when it came: the dealer's offer, the gift */
+  data: Record<string, string | number>;
+}
+
 /** the two working dogs: the Shetland sheepdog and the border collie */
 export type DogKind = "dog" | "collie";
 
@@ -204,6 +224,10 @@ export interface GameState {
     lambsBorn: number;
     lambsLost: number;
     lambsSold: number;
+    /** prizes at the Highland show and the trial */
+    rosettes: number;
+    /** Callum has paid back a kindness */
+    neighbourGifts: number;
   };
   achievements: string[];
   /** bales in the barn, for the winter — cut in summer or bought at the cart */
@@ -212,6 +236,12 @@ export interface GameState {
   dogDays: number;
   /** the dogs that have retired to the house, oldest first. They lie by the fire */
   retiredDogs: DogKind[];
+  /** something that happened at dawn and is waiting on an answer — see sim/events.ts */
+  event: PendingEvent | null;
+  /** the last day each event came, for the ones that should not come again too soon or at all */
+  eventDays: Partial<Record<EventId, number>>;
+  /** what Callum over the burn thinks of you: a hand given is a hand owed */
+  goodwill: number;
   /**
    * A code that changes the game has been used this run (money, beasts, taps,
    * weather, the wolf on demand, zen). Such a run earns no achievements, and

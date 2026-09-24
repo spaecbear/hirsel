@@ -47,6 +47,7 @@ import {
   wolfWarningDue,
 } from "./rules";
 import { checkAchievements, loadEarned, type Achievement } from "./achievements";
+import { EVENT_ORDER, EVENTS_BALANCE, eventDef, type EventChoice } from "./events";
 import { NORMAL, type Lexicon } from "./lexicon";
 import type {
   ActionId,
@@ -141,11 +142,16 @@ export function newGame(opts: GameOptions = {}): GameState {
       lambsBorn: 0,
       lambsLost: 0,
       lambsSold: 0,
+      rosettes: 0,
+      neighbourGifts: 0,
     },
     achievements: [],
     hay: 0,
     dogDays: 0,
     retiredDogs: [],
+    event: null,
+    eventDays: {},
+    goodwill: 0,
     cheated: false,
     seed,
   };
@@ -196,7 +202,7 @@ export class Game {
     this.state.log.unshift({ t, cls, day: this.state.day });
     if (this.state.log.length > 120) this.state.log.pop();
   }
-  private award() {
+  award() {
     for (const a of checkAchievements(this.state)) this.onAchievement(a);
   }
 
@@ -293,16 +299,78 @@ export class Game {
     // some things want somewhere to go before they can be bought at all
     if ("needs" in t && t.needs && !owns(g, t.needs)) return;
     g.money -= t.cost;
-    g.owned[id] = true;
     this.say(`Bought the ${t.name.toLowerCase()} for £${t.cost}.`, "gold");
+    this.grantTool(id);
+    this.award();
+    this.changed();
+  }
+
+  /** a tool is yours, however it came — the cart or the dealer. The money is the caller's business */
+  grantTool(id: ToolId) {
+    const g = this.state;
+    g.owned[id] = true;
     if (id === "boots" || id === "lamp") g.taps = Math.min(BALANCE.maxTaps, g.taps + 1);
     // a new dog starts her working life today
     if (id === "dog" || id === "collie") {
       g.dogDays = 0;
       if (g.retiredDogs.length) this.say("The old dog looks up from the fire at the new one, and puts her head back down.", "cozy");
     }
+  }
+
+  /* ---------- things that happen ---------- */
+
+  /** the choices on the event waiting, with whether each can be taken just now */
+  eventChoices(): { choice: EventChoice; ok: boolean }[] {
+    const g = this.state;
+    if (!g.event) return [];
+    const ev = eventDef(g.event.id);
+    return ev.choices(g, g.event.data, this.lex).map((c) => ({
+      choice: c,
+      ok:
+        (c.taps ?? 0) <= (this.zen || this.freeTaps ? Infinity : g.taps) &&
+        (c.money ?? 0) <= g.money &&
+        (c.can ? c.can(g) : true),
+    }));
+  }
+
+  /** answer the event waiting. Anything that cannot be afforded is refused, not half done */
+  answerEvent(choiceId: string) {
+    const g = this.state;
+    if (!g.event || g.over) return;
+    const pick = this.eventChoices().find((x) => x.choice.id === choiceId);
+    if (!pick || !pick.ok) return;
+    const data = g.event.data;
+    g.event = null;
+    const c = pick.choice;
+    if (c.money) g.money -= c.money;
+    c.run(this, data);
+    // a choice that takes a tap is the day's work like any other, and counts as one
+    if (c.taps) this.spend(c.taps);
     this.award();
     this.changed();
+  }
+
+  /**
+   * At dawn: an event left unanswered takes its free choice, and then at most
+   * one new one comes. The dated ones are asked first, so a letter is never
+   * pushed off its day by a dealer.
+   */
+  private dawnEvents() {
+    const g = this.state;
+    if (g.event) {
+      const fallback = this.eventChoices().find((x) => x.choice.fallback);
+      if (fallback) this.answerEvent(fallback.choice.id);
+      else g.event = null;
+    }
+    if (g.over || g.day < EVENTS_BALANCE.firstDay) return;
+    for (const id of EVENT_ORDER) {
+      const data = eventDef(id).due(g, this.rng);
+      if (data) {
+        g.event = { id, day: g.day, data };
+        g.eventDays[id] = g.day;
+        return;
+      }
+    }
   }
 
   /**
@@ -691,6 +759,9 @@ export class Game {
       } else if (g.money < 0) {
         this.lose("The purse is empty", "You cannot feed them and you cannot feed yourself. You go back to the job you left.");
       }
+
+      // whatever comes to the door comes after the night is settled, and not to a run that has ended
+      this.dawnEvents();
 
       this.award();
       this.changed();

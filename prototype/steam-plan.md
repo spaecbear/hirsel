@@ -113,15 +113,15 @@ tests still pass.
 
 ### 1.4 Steam achievements
 
-The 24 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
+The 26 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
 four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 
-- [ ] Register all 24 in Steamworks with the same ids; hidden flag on the four secret ones,
+- [ ] Register all 26 in Steamworks with the same ids; hidden flag on the four secret ones,
       with their existing `hint` as the post-unlock description
 - [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
 - [x] On start-up, re-send every locally earned id — covers achievements earned offline
       or before Steam was running
-- [ ] **64×64 icons for each, earned and unearned** (48 images). Pixel art, integer-scaled
+- [ ] **64×64 icons for each, earned and unearned** (52 images). Pixel art, integer-scaled
 - [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
@@ -212,7 +212,7 @@ Decide what happens to the free Vercel build once there is a paid one. Recommend
 | library hero | 3840×1240 |
 | library logo | 1280 wide max, transparent |
 | screenshots | at least 5, 1920×1080 |
-| achievement icons | 64×64 × 48 (see §1.4) |
+| achievement icons | 64×64 × 52 (see §1.4) |
 | trailer | optional but strongly recommended; 30–60s |
 
 The Glen interface in landscape is the screenshot view. Good moments: the three pastures
@@ -308,15 +308,16 @@ Cheap to build and it will land hard, with Tippy and Arrow already in the game.
 
 The inn is the only social space and she is the only arc.
 
-- [ ] **More beats in the courtship** between the second pint and the ring — she is the
-      emotional spine of the game and has the fewest scenes
-- [ ] **A neighbour** on the next hill — lends a hand, gossips, occasionally needs help
-- [ ] **A travelling dealer** — sometimes has a rare breed or a tool at a price
-- [ ] **The Highland show / a sheepdog trial** in late summer — enter your best ewe or your
-      dog; a prize and a mid-run milestone
-- [ ] **Letters from the life you left** — a few, spaced out; they give the opening's desk
-      scene a thread to pull
-- [ ] Events are seeded like everything else in the sim, so a save replays the same run
+> **Built** — `sim/events.ts`; see "Things that happen" in the README. Two courtship beats
+> (her afternoon off, the ceilidh) rather than a full arc: more of her is still the best
+> next piece of writing in the game.
+
+- [x] **More beats in the courtship** — her afternoon off, and a ceilidh each autumn
+- [x] **A neighbour** — Callum over the burn: asks for a hand, pays it back, loses a stray
+- [x] **A travelling dealer** — a good ewe or a tool you lack, under the cart price
+- [x] **The Highland show / a sheepdog trial** each midsummer
+- [x] **Letters from the life you left** — four, on their days
+- [x] Events are seeded like everything else in the sim, so a save replays the same run
 
 ### 2.6 After she says aye
 

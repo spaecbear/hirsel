@@ -505,6 +505,36 @@ never a surprise. `state.cheated` holds it, and `hydrate` back-fills old saves a
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
 The simulation is untouched — only the words and the sprites swap.
 
+### Things that happen
+
+`sim/events.ts`. The world comes to the door: at most one event a dawn, rolled from the run's
+seed like everything else, none in the first week. Each is a card over the hill with a few
+choices, and every choice says what it costs — a tap out of today, money, or nothing. **Every
+event offers a choice that costs nothing**, so none can leave a player stuck, and one left
+unanswered overnight takes that choice at the next dawn (a test pins both). None mentions the
+sword, the wolf or how he is called.
+
+| event | when | the choice |
+| --- | --- | --- |
+| letters | days 9, 40, 110, 190 — the old office, your mother (with £10), a friend, your sister | mostly words; they are the thread back to the desk in the opening |
+| the dealer | now and then, not in winter | a good ewe at ¾ of the cart price, or a tool you lack at ⅘ — never a second dog, the sword or the watch |
+| Callum's ewes are out | now and then | a tap to help him, or not |
+| Callum pays it back | after two kindnesses | 20 bales in the back end of the year, £15 in the front |
+| a stray | now and then, not in winter | walk her back (a tap, and a kindness) or keep her (a ewe, and he knows) |
+| the Highland show | the 18th of each summer | show your best grown ewe (breed, fleece, tended) for £25 or £12, or run the dog in the trial for £20 — the collie is the trials dog, and an old one is slower |
+| her afternoon off | once, after three evenings at the inn | walk the hill with her: it counts for an evening |
+| the ceilidh | the 10th of each autumn, once you know her | £4 and a tap: an evening, and hale for two days |
+
+The dated ones are asked before the chance ones each dawn, so a letter is never pushed off
+its day by the dealer. The card is its own layer for keys and a pad: focus lands on the first
+choice that can be afforded, and quick keys do nothing behind it.
+
+Measured with `tools/balance.ts` (the policy helps Callum, walks strays back, shows a ewe,
+goes to the dance, and buys off the dealer only with money to spare): median wins 182 / 214 /
+233 against 203 / 226 / 266 without events — a run is about a tenth shorter for a player who
+answers the door, with no more lost. Every number is in `EVENTS_BALANCE`. With the events
+switched off the tool reproduces the old figures exactly, so the difference is theirs.
+
 ### Keys and a controller
 
 The game was built for a finger and a mouse; a Steam Deck needs it to be playable with a pad
