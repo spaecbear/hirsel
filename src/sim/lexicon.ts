@@ -31,6 +31,13 @@ export interface Lexicon {
   snowLost: string;
   /** winter fodder. Hay in both: the skulk grazes the same grass the flock did */
   hay: string;
+  /** the breeding male, the young, and the state of carrying them */
+  tup: string;
+  lamb: string;
+  lambs: string;
+  inLamb: string;
+  /** tool names that name an animal, where the tool list's own name would leak */
+  toolNames: Record<string, string>;
   lastGone: { title: string; body: string };
   soldLast: { title: string; body: string };
   maulSurvivors: (lost: number, keep: number) => string;
@@ -85,6 +92,11 @@ export const NORMAL: Lexicon = {
   strike: "Strike in a matted fleece. You found her too late.",
   snowLost: "One of them wandered off into the snow looking for grass, and did not come back.",
   hay: "hay",
+  tup: "tup",
+  lamb: "lamb",
+  lambs: "lambs",
+  inLamb: "in lamb",
+  toolNames: {},
   lastGone: { title: "The last of them gone", body: "You are a shepherd with no sheep. The croft goes quiet." },
   soldLast: { title: "You sold the last of them", body: "There is no shepherd without a flock. You take the road down." },
   maulSurvivors: (lost, keep) =>
@@ -119,6 +131,9 @@ export function actionName(lex: Lexicon, id: string, fiddle = false): string {
   if (id === "music" && fiddle) return lex.actionNames.fiddle;
   return lex.actionNames[id] ?? "";
 }
+
+/** what a tool is called, for the tools that name an animal */
+export const toolName = (lex: Lexicon, id: string, fallback: string) => lex.toolNames[id] ?? fallback;
 
 /** what a tool says it does, for the tools that name the animals */
 export const toolWhat = (lex: Lexicon, id: string, fallback: string) => lex.toolWhat[id] ?? fallback;
@@ -158,6 +173,11 @@ export const INVERSE: Lexicon = {
   strike: "Canker in a matted brush. You found her too late.",
   snowLost: "One of them went off over the snow after something to eat, and did not come back.",
   hay: "hay",
+  tup: "dog fox",
+  lamb: "cub",
+  lambs: "cubs",
+  inLamb: "in cub",
+  toolNames: { tup: "A dog fox" },
   lastGone: { title: "The last of them gone", body: "You are a tod-keeper with nothing left to keep. The croft goes quiet." },
   soldLast: { title: "You sold the last of them", body: "There is no keeper without a skulk. You take the road down." },
   maulSurvivors: (lost, keep) =>
@@ -181,6 +201,7 @@ export const INVERSE: Lexicon = {
     fiddle: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a ram off.",
     crook: "Takes a tap off gathering — and off a big skulk, which costs two.",
     oilskin: "You can comb through a haar in this. Rain is still rain.",
+    tup: "A dog fox for the vixens. He runs with them through the autumn, and the cubs come in the spring.",
     sword: "Hangs well above the fire. Bonny thing. Not much use for keeping rams off, mind.",
     swordLocked: "Bonny thing. If only you had somewhere to hang it over...",
   },

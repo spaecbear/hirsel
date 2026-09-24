@@ -96,6 +96,7 @@ Each needs a 64×64 icon, earned and unearned.
 | `HUNDRED_DAYS` | Still here | Reach day 100. |  |
 | `MADE_HAY` | Made hay | Cut hay while the sun shone. |  |
 | `FIRST_WINTER` | Through the winter | See the flock through a winter to the spring. |  |
+| `FIRST_LAMB` | On its feet | A lamb born on your own ground, and alive in the morning. |  |
 | `OLD_DOG` | Earned the fire | See a dog through her working life to the fireside. |  |
 | `CLEAN` | No fox got in | Reach day 20 without losing a sheep to a fox. |  |
 | `AYE` | She said aye | Finish the croft and ask her. |  |

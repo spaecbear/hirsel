@@ -201,6 +201,36 @@ export const BALANCE = {
   oldDogStrength: 0.5,
   retiredFoxBias: 0.95,
   retiredCounted: 2,
+
+  /*
+   * Lambing.
+   *
+   * The tup runs with the ewes through the autumn; as winter comes in, most
+   * of them are in lamb. A hungry winter night can cost a ewe her lamb, so the
+   * barn feeds next year's flock as well as this one. The lambs come over the
+   * first days of spring. Born in the byre they all live; born out on the hill
+   * on a wet night, some do not — less so if the flock is being tended. They
+   * are half a mouth (mostly on their mothers), carry half a fleece, are
+   * grown by the winter, and sell best at the autumn sales.
+   *
+   * Measured with tools/balance.ts: at a full ration a lamb cost more to keep
+   * to the autumn than it fetched, and lambing made every run slower. At half
+   * a ration, one ewe in three twinning and the autumn price here, it pays a
+   * little — median wins 203/226/266 against 206/227/269 without it.
+   */
+  tupRate: 0.85,
+  lambingDays: 10,
+  twinChance: 0.3,
+  lambLossBadNight: 0.4,
+  lambLossTended: 0.5,
+  slipChance: 0.15,
+  lambGrowth: 0.5,
+  lambGrowDays: 72,
+  /** a lamb is mostly on its mother: half a mouth at the grass, the barn and the feed bill */
+  lambEats: 0.5,
+  /** a lamb fetches this much of a grown ewe's cost, and more at the autumn sales */
+  lambPrice: 0.4,
+  lambPriceAutumn: 2.4,
 } as const;
 
 /**
@@ -412,6 +442,7 @@ export const TOOLS = [
   { id: "boots", name: "Stout boots", cost: 26, what: "One more tap every day." },
   { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night, and foxes think twice about her." },
   { id: "collie", name: "Border collie", cost: 58, what: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a fox, but they do better under her." },
+  { id: "tup", name: "A tup", cost: 48, what: "A ram for the ewes. He runs with them through the autumn, and the lambs come in the spring." },
   { id: "fiddle", name: "A fiddle", cost: 34, what: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a fox off." },
   { id: "cart", name: "Pony and cart", cost: 74, what: "Market costs no tap." },
   { id: "saltlick", name: "Salt lick", cost: 28, what: "Set it on the hill and they take a quarter less grass for the same growth." },

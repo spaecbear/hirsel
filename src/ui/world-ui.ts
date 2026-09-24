@@ -14,7 +14,7 @@
 import { $, button, el } from "./dom";
 import { ACTIONS, collieAtFire, type Game } from "../sim/game";
 import { BALANCE, BREEDS, CROFT, SEASON_DAYS, TOOLS, WEATHER } from "../sim/config";
-import { actionName, toolWhat } from "../sim/lexicon";
+import { actionName, toolName, toolWhat } from "../sim/lexicon";
 import { startSpin } from "../render/dog-spin";
 import { tippyWalking } from "../render/tippy";
 import {
@@ -25,6 +25,10 @@ import {
   hayNeeded,
   hayNights,
   here,
+  inLambCount,
+  lambPrice,
+  lambingOn,
+  lambsOf,
   isFullMoon,
   isWinter,
   moonName,
@@ -387,7 +391,7 @@ export class WorldUi {
       case "cart":
         return `The cart · ${this.game.lex.wool} ${woolPrice(g)}p a stone`;
       case "flock":
-        return `${this.game.lex.flockCap} · ${g.flock.length} on the hill`;
+        return `${this.game.lex.flockCap} · ${g.flock.length} on the hill${this.flockNote()}`;
       case "shepherd":
         return "Yourself";
       case "ground":
@@ -403,6 +407,18 @@ export class WorldUi {
       default:
         return "";
     }
+  }
+
+  /** the lambs among them, and the ewes carrying — said wherever the flock is counted */
+  private flockNote(): string {
+    const g = this.game.state;
+    const lex = this.game.lex;
+    const lambs = lambsOf(g).length;
+    const due = inLambCount(g);
+    return (
+      (lambs ? ` · ${lambs} ${lambs === 1 ? lex.lamb : lex.lambs}` : "") +
+      (due ? ` · ${due} ${lex.inLamb}` : "")
+    );
   }
 
   /* ---------- what can be done where ---------- */
@@ -445,13 +461,23 @@ export class WorldUi {
       g.hay > 0
         ? `${g.hay} bales in the barn, about ${hayNights(g)} nights for the ${this.game.lex.flock}`
         : "the barn is empty";
+    const due = inLambCount(g);
+    const lex = this.game.lex;
+    const lambing =
+      due && lambingOn(g)
+        ? ` · lambing: ${due} still to come${owns(g, "byre") ? ", in the byre" : ""}`
+        : due
+          ? ` · ${due} ${lex.inLamb}, due in the spring`
+          : owns(g, "tup") && (s.id === "autumn" || s.id === "summer")
+            ? ` · the ${lex.tup} goes in with them for the winter`
+            : "";
     const rows: Row[] = [
       {
         label: `${s.name} · day ${s.day} of ${SEASON_DAYS}`,
         detail:
           s.left === 0
-            ? `${nextSeason(g.day).name} tomorrow · ${barn}`
-            : `${nextSeason(g.day).name} in ${s.left + 1} days · ${barn}`,
+            ? `${nextSeason(g.day).name} tomorrow · ${barn}${lambing}`
+            : `${nextSeason(g.day).name} in ${s.left + 1} days · ${barn}${lambing}`,
         info: true,
         onPick: () => {},
       },
@@ -664,7 +690,7 @@ export class WorldUi {
         continue;
       }
       // the broadsword is never explained, here least of all
-      rows.push({ label: t.name, detail: t.id === "sword" ? "Hangs well above the fire." : toolWhat(this.lexicon, t.id, t.what), info: true, onPick: () => {} });
+      rows.push({ label: toolName(this.lexicon, t.id, t.name), detail: t.id === "sword" ? "Hangs well above the fire." : toolWhat(this.lexicon, t.id, t.what), info: true, onPick: () => {} });
     }
     if (g.retiredDogs.length) {
       const names = g.retiredDogs.map((k) => (k === "collie" ? "a collie" : "a sheltie"));
@@ -718,7 +744,7 @@ export class WorldUi {
 
     // sell a beast — no tap, and a loss on her
     for (const breed of Object.keys(BREEDS) as BreedId[]) {
-      const held = g.flock.filter((s) => s.breed === breed);
+      const held = g.flock.filter((s) => s.breed === breed && !s.lamb);
       if (!held.length) continue;
       const worst = held.reduce((a, b) => (a.fleece <= b.fleece ? a : b));
       const price = this.game.sellPrice(worst.id);
@@ -726,6 +752,23 @@ export class WorldUi {
         label: `Sell a ${lex.breeds[breed]} · £${price}`,
         detail: `${held.length} in the ${lex.flock}. The cart pays under what she cost.`,
         onPick: () => this.game.sellEwe(worst.id),
+      });
+    }
+
+    // sell a lamb — at their best at the autumn sales
+    for (const breed of Object.keys(BREEDS) as BreedId[]) {
+      const lambs = g.flock.filter((s) => s.breed === breed && s.lamb);
+      if (!lambs.length) continue;
+      const one = lambs[0];
+      const price = lambPrice(g, one);
+      rows.push({
+        label: `Sell a ${lex.breeds[breed]} ${lex.lamb} · £${price}`,
+        detail:
+          `${lambs.length} ${lambs.length === 1 ? lex.lamb : lex.lambs} on the hill. ` +
+          (season(g).id === "autumn"
+            ? "The autumn sales are on: the best price of the year."
+            : `Kept, ${lambs.length === 1 ? "she grows" : "they grow"} into the ${lex.flock} by the winter. The autumn sales pay best.`),
+        onPick: () => this.game.sellEwe(one.id),
       });
     }
 
@@ -766,7 +809,7 @@ export class WorldUi {
       const wanting = needs && !owns(g, needs);
       const again = (t.id === "dog" || t.id === "collie") && g.retiredDogs.length > 0;
       rows.push({
-        label: `${t.name} · £${t.cost}`,
+        label: `${toolName(this.lexicon, t.id, t.name)} · £${t.cost}`,
         detail: wanting
           ? toolWhat(this.lexicon, `${t.id}Locked`, "Not yet.")
           : `${again ? "A young dog for the hill, now the old one has the fire. " : ""}${toolWhat(this.lexicon, t.id, t.what)}`,
@@ -805,7 +848,7 @@ export class WorldUi {
       case "cart":
         return `The cart — ${this.lexicon.wool} ${woolPrice(g)}p a stone`;
       case "flock":
-        return `${this.lexicon.flockCap} — ${g.flock.length} on the hill`;
+        return `${this.lexicon.flockCap} — ${g.flock.length} on the hill${this.flockNote()}`;
       case "shepherd":
         return "Yourself";
       case "ground":

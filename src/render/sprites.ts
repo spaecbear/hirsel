@@ -156,6 +156,7 @@ export interface SheepOpts {
 
 export function drawSheep(g: Painter, x: number, y: number, s: Sheep, o: SheepOpts = {}) {
   if (INV) return drawFoxBeast(g, x, y, s, o);
+  if (s.lamb) return drawLamb(g, x, y, s, o);
   const gr = grade(o.shorn ? 0 : s.fleece);
   const b = br(s);
   const bulk = Math.round(Math.min(6, gr.v * 0.55));
@@ -181,6 +182,35 @@ export function drawSheep(g: Painter, x: number, y: number, s: Sheep, o: SheepOp
   g.px(hx + (dir > 0 ? 1 : 3), hy + 1, 1, 1, "#0d0d0b");
   g.px(hx + (dir > 0 ? 0 : 4), hy - 2, 2, 2, b.face); // ear
   g.px(dir > 0 ? x - 2 : x + w, y + 2, 2, 3, wool); // tail
+}
+
+/**
+ * A lamb: small, pale, mostly leg, with a head too big for it. Drawn on the
+ * same origin as a grown ewe so its hooves land on the same line.
+ */
+function drawLamb(g: Painter, x: number, y: number, s: Sheep, o: SheepOpts) {
+  const b = br(s);
+  const dir = o.flip ? -1 : 1;
+  const wool = shade(b.wool, 14);
+  const w = 8;
+  const h = 5;
+  const ox = x + 2;
+  const oy = y + 3;
+  const legPhase = o.run ? (Math.sin(o.run * Math.PI * 14) > 0 ? 1 : -1) : 0;
+  g.a(ox, oy + h + 5, w, 2, 0, 0, 0, 0.2);
+  g.px(ox + 1, oy + h, 1, 5 - Math.abs(legPhase), "#3a352c");
+  g.px(ox + w - 2, oy + h, 1, 5 - Math.abs(legPhase), "#3a352c");
+  g.px(ox + 3, oy + h, 1, 5 + legPhase, "#2e2a22");
+  g.px(ox + w - 4, oy + h, 1, 5 - legPhase, "#2e2a22");
+  g.px(ox, oy + 1, w, h - 1, wool);
+  g.px(ox + 1, oy, w - 2, 1, shade(wool, 10));
+  g.px(ox, oy + h - 1, w, 1, shade(wool, -20));
+  const hx = dir > 0 ? ox + w - 1 : ox - 3;
+  const hy = o.graze ? oy + h - 2 : oy - 2;
+  g.px(hx, hy, 4, 4, shade(b.face, 20));
+  g.px(hx + (dir > 0 ? 2 : 1), hy + 1, 1, 1, "#0d0d0b");
+  g.px(hx + (dir > 0 ? 0 : 2), hy - 1, 2, 1, shade(b.face, 20)); // ear
+  g.px(dir > 0 ? ox - 1 : ox + w, oy + 1, 1, 2, wool); // tail
 }
 
 /* ---------- the shepherd ---------- */

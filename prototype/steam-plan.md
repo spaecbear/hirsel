@@ -113,15 +113,15 @@ tests still pass.
 
 ### 1.4 Steam achievements
 
-The 23 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
+The 24 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
 four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 
-- [ ] Register all 23 in Steamworks with the same ids; hidden flag on the four secret ones,
+- [ ] Register all 24 in Steamworks with the same ids; hidden flag on the four secret ones,
       with their existing `hint` as the post-unlock description
 - [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
 - [x] On start-up, re-send every locally earned id — covers achievements earned offline
       or before Steam was running
-- [ ] **64×64 icons for each, earned and unearned** (46 images). Pixel art, integer-scaled
+- [ ] **64×64 icons for each, earned and unearned** (48 images). Pixel art, integer-scaled
 - [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
@@ -207,7 +207,7 @@ Decide what happens to the free Vercel build once there is a paid one. Recommend
 | library hero | 3840×1240 |
 | library logo | 1280 wide max, transparent |
 | screenshots | at least 5, 1920×1080 |
-| achievement icons | 64×64 × 46 (see §1.4) |
+| achievement icons | 64×64 × 48 (see §1.4) |
 | trailer | optional but strongly recommended; 30–60s |
 
 The Glen interface in landscape is the screenshot view. Good moments: the three pastures
@@ -263,12 +263,15 @@ It gives a 100-day run a shape.
 
 ### 2.2 Lambing and breeding
 
-The flock only grows by buying today.
+> **Built.** The tup is sold at the cart from the start; the byre is what makes lambing
+> safe (lambs born under cover always live). Tying lambing to the byre was considered and
+> dropped: the byre is finished around day 170–230, too late for a lambing before most runs
+> end. See "Lambing" in the README.
 
-- [ ] A tup (ram) as a purchase — one slot, like the dog
-- [ ] Ewes with the tup in autumn lamb in spring; lambs have the ewe's breed
-- [ ] Lambs can be kept (flock grows, feed rises) or sold at the autumn sales
-- [ ] Gives the four breeds a long-term identity: which ones you breed from, not just buy
+- [x] A tup (ram) as a purchase — one slot, like the dog
+- [x] Ewes with the tup in autumn lamb in spring; lambs have the ewe's breed
+- [x] Lambs can be kept (flock grows, feed rises) or sold at the autumn sales
+- [x] Gives the four breeds a long-term identity: which ones you breed from, not just buy
 - [ ] `Sheep.age` already exists; old ewes stop lambing and sell cheaply — a reason to renew
 
 ### 2.3 Work that fills the empty days

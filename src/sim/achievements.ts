@@ -36,6 +36,12 @@ export const ACHIEVEMENTS: Achievement[] = [
     won: (g) => g.day > SEASON_DAYS * 4 && g.flock.length > 0,
   },
   {
+    id: "first-lamb",
+    name: "On its feet",
+    hint: "A lamb born on your own ground, and alive in the morning.",
+    won: (g) => g.stats.lambsBorn > 0,
+  },
+  {
     id: "old-dog",
     name: "Earned the fire",
     hint: "See a dog through her working life to the fireside.",

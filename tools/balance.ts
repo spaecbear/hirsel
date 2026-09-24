@@ -42,6 +42,9 @@ interface Result {
   flockAt: number[];
   /** dogs retired to the fire by the end of the run */
   retired: number;
+  lambs: number;
+  /** the day each croft milestone was finished, if it was */
+  built: Record<string, number>;
   hungryDays: number;
 }
 
@@ -53,6 +56,7 @@ function play(seed: number, difficulty: Difficulty): Result {
   let flockAt90: number | null = null;
   let wonDay: number | null = null;
   const flockAt: number[] = [];
+  const built: Record<string, number> = {};
 
   const can = (id: ActionId) => {
     const a = ACTIONS.find((x) => x.id === id);
@@ -65,7 +69,7 @@ function play(seed: number, difficulty: Difficulty): Result {
     return true;
   };
 
-  const TOOL_ORDER: ToolId[] = ["crook", "dog", "boots", "shears", "cart", "lamp", "saltlick"];
+  const TOOL_ORDER: ToolId[] = ["crook", "dog", "boots", "tup", "shears", "cart", "lamp", "saltlick"];
 
   while (!g.over && g.day <= DAYS) {
     const season = seasonOf?.(g.day).id;
@@ -82,13 +86,22 @@ function play(seed: number, difficulty: Difficulty): Result {
 
     /* ---- the steading: money, never taps ---- */
     for (const t of TOOL_ORDER) {
-      const cost = { crook: 18, dog: 58, boots: 26, shears: 32, cart: 74, lamp: 44, saltlick: 28 }[t as string] ?? 999;
+      const cost = { crook: 18, dog: 58, boots: 26, tup: 48, shears: 32, cart: 74, lamp: 44, saltlick: 28 }[t as string] ?? 999;
       if (!rules.owns(g, t) && g.money >= cost + 25 + winterReserve) game.buyTool(t);
     }
     // grow the flock towards a dozen, but not in the teeth of winter
     const reserve = 30 + rules.feedCost(g) * 6;
     if (g.flock.length < 12 && g.money >= BREEDS.blackface.cost + reserve && season !== "winter" && g.money >= BREEDS.blackface.cost + reserve + winterReserve / 3) {
       game.buyEwe("blackface");
+    }
+    // lambs past what the hill wants go to the autumn sales, the rest are kept
+    if (season === "autumn") {
+      const lambs = g.flock.filter((x) => (x as { lamb?: boolean }).lamb);
+      let over = g.flock.length - 14;
+      for (const l of lambs) {
+        if (over-- <= 0) break;
+        game.sellEwe(l.id);
+      }
     }
     // hay for the winter: in autumn, buy what the barn is short of
     if (hayNeeded && season === "autumn" && s && s.left <= 8) {
@@ -141,6 +154,7 @@ function play(seed: number, difficulty: Difficulty): Result {
       flockAt90 = g.flock.length;
     }
     game.sleep();
+    for (const m of CROFT) if (rules.owns(g, m.id) && !built[m.id]) built[m.id] = g.day;
     if (g.over?.kind === "win") wonDay = g.day;
   }
   if (process.env.WHY && g.over?.kind === "lose") {
@@ -156,6 +170,8 @@ function play(seed: number, difficulty: Difficulty): Result {
     foxLosses: g.stats.foxLosses,
     flockAt,
     retired: (g as GameState & { retiredDogs?: unknown[] }).retiredDogs?.length ?? 0,
+    lambs: (g.stats as { lambsBorn?: number }).lambsBorn ?? 0,
+    built,
     snowLosses: (g.stats as { snowLosses?: number }).snowLosses ?? 0,
     hungryDays: g.stats.daysHungry,
   };
@@ -168,7 +184,7 @@ const median = (xs: number[]) => {
 };
 
 console.log(`${RUNS} runs a scale, up to day ${DAYS}${seasonOf ? ", with seasons" : ", no seasons"}\n`);
-console.log("flock at day 24/48/72/96 (median of runs still going); dogs: runs that retired one / retired two");
+console.log("flock at day 24/48/72/96 (median of runs still going); dogs: runs that retired one / retired two; median day each croft piece was finished");
 console.log("scale    alive90  busted  won   median win day  median £ d90  median flock d90  fox/run  snow/run  hungry/run");
 for (const d of ["gentle", "steady", "hard"] as Difficulty[]) {
   const rs: Result[] = [];
@@ -193,6 +209,8 @@ for (const d of ["gentle", "steady", "hard"] as Difficulty[]) {
       avg("hungryDays").padStart(11),
       "   " + [0, 1, 2, 3].map((i) => median(rs.map((x) => x.flockAt[i]).filter((x) => x !== undefined))).join("/"),
       `   ${rs.filter((x) => x.retired >= 1).length}/${rs.filter((x) => x.retired >= 2).length}`,
+      `   lambs ${median(rs.map((x) => x.lambs))}`,
+      "   " + CROFT.map((m) => `${m.id} ${median(rs.map((x) => x.built[m.id]).filter((x) => x !== undefined))}`).join(" "),
     ].join("  "),
   );
 }

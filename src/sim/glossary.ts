@@ -76,6 +76,12 @@ export function workGlossary(): GlossaryEntry[] {
       effect: `Once she is getting on she still gathers, but is worth ${Math.round(BALANCE.oldDogStrength * 100)}% of what she was. Retired, she lies by the fire and the cart will sell you another; each retired dog still takes fox risk ×${BALANCE.retiredFoxBias}, up to ${BALANCE.retiredCounted} of them.`,
     },
     {
+      id: "lambing",
+      name: "Lambing",
+      meta: `The tup goes in over the autumn · lambs over the first ${BALANCE.lambingDays} days of spring`,
+      effect: `About ${Math.round(BALANCE.tupRate * 100)}% of the ewes are in lamb by winter; a hungry winter night can cost one her lamb. About one ewe in ${Math.round(1 / BALANCE.twinChance)} has twins. In the byre every lamb lives; out on a wet night ${Math.round(BALANCE.lambLossBadNight * 100)}% are lost, half that if the flock is tended. Lambs carry half a fleece, are grown after ${BALANCE.lambGrowDays} days, and sell for ${Math.round(BALANCE.lambPrice * 100)}% of a ewe's price — ${Math.round(BALANCE.lambPrice * BALANCE.lambPriceAutumn * 100)}% at the autumn sales.`,
+    },
+    {
       id: "hay",
       name: "Hay",
       meta: `Cut hay (summer, a dry day): ${BALANCE.hayCutBales} bales · the cart: ${BALANCE.hayLot} for £${BALANCE.hayLotCost}, £${BALANCE.hayLotCostWinter} in winter`,

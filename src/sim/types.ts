@@ -20,6 +20,10 @@ export interface Sheep {
   breed: BreedId;
   /** days in the flock — surfaced on hover, and the hook for a future ageing system */
   age: number;
+  /** born on the hill this spring, and not yet grown */
+  lamb?: boolean;
+  /** tupped in the autumn; lambs in the spring */
+  inLamb?: boolean;
 }
 
 export type WeatherId = "sun" | "overcast" | "rain" | "mist" | "snow";
@@ -76,7 +80,8 @@ export type ToolId =
   | "watch"
   | "sword"
   | "saltlick"
-  | "oilskin";
+  | "oilskin"
+  | "tup";
 
 export type CroftId = "roof" | "hearth" | "byre" | "ring";
 
@@ -195,6 +200,10 @@ export interface GameState {
     snowLosses: number;
     /** hay has been cut on a day of sun */
     hayInSun: boolean;
+    /** lambs born alive, lost at birth or in the womb, and sold */
+    lambsBorn: number;
+    lambsLost: number;
+    lambsSold: number;
   };
   achievements: string[];
   /** bales in the barn, for the winter — cut in summer or bought at the cart */

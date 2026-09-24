@@ -17,7 +17,7 @@ import {
   tapsPerDay,
 } from "../sim/rules";
 import { WEATHER } from "../sim/config";
-import { actionName, toolWhat, lexicon } from "../sim/lexicon";
+import { actionName, toolName, toolWhat, lexicon } from "../sim/lexicon";
 import type { Animator } from "../render/animator";
 import type { Settings } from "../sim/settings";
 import type { BreedId, CroftId, ToolId } from "../sim/types";
@@ -220,9 +220,9 @@ export class View {
           "div",
           {
             class: `tile ${gr.label}`,
-            title: `${lex.breeds[s.breed]} · ${lex.wool} ${s.fleece.toFixed(1)} (${gr.label}) · ${s.age} day${s.age === 1 ? "" : "s"} in the ${lex.flock}`,
+            title: `${lex.breeds[s.breed]}${s.lamb ? ` ${lex.lamb}` : ""}${s.inLamb ? ` · ${lex.inLamb}` : ""} · ${lex.wool} ${s.fleece.toFixed(1)} (${gr.label}) · ${s.age} day${s.age === 1 ? "" : "s"} in the ${lex.flock}`,
           },
-          `<b>${lex.breeds[s.breed].split(" ")[0]}</b>${gr.label}`,
+          `<b>${lex.breeds[s.breed].split(" ")[0]}</b>${s.lamb ? lex.lamb : s.inLamb ? lex.inLamb : gr.label}`,
         ),
       );
     }
@@ -277,7 +277,7 @@ export class View {
       sh.appendChild(
         button(
           `act buy${has ? " owned" : ""}`,
-          `<span class="n">${t.name}${has ? "" : ` · £${t.cost}`}</span><span class="d">${
+          `<span class="n">${toolName(lex, t.id, t.name)}${has ? "" : ` · £${t.cost}`}</span><span class="d">${
             has && (t.id === "dog" || t.id === "collie")
               ? `On the hill ${g.dogDays} days${dogIsOld(g) ? ", and getting on" : ""}. ${toolWhat(lex, t.id, t.what)}`
               : has

@@ -560,6 +560,38 @@ out. The house's shelf ("What you have") shows her days on the hill and what is 
 to the croft is about two and a half years, so nearly every run retires a dog: measured,
 40/40 on Gentle and Hard, 37/40 on Steady, at a cost of five to seven days on the median win.
 
+### Lambing
+
+The flock no longer grows only by buying. **The tup** (£48, one of him, at the cart from the
+start) runs with the ewes through the autumn; at dawn on the first day of winter about 85% of
+the grown ewes are **in lamb**. This year's lambs are too young.
+
+A hungry winter night can make a ewe **slip her lamb** (15% each), so the barn is feeding
+next year's flock as well as this one's. **The lambing** is the first ten days of spring:
+every ewe in lamb lambs somewhere in it, the last night taking whoever is left, and about one
+in three has twins. A lamb takes its mother's breed.
+
+**The byre makes lambing safe.** Born under cover, every lamb lives. Born out on the hill on a
+night of rain or haar, 40% do not — half that if the flock is being tended, which is what the
+Tend button says during the lambing. On a fair night nothing is lost either way. The byre is
+the third croft milestone, finished around day 170–230, so most runs lamb out on the hill at
+least once and feel what the byre is for when it comes.
+
+**Lambs** eat half what a grown beast does (the grass, the barn and the feed bill all count
+them as half a mouth — they are mostly on their mothers), carry half a fleece, and are grown
+after 72 days: by the winter they are ewes. They sell for 40% of a grown ewe's price, and for
+nearly all of it (×2.4) at **the autumn sales** — so the choice each autumn is which to keep
+and which to sell. The fox and the gathering count every head.
+
+Everything turns over in TOD: a dog fox, cubs, in cub. The tup is drawn at the edge of the
+flock, lambs are small and leggy, and the flock's count, the sky sheet and the cart all say
+how many lambs there are and how many are in lamb.
+
+Measured: a lamb that ate a full ration cost more to keep to the autumn than it fetched, and
+lambing made every run slower. At half a ration, a better autumn price and one ewe in three
+twinning, it pays a little — median wins 203/226/266 against 206/227/269 without it, about ten
+lambs a run.
+
 ### Tools beyond the spec
 
 Two additions, both chosen to add a decision without touching the tap economy:

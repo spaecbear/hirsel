@@ -30,6 +30,8 @@ import {
   grazing,
   hayLotCost,
   hayNights,
+  lambPrice,
+  lambingOn,
   here,
   housed,
   isFullMoon,
@@ -136,6 +138,9 @@ export function newGame(opts: GameOptions = {}): GameState {
       sawTippy: false,
       snowLosses: 0,
       hayInSun: false,
+      lambsBorn: 0,
+      lambsLost: 0,
+      lambsSold: 0,
     },
     achievements: [],
     hay: 0,
@@ -397,13 +402,17 @@ export class Game {
     const i = g.flock.findIndex((s) => s.id === id);
     if (i < 0) return;
     const sheep = g.flock[i];
-    const b = BREEDS[sheep.breed];
-    const take = Math.max(1, Math.round(b.cost * BALANCE.sellbackRate));
+    const take = this.sellPrice(id);
     g.flock.splice(i, 1);
     g.money += take;
-    g.stats.sheepSold++;
     g.stats.earned += take;
-    this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.unit} at the cart. £${take}.`, "gold");
+    if (sheep.lamb) {
+      g.stats.lambsSold++;
+      this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.lamb} at the cart. £${take}.`, "gold");
+    } else {
+      g.stats.sheepSold++;
+      this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.unit} at the cart. £${take}.`, "gold");
+    }
     if (g.flock.length === 0) {
       this.lose(this.lex.soldLast.title, this.lex.soldLast.body);
     }
@@ -415,6 +424,7 @@ export class Game {
   sellPrice(id: number): number {
     const sheep = this.state.flock.find((s) => s.id === id);
     if (!sheep) return 0;
+    if (sheep.lamb) return lambPrice(this.state, sheep);
     return Math.max(1, Math.round(BREEDS[sheep.breed].cost * BALANCE.sellbackRate));
   }
 
@@ -531,10 +541,11 @@ export class Game {
       if (g.hay === 0) this.say(`The last of the ${this.lex.hay} went out tonight. The barn is empty.`, "bad");
     }
     for (const s of g.flock) {
-      s.fleece += growth * breedOf(s).growth;
+      s.fleece += growth * breedOf(s).growth * (s.lamb ? BALANCE.lambGrowth : 1);
       s.age++;
     }
     if (hasDog(g)) g.dogDays++;
+    this.lambingNight(fed, w.id);
     if (g.flock.length && fed < BALANCE.hungryBelow) {
       g.stats.daysHungry++;
       this.say(
@@ -656,6 +667,7 @@ export class Game {
       g.taps = tapsPerDay(g);
       const s = season(g);
       if (s.day === 1) this.say(s.arrives, "gold");
+      if (s.id === "winter" && s.day === 1) this.tupping();
       this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
       if (s.id === "autumn" && s.left === BALANCE.winterWarnDays) {
         const nights = hayNights(g);
@@ -684,6 +696,105 @@ export class Game {
 
     this.award();
     this.changed();
+  }
+
+  /**
+   * As winter comes in: whatever the tup has been in with all autumn is in
+   * lamb now. Grown ewes only; this spring's lambs are too young.
+   */
+  private tupping() {
+    const g = this.state;
+    if (!owns(g, "tup")) return;
+    let n = 0;
+    for (const s of g.flock) {
+      if (s.lamb || s.inLamb) continue;
+      if (this.rng() < BALANCE.tupRate) {
+        s.inLamb = true;
+        n++;
+      }
+    }
+    const lex = this.lex;
+    this.say(
+      n
+        ? `The ${lex.tup} has been in with them all autumn. ${n} ${lex.unit}${n === 1 ? "" : "s"} ${lex.inLamb}, due in the spring. Keep them fed.`
+        : `The ${lex.tup} has been in with them all autumn, and nothing to show for it.`,
+      "cozy",
+    );
+  }
+
+  /**
+   * The night's share of the lambing, and what the winter does to a ewe
+   * carrying one.
+   *
+   * Every ewe in lamb lambs somewhere in the first `lambingDays` of spring,
+   * spread over them so the last night takes whoever is left. Born in the
+   * byre, a lamb lives. Born out on a wet or snowy night it may not, and a
+   * flock being tended loses half as many. A hungry winter night can make a
+   * ewe slip her lamb — the barn is feeding next year's flock as well.
+   */
+  private lambingNight(fed: number, weather: WeatherId) {
+    const g = this.state;
+    const s = season(g);
+    const lex = this.lex;
+
+    if (s.id === "winter" && fed < BALANCE.hungryBelow) {
+      for (const e of g.flock) {
+        if (e.inLamb && this.rng() < BALANCE.slipChance) {
+          e.inLamb = false;
+          g.stats.lambsLost++;
+          this.say(`A ${lex.unit} slipped her ${lex.lamb} on a hungry night.`, "bad");
+        }
+      }
+    }
+
+    // this spring's lambs grow up and are counted with the rest
+    let grown = 0;
+    for (const e of g.flock) {
+      if (e.lamb && e.age >= BALANCE.lambGrowDays) {
+        e.lamb = false;
+        grown++;
+      }
+    }
+    if (grown) this.say(`${grown} of the spring's ${lex.lambs} are grown now, and counted with the ${lex.flock}.`, "hi");
+
+    if (s.id !== "spring" || s.day > BALANCE.lambingDays) return;
+    const due = g.flock.filter((e) => e.inLamb);
+    if (!due.length) return;
+    const nightsLeft = BALANCE.lambingDays - s.day + 1;
+    const underCover = owns(g, "byre");
+    const bad = weather === "rain" || weather === "snow" || weather === "mist";
+    const lossChance = underCover || !bad ? 0 : BALANCE.lambLossBadNight * (buffed(g, "tended") ? BALANCE.lambLossTended : 1);
+    let born = 0;
+    let lost = 0;
+    for (const e of due) {
+      if (this.rng() >= 1 / nightsLeft) continue;
+      e.inLamb = false;
+      const twins = this.rng() < BALANCE.twinChance ? 2 : 1;
+      for (let i = 0; i < twins; i++) {
+        if (this.rng() < lossChance) {
+          lost++;
+          continue;
+        }
+        g.flock.push({ id: g.nextSheepId++, fleece: 0, breed: e.breed, age: 0, lamb: true });
+        born++;
+      }
+    }
+    g.stats.lambsBorn += born;
+    g.stats.lambsLost += lost;
+    if (born) {
+      this.say(
+        underCover
+          ? `${born} ${born === 1 ? lex.lamb : lex.lambs} born in the byre in the night, on ${born === 1 ? "its" : "their"} feet by morning.`
+          : `${born} ${born === 1 ? lex.lamb : lex.lambs} born out on the hill in the night.`,
+        "gold",
+      );
+    }
+    if (lost) {
+      this.say(
+        `${lost} ${lost === 1 ? lex.lamb : lex.lambs} born into the ${weather === "mist" ? "haar" : weather} did not last till morning. The byre would have saved ${lost === 1 ? "it" : "them"}.`,
+        "bad",
+      );
+    }
   }
 
   /**
@@ -897,6 +1008,10 @@ export const ACTIONS: ActionDef[] = [
     anim: "tend",
     cost: one,
     desc: (g, lex) => {
+      // in the lambing, out on the hill, tending is what keeps a lamb alive on a wet night
+      if (lambingOn(g) && g.flock.some((s) => s.inLamb) && !owns(g, "byre")) {
+        return `The lambing is on. Out with them, fewer ${lex.lambs} are lost on a wet night.`;
+      }
       const at = g.flock.filter((s) => s.fleece >= BALANCE.flystrikeFleece).length;
       return at
         ? `${at} carrying heavy ${lex.fleeceWord}. Strike will take one if you leave it.`

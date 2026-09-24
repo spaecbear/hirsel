@@ -492,6 +492,26 @@ function flockActors(g: Painter, L: WorldLayout, s: Scene): Actor[] {
     // SHEEP_FEET below the draw origin is where her hooves land
     out.push({ feet: y + SHEEP_FEET, paint: () => drawSheep(g, x, y, sh, { shorn, graze, run, flip }) });
   });
+
+  /*
+   * The tup, if there is one: he keeps to the edge of the flock on his own
+   * mark and wanders like the rest. Not a member of the flock — the sim keeps
+   * him as kit, so no fox takes him and no shears touch him — but he is on
+   * the hill, and should be seen there. In TOD he is a dog fox among the skulk.
+   */
+  if (owns(st, "tup") && k !== "move" && k !== "gather") {
+    const hx = L.flockBox.x + L.flockBox.w * 0.85;
+    const hy = L.flockBox.y + L.flockBox.h * 0.35;
+    const drift = driftFor(99991, s.time, { dx: L.shepherd.x - hx, dy: L.shepherd.y - hy });
+    const x = Math.round(hx + drift.dx);
+    const y = Math.round(hy + drift.dy);
+    const facing: 1 | -1 = drift.flip ? -1 : 1;
+    const run = drift.moving ? s.time / 320 : 0;
+    out.push({
+      feet: y + 13,
+      paint: () => (isInverse() ? drawFox(g, x, y + 2, run, facing) : drawRam(g, x, y, run, facing)),
+    });
+  }
   return out;
 }
 

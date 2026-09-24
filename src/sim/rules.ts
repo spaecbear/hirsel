@@ -21,6 +21,14 @@ export const moonPhase = (day: number) => (day - 1) % MOON_CYCLE;
 export const moonName = (day: number) => MOON_NAMES[moonPhase(day)];
 export const isFullMoon = (day: number) => moonPhase(day) === FULL_MOON_PHASE;
 
+/**
+ * How many the hill is feeding. A lamb is mostly on its mother until it is
+ * grown, so it counts for `lambEats` of a beast at the grass, in the barn and
+ * on the feed bill. Every head still counts for the fox and the gathering.
+ */
+export const mouths = (g: GameState) =>
+  g.flock.reduce((n, s) => n + (s.lamb ? BALANCE.lambEats : 1), 0);
+
 /* ---------- the year ---------- */
 
 export interface SeasonAt extends Season {
@@ -60,7 +68,7 @@ export const housed = (g: GameState) => g.forecast[0] === "snow" && owns(g, "byr
 
 /** what one night's hay is for this flock, if the ground gave them nothing */
 export function hayPerNight(g: GameState): number {
-  const want = g.flock.length * BALANCE.grazePerSheep * (owns(g, "saltlick") ? BALANCE.saltlickGraze : 1);
+  const want = mouths(g) * BALANCE.grazePerSheep * (owns(g, "saltlick") ? BALANCE.saltlickGraze : 1);
   return want / BALANCE.hayGrass;
 }
 
@@ -82,6 +90,19 @@ export function hayNeeded(g: GameState): number {
 
 /** what a lot of hay costs at the cart today */
 export const hayLotCost = (g: GameState) => (isWinter(g) ? BALANCE.hayLotCostWinter : BALANCE.hayLotCost);
+
+/* ---------- lambing ---------- */
+
+export const lambsOf = (g: GameState) => g.flock.filter((s) => s.lamb);
+export const inLambCount = (g: GameState) => g.flock.filter((s) => s.inLamb).length;
+/** the lambing is on: the first days of spring */
+export const lambingOn = (g: GameState) => season(g).id === "spring" && season(g).day <= BALANCE.lambingDays;
+
+/** what a lamb fetches today: half a grown beast, and half as much again at the autumn sales */
+export function lambPrice(g: GameState, s: Sheep): number {
+  const autumn = season(g).id === "autumn" ? BALANCE.lambPriceAutumn : 1;
+  return Math.max(1, Math.round(BREEDS[s.breed].cost * BALANCE.lambPrice * autumn));
+}
 
 /* ---------- wool ---------- */
 export type Grade = { v: number; label: "bare" | "short" | "prime" | "heavy" | "matted" };
@@ -124,7 +145,7 @@ export function tapsPerDay(g: GameState): number {
 }
 
 export function feedCost(g: GameState): number {
-  return Math.ceil(g.flock.length / BALANCE.sheepPerPound);
+  return Math.ceil(mouths(g) / BALANCE.sheepPerPound);
 }
 
 /* ---------- what the work costs ---------- */
@@ -154,7 +175,7 @@ export function gatherCost(g: GameState): number {
 export function grazing(g: GameState) {
   const p = here(g);
   // the salt lick makes them work the ground less hard for the same fleece
-  const want = g.flock.length * BALANCE.grazePerSheep * (owns(g, "saltlick") ? BALANCE.saltlickGraze : 1);
+  const want = mouths(g) * BALANCE.grazePerSheep * (owns(g, "saltlick") ? BALANCE.saltlickGraze : 1);
   // under snow, or in the byre, there is no grass to be had at all
   const reachable = g.forecast[0] === "snow" ? 0 : p.grass;
   const eaten = Math.min(reachable, want);
