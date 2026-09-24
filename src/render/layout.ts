@@ -10,7 +10,7 @@
  * One layout function, two consumers: the art pack draws from it and the world
  * UI hit-tests against it. They cannot disagree about where the house is.
  */
-import type { GameState } from "../sim/types";
+import type { DogKind, GameState } from "../sim/types";
 import { herdCircuit } from "./wander";
 
 export interface Rect {
@@ -288,6 +288,8 @@ export interface InteriorLayout {
   table: Rect;
   /** where the dog is in the room: at the fire, or on her own mark */
   dogSpot: { x: number; y: number };
+  /** the retired dogs, curled along the hearthstone — the working collie keeps the middle of it */
+  retiredSpots: { x: number; y: number; kind: DogKind }[];
   /** where the man stands, top-left of his sprite */
   man: { x: number; y: number };
   hearth: Rect;
@@ -353,12 +355,25 @@ export function layoutInterior(W: number, H: number, st?: GameState): InteriorLa
     ? { x: hearth.x + Math.round(hearth.w / 2) - 6, y: floorY + 3 }
     : { x: Math.round(W * 0.3), y: midY - 11 };
 
+  /*
+   * The old dogs lie along the front of the hearth, the first one in the
+   * middle of it unless the working collie already has that. Three at most
+   * are drawn; a hearth has only so much stone in front of it.
+   */
+  const fireX = hearth.x + Math.round(hearth.w / 2) - 6;
+  const firstFree = atFire ? 1 : 0;
+  const retiredSpots = (st?.retiredDogs ?? []).slice(-3).map((kind, i) => {
+    const slot = firstFree + i;
+    return { x: fireX + slot * 25, y: floorY + 3 + (slot % 2) * 6, kind };
+  });
+
   return {
     W,
     H,
     floorY,
     midY,
     dogSpot,
+    retiredSpots,
     frontY,
     hearth,
     bed,

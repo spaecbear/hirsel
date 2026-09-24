@@ -540,6 +540,26 @@ Measured with `tools/balance.ts` — see the note above `SEASON_DAYS` in `config
 winter costs time, not lives: median wins are 5–10% later on every scale, busts are no worse,
 and a beast is lost to the snow in about one run in five.
 
+### The dog grows old
+
+`state.dogDays` counts the nights the working dog has worked, reset when a new one is taken
+on. For a year of work (96 days) she is in her prime. Then she is **getting on**: she still
+gathers, but her worth against a fox — and the collie's over the grass — is half what it
+was. At 120 days she **retires to the house** rather than dying: she is removed from
+`owned`, added to `state.retiredDogs`, and the slot is free, so the cart sells another dog
+of either kind. One working dog on the hill at a time is still the rule; the retired ones
+do not count against it.
+
+The retired dogs lie along the hearthstone in their own coats — the visible record of the
+years the hill has been worked — and each still lifts her head at anything moving outside
+at night: fox risk ×0.95, for up to two of them. A retired collie at a built hearth counts
+for Tippy; the fire is where she went.
+
+Dawn says when she gets old, when she has about a week left, and the morning she does not go
+out. The house's shelf ("What you have") shows her days on the hill and what is left. A run
+to the croft is about two and a half years, so nearly every run retires a dog: measured,
+40/40 on Gentle and Hard, 37/40 on Steady, at a cost of five to seven days on the median win.
+
 ### Tools beyond the spec
 
 Two additions, both chosen to add a decision without touching the tap economy:
@@ -561,7 +581,7 @@ current values, with notes. Change them there rather than hunting for numbers:
 5. the pelt ending the fox game — seasons now carry some of the pressure the fox did: the
    winter, the hay and the snow do not care about the pelt
 6. seasons — built; see **Seasons** above. Season length is still a question (24 days)
-7. dog ageing and retirement — not built; `Sheep.age` exists as the pattern to follow
+7. dog ageing and retirement — built; see **The dog grows old** above
 
 ### Starting money
 

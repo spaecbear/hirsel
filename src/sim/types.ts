@@ -80,6 +80,9 @@ export type ToolId =
 
 export type CroftId = "roof" | "hearth" | "byre" | "ring";
 
+/** the two working dogs: the Shetland sheepdog and the border collie */
+export type DogKind = "dog" | "collie";
+
 /** everything ownable, including the pelt, which is won rather than bought */
 export type OwnedId = ToolId | CroftId | "pelt";
 
@@ -196,6 +199,10 @@ export interface GameState {
   achievements: string[];
   /** bales in the barn, for the winter — cut in summer or bought at the cart */
   hay: number;
+  /** nights the working dog has worked. Reset when a new one is taken on */
+  dogDays: number;
+  /** the dogs that have retired to the house, oldest first. They lie by the fire */
+  retiredDogs: DogKind[];
   /**
    * A code that changes the game has been used this run (money, beasts, taps,
    * weather, the wolf on demand, zen). Such a run earns no achievements, and

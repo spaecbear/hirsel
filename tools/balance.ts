@@ -40,6 +40,8 @@ interface Result {
   snowLosses: number;
   /** flock at the end of each of the first four seasons' worth of days */
   flockAt: number[];
+  /** dogs retired to the fire by the end of the run */
+  retired: number;
   hungryDays: number;
 }
 
@@ -153,6 +155,7 @@ function play(seed: number, difficulty: Difficulty): Result {
     flockAt90,
     foxLosses: g.stats.foxLosses,
     flockAt,
+    retired: (g as GameState & { retiredDogs?: unknown[] }).retiredDogs?.length ?? 0,
     snowLosses: (g.stats as { snowLosses?: number }).snowLosses ?? 0,
     hungryDays: g.stats.daysHungry,
   };
@@ -165,7 +168,7 @@ const median = (xs: number[]) => {
 };
 
 console.log(`${RUNS} runs a scale, up to day ${DAYS}${seasonOf ? ", with seasons" : ", no seasons"}\n`);
-console.log("flock at day 24/48/72/96 (median of runs still going)");
+console.log("flock at day 24/48/72/96 (median of runs still going); dogs: runs that retired one / retired two");
 console.log("scale    alive90  busted  won   median win day  median £ d90  median flock d90  fox/run  snow/run  hungry/run");
 for (const d of ["gentle", "steady", "hard"] as Difficulty[]) {
   const rs: Result[] = [];
@@ -189,6 +192,7 @@ for (const d of ["gentle", "steady", "hard"] as Difficulty[]) {
       avg("snowLosses").padStart(9),
       avg("hungryDays").padStart(11),
       "   " + [0, 1, 2, 3].map((i) => median(rs.map((x) => x.flockAt[i]).filter((x) => x !== undefined))).join("/"),
+      `   ${rs.filter((x) => x.retired >= 1).length}/${rs.filter((x) => x.retired >= 2).length}`,
     ].join("  "),
   );
 }

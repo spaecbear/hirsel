@@ -3,6 +3,7 @@ import { ACTIONS, type Game } from "../sim/game";
 import { BALANCE, BREEDS, CROFT, TOOLS } from "../sim/config";
 import {
   canShear,
+  dogIsOld,
   hayLotCost,
   hayNights,
   season,
@@ -276,9 +277,28 @@ export class View {
       sh.appendChild(
         button(
           `act buy${has ? " owned" : ""}`,
-          `<span class="n">${t.name}${has ? "" : ` · £${t.cost}`}</span><span class="d">${has ? `In the steading. ${toolWhat(lex, t.id, t.what)}` : toolWhat(lex, t.id, t.what)}</span>`,
+          `<span class="n">${t.name}${has ? "" : ` · £${t.cost}`}</span><span class="d">${
+            has && (t.id === "dog" || t.id === "collie")
+              ? `On the hill ${g.dogDays} days${dogIsOld(g) ? ", and getting on" : ""}. ${toolWhat(lex, t.id, t.what)}`
+              : has
+                ? `In the steading. ${toolWhat(lex, t.id, t.what)}`
+                : toolWhat(lex, t.id, t.what)
+          }</span>`,
           () => this.game.buyTool(t.id as ToolId),
           has || g.money < t.cost || this.busy,
+        ),
+      );
+    }
+
+    if (g.retiredDogs.length) {
+      sh.appendChild(
+        button(
+          "act buy owned",
+          `<span class="n">By the fire, retired</span><span class="d">${g.retiredDogs
+            .map((k) => (k === "collie" ? "a collie" : "a sheltie"))
+            .join(", ")}. They still lift their heads at anything moving outside at night.</span>`,
+          () => {},
+          true,
         ),
       );
     }

@@ -20,6 +20,8 @@ import {
   shearCost,
   dogFoxBias,
   hasDog,
+  dogIsOld,
+  workingDog,
   feedCost,
   flockValue,
   flystrikeExposed,
@@ -75,6 +77,10 @@ export interface ActionDef {
   can: (g: GameState) => boolean;
   run: (game: Game) => void;
 }
+
+/** a collie lying at a built hearth: the working one, or one retired to it */
+export const collieAtFire = (g: GameState) =>
+  owns(g, "hearth") && (owns(g, "collie") || g.retiredDogs.includes("collie"));
 
 export function newGame(opts: GameOptions = {}): GameState {
   const seed = opts.seed ?? (Math.random() * 2 ** 32) >>> 0;
@@ -133,6 +139,8 @@ export function newGame(opts: GameOptions = {}): GameState {
     },
     achievements: [],
     hay: 0,
+    dogDays: 0,
+    retiredDogs: [],
     cheated: false,
     seed,
   };
@@ -283,6 +291,11 @@ export class Game {
     g.owned[id] = true;
     this.say(`Bought the ${t.name.toLowerCase()} for £${t.cost}.`, "gold");
     if (id === "boots" || id === "lamp") g.taps = Math.min(BALANCE.maxTaps, g.taps + 1);
+    // a new dog starts her working life today
+    if (id === "dog" || id === "collie") {
+      g.dogDays = 0;
+      if (g.retiredDogs.length) this.say("The old dog looks up from the fire at the new one, and puts her head back down.", "cozy");
+    }
     this.award();
     this.changed();
   }
@@ -314,8 +327,9 @@ export class Game {
   markTippy() {
     const g = this.state;
     // she cannot have settled at a fire that is not built, or been a collie
-    // that was never bought — the UI gates this too, but the rule lives here
-    if (!owns(g, "collie") || !owns(g, "hearth")) return;
+    // that was never bought — the UI gates this too, but the rule lives here.
+    // A collie retired to the house counts: the fire is where she went.
+    if (!collieAtFire(g)) return;
     if (this.state.stats.sawTippy) return;
     this.state.stats.sawTippy = true;
     this.award();
@@ -520,6 +534,7 @@ export class Game {
       s.fleece += growth * breedOf(s).growth;
       s.age++;
     }
+    if (hasDog(g)) g.dogDays++;
     if (g.flock.length && fed < BALANCE.hungryBelow) {
       g.stats.daysHungry++;
       this.say(
@@ -548,9 +563,11 @@ export class Game {
     if (hasDog(g) && !g.gatheredToday) {
       g.gatheredToday = true;
       this.say(
-        owns(g, "collie")
-          ? "She had them in and settled before you thought to look for her."
-          : "She brought them in herself while you were seeing to other things.",
+        dogIsOld(g)
+          ? "She had them in, slower about it than she used to be."
+          : owns(g, "collie")
+            ? "She had them in and settled before you thought to look for her."
+            : "She brought them in herself while you were seeing to other things.",
         "cozy",
       );
     }
@@ -649,6 +666,7 @@ export class Game {
           "bad",
         );
       }
+      this.dogYears();
       if (isFullMoon(g.day) && !owns(g, "pelt")) {
         this.say("Full moon tonight. The high ground is no place to be caught out late.", "bad");
       }
@@ -666,6 +684,31 @@ export class Game {
 
     this.award();
     this.changed();
+  }
+
+  /**
+   * The dog's working life, told at dawn: when she gets old, when she has
+   * little left in her, and the morning she does not go out.
+   */
+  private dogYears() {
+    const g = this.state;
+    const kind = workingDog(g);
+    if (!kind) return;
+    const who = kind === "collie" ? "The collie" : "The sheltie";
+    if (g.dogDays === BALANCE.dogOldDays) {
+      this.say(`${who} is getting on. Grey about the muzzle, and slower on the hill than she was.`, "hi");
+    } else if (g.dogDays === BALANCE.dogRetireDays - BALANCE.dogRetireWarnDays) {
+      this.say(`${who} has not much work left in her. A week or so, and she will have earned the fire.`, "hi");
+    } else if (g.dogDays >= BALANCE.dogRetireDays) {
+      delete g.owned[kind];
+      g.retiredDogs.push(kind);
+      g.dogDays = 0;
+      this.say(
+        `${who} did not go out this morning. She has earned her place by the fire, and she still lifts her head at anything moving outside at night.`,
+        "gold",
+      );
+      this.say("The cart can find you another dog for the hill.", "cozy");
+    }
   }
 
   private lose(title: string, body: string) {

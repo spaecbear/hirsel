@@ -181,6 +181,26 @@ export const BALANCE = {
   snowLossChance: 0.25,
   /** the autumn warning comes this many days before the winter does */
   winterWarnDays: 6,
+
+  /*
+   * The dog grows old (spec §14.7).
+   *
+   * A year of work in her prime, then she is getting on: still gathering,
+   * but her worth against a fox and over the grass is half what it was. At
+   * `dogRetireDays` she retires to the house rather than dying — she lies by
+   * the fire, a record of the years the hill has been worked, and the slot is
+   * free for another dog. Retired, she still lifts her head at anything
+   * moving outside at night: a small deterrent, counted for up to two of them.
+   *
+   * A run to the croft is about two and a half years (see SEASON_DAYS), so a
+   * dog bought early retires in the run and a second one is a real purchase.
+   */
+  dogOldDays: 96,
+  dogRetireDays: 120,
+  dogRetireWarnDays: 8,
+  oldDogStrength: 0.5,
+  retiredFoxBias: 0.95,
+  retiredCounted: 2,
 } as const;
 
 /**

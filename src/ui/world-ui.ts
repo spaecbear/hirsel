@@ -12,13 +12,15 @@
  * the words about the world are text.
  */
 import { $, button, el } from "./dom";
-import { ACTIONS, type Game } from "../sim/game";
+import { ACTIONS, collieAtFire, type Game } from "../sim/game";
 import { BALANCE, BREEDS, CROFT, SEASON_DAYS, TOOLS, WEATHER } from "../sim/config";
 import { actionName, toolWhat } from "../sim/lexicon";
 import { startSpin } from "../render/dog-spin";
 import { tippyWalking } from "../render/tippy";
 import {
   canShear,
+  dogDaysLeft,
+  dogIsOld,
   hayLotCost,
   hayNeeded,
   hayNights,
@@ -300,8 +302,9 @@ export class WorldUi {
   tick(now: number) {
     const g = this.game.state;
     if (!this.interior || g.stats.sawTippy) return;
-    if (!owns(g, "collie") || !owns(g, "hearth")) return;
-    if (tippyWalking(now)) return; // let her get there first
+    if (!collieAtFire(g)) return;
+    // let the working collie get there first; a retired one is already lying there
+    if (owns(g, "collie") && tippyWalking(now)) return;
     this.game.markTippy();
   }
 
@@ -645,8 +648,32 @@ export class WorldUi {
     const rows: Row[] = [];
     for (const t of TOOLS) {
       if (!owns(g, t.id)) continue;
+      // the dog is not kit on a wall: say how she is keeping
+      if (t.id === "dog" || t.id === "collie") {
+        const left = dogDaysLeft(g);
+        rows.push({
+          label: `${t.name} · ${dogIsOld(g) ? "getting on" : "in her prime"}`,
+          detail: `${g.dogDays} days on the hill. ${
+            dogIsOld(g)
+              ? `Slower than she was, and worth half what she was against a ${this.game.lex.raider}. About ${left} days' work left in her.`
+              : toolWhat(this.lexicon, t.id, t.what)
+          }`,
+          info: true,
+          onPick: () => {},
+        });
+        continue;
+      }
       // the broadsword is never explained, here least of all
       rows.push({ label: t.name, detail: t.id === "sword" ? "Hangs well above the fire." : toolWhat(this.lexicon, t.id, t.what), info: true, onPick: () => {} });
+    }
+    if (g.retiredDogs.length) {
+      const names = g.retiredDogs.map((k) => (k === "collie" ? "a collie" : "a sheltie"));
+      rows.push({
+        label: g.retiredDogs.length === 1 ? "By the fire, retired" : `By the fire, ${g.retiredDogs.length} of them retired`,
+        detail: `${names.join(", ")}. They have earned it — and they still lift their heads at anything moving outside at night.`,
+        info: true,
+        onPick: () => {},
+      });
     }
     if (owns(g, "pelt")) {
       rows.push({ label: "The last wolf's pelt", detail: "No fox comes near this ground.", info: true, onPick: () => {} });
@@ -737,11 +764,12 @@ export class WorldUi {
        */
       const needs = "needs" in t ? (t.needs as string | undefined) : undefined;
       const wanting = needs && !owns(g, needs);
+      const again = (t.id === "dog" || t.id === "collie") && g.retiredDogs.length > 0;
       rows.push({
         label: `${t.name} · £${t.cost}`,
         detail: wanting
           ? toolWhat(this.lexicon, `${t.id}Locked`, "Not yet.")
-          : toolWhat(this.lexicon, t.id, t.what),
+          : `${again ? "A young dog for the hill, now the old one has the fire. " : ""}${toolWhat(this.lexicon, t.id, t.what)}`,
         disabled: !!wanting || g.money < t.cost,
         onPick: () => this.game.buyTool(t.id as ToolId),
       });

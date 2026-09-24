@@ -49,6 +49,7 @@ import {
   drawWoolSacks,
   hash,
   isInverse,
+  KIT,
   setSpriteState,
   shade,
 } from "../sprites";
@@ -1672,6 +1673,20 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   // be tapped are the same fact rather than two copies of it
   const fireSpot = { x: hx + Math.round(I.hearth.w / 2) - 6, y: I.floorY + 3 };
   const dogHome = { x: Math.round(I.W * 0.3), y: I.midY - 11 };
+
+  /*
+   * The old dogs, retired to the house: curled on the hearthstone, each in
+   * her own coat whatever the working dog is, breathing at her own pace.
+   */
+  if (I.retiredSpots.length) {
+    const wasCollie = KIT.collie;
+    I.retiredSpots.forEach((d, i) => {
+      setSpriteState({ kit: { collie: d.kind === "collie" } });
+      drawDogCurled(g, d.x, d.y, time + i * 700, i % 2 ? -1 : 1);
+    });
+    setSpriteState({ kit: { collie: wasCollie } });
+  }
+
   if (hasDog(st)) {
     const collieAtFire = owns(st, "collie") && hearthBuilt;
     const tip = tippyFrame(time, true, collieAtFire);

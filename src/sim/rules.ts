@@ -14,7 +14,7 @@ import {
   SEASONS,
   WEATHER,
 } from "./config";
-import type { GameState, Season, Sheep, WeatherId } from "./types";
+import type { DogKind, GameState, Season, Sheep, WeatherId } from "./types";
 
 /* ---------- moon ---------- */
 export const moonPhase = (day: number) => (day - 1) % MOON_CYCLE;
@@ -169,7 +169,7 @@ export function grazing(g: GameState) {
     season(g).growth *
     p.quality *
     // the collie keeps them moving over the ground rather than standing
-    (owns(g, "collie") ? BALANCE.collieGraze : 1) *
+    (owns(g, "collie") ? 1 + (BALANCE.collieGraze - 1) * dogStrength(g) : 1) *
     weatherOn(g).graze *
     (buffed(g, "settled flock") ? BALANCE.settledGrowth : 1) *
     (buffed(g, "fiddled") ? BALANCE.fiddleGrowth : 1) *
@@ -179,9 +179,25 @@ export function grazing(g: GameState) {
 
 /** whichever dog is on the hill, or none */
 export const hasDog = (g: GameState) => owns(g, "dog") || owns(g, "collie");
-/** what she is worth against a fox: the sheltie is the better deterrent */
-export const dogFoxBias = (g: GameState) =>
-  owns(g, "dog") ? BALANCE.dogFoxBias : owns(g, "collie") ? BALANCE.collieFoxBias : 1;
+export const workingDog = (g: GameState): DogKind | null =>
+  owns(g, "dog") ? "dog" : owns(g, "collie") ? "collie" : null;
+
+/** a year of work and she is getting on */
+export const dogIsOld = (g: GameState) => hasDog(g) && g.dogDays >= BALANCE.dogOldDays;
+/** how much of her worth is left in her: all of it in her prime, half once she is old */
+export const dogStrength = (g: GameState) => (dogIsOld(g) ? BALANCE.oldDogStrength : 1);
+/** nights of work left before she retires */
+export const dogDaysLeft = (g: GameState) => (hasDog(g) ? Math.max(0, BALANCE.dogRetireDays - g.dogDays) : 0);
+
+/** what she is worth against a fox: the sheltie is the better deterrent, and age takes some of it */
+export function dogFoxBias(g: GameState): number {
+  const base = owns(g, "dog") ? BALANCE.dogFoxBias : owns(g, "collie") ? BALANCE.collieFoxBias : 1;
+  return 1 - (1 - base) * dogStrength(g);
+}
+
+/** what the retired dogs by the fire still do: an ear out at night */
+export const retiredFoxBias = (g: GameState) =>
+  Math.pow(BALANCE.retiredFoxBias, Math.min(BALANCE.retiredCounted, g.retiredDogs.length));
 
 export function foxRisk(g: GameState): number {
   // in the byre on a night of snow: nothing gets at them
@@ -194,6 +210,7 @@ export function foxRisk(g: GameState): number {
   risk *= DIFFICULTY[g.difficulty].fox;
   if (g.gatheredToday) risk *= BALANCE.gatheredFoxBias;
   risk *= dogFoxBias(g);
+  risk *= retiredFoxBias(g);
   if (buffed(g, "settled flock")) risk *= BALANCE.settledFoxBias;
   return risk;
 }

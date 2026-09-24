@@ -70,6 +70,12 @@ export function workGlossary(): GlossaryEntry[] {
       effect: "A dog does the running for you, and the crook takes a tap off either way.",
     },
     {
+      id: "dogs",
+      name: "The dog's years",
+      meta: `In her prime for ${BALANCE.dogOldDays} days on the hill · retires after ${BALANCE.dogRetireDays}`,
+      effect: `Once she is getting on she still gathers, but is worth ${Math.round(BALANCE.oldDogStrength * 100)}% of what she was. Retired, she lies by the fire and the cart will sell you another; each retired dog still takes fox risk ×${BALANCE.retiredFoxBias}, up to ${BALANCE.retiredCounted} of them.`,
+    },
+    {
       id: "hay",
       name: "Hay",
       meta: `Cut hay (summer, a dry day): ${BALANCE.hayCutBales} bales · the cart: ${BALANCE.hayLot} for £${BALANCE.hayLotCost}, £${BALANCE.hayLotCostWinter} in winter`,

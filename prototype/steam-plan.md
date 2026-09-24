@@ -113,15 +113,15 @@ tests still pass.
 
 ### 1.4 Steam achievements
 
-The 22 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
+The 23 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
 four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 
-- [ ] Register all 22 in Steamworks with the same ids; hidden flag on the four secret ones,
+- [ ] Register all 23 in Steamworks with the same ids; hidden flag on the four secret ones,
       with their existing `hint` as the post-unlock description
 - [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
 - [x] On start-up, re-send every locally earned id — covers achievements earned offline
       or before Steam was running
-- [ ] **64×64 icons for each, earned and unearned** (44 images). Pixel art, integer-scaled
+- [ ] **64×64 icons for each, earned and unearned** (46 images). Pixel art, integer-scaled
 - [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
@@ -207,7 +207,7 @@ Decide what happens to the free Vercel build once there is a paid one. Recommend
 | library hero | 3840×1240 |
 | library logo | 1280 wide max, transparent |
 | screenshots | at least 5, 1920×1080 |
-| achievement icons | 64×64 × 44 (see §1.4) |
+| achievement icons | 64×64 × 46 (see §1.4) |
 | trailer | optional but strongly recommended; 30–60s |
 
 The Glen interface in landscape is the screenshot view. Good moments: the three pastures
@@ -284,13 +284,17 @@ The README names the next levers: actions that are investment rather than filler
 
 ### 2.4 The dog grows old (spec §14.7)
 
+> **Built.** Prime for 96 days, getting on (half the bonus) until 120, then retired to the
+> fire with fox risk ×0.95 each (up to two); either dog can be bought again. The pup that
+> "starts weaker and learns" is not built: a new dog is at full strength from her first day.
+
 Cheap to build and it will land hard, with Tippy and Arrow already in the game.
 
-- [ ] Dogs age; after N seasons she slows (smaller bonus), then retires to the house
-- [ ] A retired dog lies by the fire in the interior — the visible record of a run — and
+- [x] Dogs age; after N seasons she slows (smaller bonus), then retires to the house
+- [x] A retired dog lies by the fire in the interior — the visible record of a run — and
       gives a small passive bonus
 - [ ] A pup can be taken on; it starts weaker and learns
-- [ ] One working dog at a time is still the rule; retired dogs do not count against the slot
+- [x] One working dog at a time is still the rule; retired dogs do not count against the slot
 
 ### 2.5 People and events
 

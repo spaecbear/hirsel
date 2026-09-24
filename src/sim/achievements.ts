@@ -35,6 +35,12 @@ export const ACHIEVEMENTS: Achievement[] = [
     // the first day of the second spring, with anything still on the hill
     won: (g) => g.day > SEASON_DAYS * 4 && g.flock.length > 0,
   },
+  {
+    id: "old-dog",
+    name: "Earned the fire",
+    hint: "See a dog through her working life to the fireside.",
+    won: (g) => g.retiredDogs.length > 0,
+  },
   { id: "clean", name: "No fox got in", hint: "Reach day 20 without losing a sheep to a fox.", won: (g) => g.day >= 20 && g.stats.foxLosses === 0 },
   { id: "aye", name: "She said aye", hint: "Finish the croft and ask her.", won: (g) => g.over?.kind === "win" },
   // hidden: the hint is only ever read by someone who has already been there
