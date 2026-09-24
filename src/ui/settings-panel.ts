@@ -6,6 +6,7 @@ import { prefersReducedMotion } from "../sim/settings";
 import type { Settings } from "../sim/settings";
 import { DIFFICULTY } from "../sim/config";
 import type { Difficulty } from "../sim/types";
+import { platform } from "../platform";
 
 export interface SettingsApi {
   settings: Settings;
@@ -159,6 +160,28 @@ export function buildSettings(api: SettingsApi) {
       ),
     );
     box.appendChild(game);
+
+    /* ---- the window: desktop builds only ---- */
+    if (platform.setFullscreen || platform.quit) {
+      const win = group("The window");
+      if (platform.setFullscreen) {
+        const full = platform.isFullscreen?.() ?? false;
+        win.appendChild(
+          seg("Display", [["Fullscreen", full], ["Windowed", !full]], (i) => {
+            platform.setFullscreen?.(i === 0);
+            draw();
+          }),
+        );
+        win.appendChild(el("div", { class: "note" }, "F11 switches between the two at any time."));
+      }
+      if (platform.quit) {
+        const btns = el("div", { class: "set-btns" });
+        btns.appendChild(mkBtn("Quit to desktop", () => platform.quit?.(), false, true));
+        win.appendChild(btns);
+        win.appendChild(el("div", { class: "note" }, "With autosave on, the run is kept at the end of every night — quitting mid-day loses only today."));
+      }
+      box.appendChild(win);
+    }
 
     /* ---- buffs & status: what the HUD's terse "tended (3d)" actually means ---- */
     const gloss = group("Buffs & status");

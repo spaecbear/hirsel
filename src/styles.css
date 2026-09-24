@@ -39,6 +39,11 @@
   padding: 0;
 }
 
+/* classes like .act set display, which would otherwise beat the hidden attribute */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   background: var(--peat);

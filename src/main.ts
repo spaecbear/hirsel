@@ -7,6 +7,7 @@ import { clearSave, exportFile, hasSave, importFile, readSave, saveGame } from "
 import { lexicon } from "./sim/lexicon";
 import { CHEATS, revealNextCheat } from "./sim/cheats";
 import { ACHIEVEMENTS, loadEarned, syncAchievements } from "./sim/achievements";
+import { platform } from "./platform";
 import { tutorialSetup } from "./sim/tutorial";
 import type { Difficulty, GameState } from "./sim/types";
 import { DIFFICULTY } from "./sim/config";
@@ -438,6 +439,11 @@ $("title-continue").addEventListener("click", () => {
     game.say(`— Picked up where you left off, day ${f.state.day}. —`, "cozy");
   } else startGame(undefined, { intro: true });
 });
+if (platform.quit) {
+  const quit = $<HTMLButtonElement>("title-quit");
+  quit.hidden = false;
+  quit.addEventListener("click", () => platform.quit?.());
+}
 $("title-settings").addEventListener("click", () => {
   firstGesture();
   openSettings();
@@ -742,7 +748,8 @@ if (import.meta.env.DEV) {
 }
 
 /* ---------- PWA ---------- */
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+// web only: a desktop build loads from disk, where a cache only gets in the way
+if ("serviceWorker" in navigator && import.meta.env.PROD && platform.kind === "web") {
   addEventListener("load", () => {
     void navigator.serviceWorker.register("./sw.js").catch(() => {
       /* offline play is a bonus, not a requirement */
