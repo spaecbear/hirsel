@@ -330,6 +330,7 @@ body.mode-retro .glen-chrome {
 .hud-bar .taps.spent { color: var(--fox); }
 .hud-bar #hud-mid { color: #e8ecd6; letter-spacing: 0.2em; }
 .hud-bar .moon { color: var(--stone); }
+.hud-bar .season { color: var(--grass); }
 
 /* The word of the glen, drifting over the hill. Text rather than canvas
    pixels: the bitmap font is for labels on a hillside, not for anything the

@@ -13,11 +13,27 @@
  */
 import { $, button, el } from "./dom";
 import { ACTIONS, type Game } from "../sim/game";
-import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
+import { BALANCE, BREEDS, CROFT, SEASON_DAYS, TOOLS, WEATHER } from "../sim/config";
 import { actionName, toolWhat } from "../sim/lexicon";
 import { startSpin } from "../render/dog-spin";
 import { tippyWalking } from "../render/tippy";
-import { canShear, here, isFullMoon, moonName, owns, woolPrice, readyToShear, tapsPerDay } from "../sim/rules";
+import {
+  canShear,
+  hayLotCost,
+  hayNeeded,
+  hayNights,
+  here,
+  isFullMoon,
+  isWinter,
+  moonName,
+  nextSeason,
+  owns,
+  season,
+  seasonOf,
+  woolPrice,
+  readyToShear,
+  tapsPerDay,
+} from "../sim/rules";
 import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { Walk } from "./walk";
 import type { Screen } from "../render/screen";
@@ -308,9 +324,11 @@ export class WorldUi {
         : `TAPS <span class="taps">${g.taps}/${tapsPerDay(g)}</span>`;
     $("hud-left").innerHTML = `DAY ${g.day} &nbsp; ${taps}`;
     // the weather is falling on the hill in front of you; the moon is not
+    // the season is the other thing the day is played by: it says what the next weeks are for
+    const s = season(g).name.toLowerCase();
     $("hud-mid").innerHTML = isFullMoon(g.day)
-      ? "FULL MOON"
-      : `<span class="moon">${moonName(g.day).toLowerCase()}</span>`;
+      ? `<span class="season">${s}</span> · FULL MOON`
+      : `<span class="season">${s}</span> · <span class="moon">${moonName(g.day).toLowerCase()}</span>`;
     $("hud-right").textContent = `£${g.money}  ·  ${g.wool} st`;
   }
 
@@ -391,7 +409,7 @@ export class WorldUi {
       case "flock":
         return this.actionRows(["gather", "shear", "tend"]);
       case "ground":
-        return this.actionRows(["muck"]);
+        return this.actionRows(["muck", "hay"]);
       case "shepherd":
         return [...this.actionRows(["pipe", "music", "pub", "ask"]), ...this.watchRows()];
       case "hills":
@@ -419,20 +437,41 @@ export class WorldUi {
    */
   private skyRows(): Row[] {
     const g = this.game.state;
-    const rows: Row[] = g.forecast.map((w, i) => {
+    const s = season(g);
+    const barn =
+      g.hay > 0
+        ? `${g.hay} bales in the barn, about ${hayNights(g)} nights for the ${this.game.lex.flock}`
+        : "the barn is empty";
+    const rows: Row[] = [
+      {
+        label: `${s.name} · day ${s.day} of ${SEASON_DAYS}`,
+        detail:
+          s.left === 0
+            ? `${nextSeason(g.day).name} tomorrow · ${barn}`
+            : `${nextSeason(g.day).name} in ${s.left + 1} days · ${barn}`,
+        info: true,
+        onPick: () => {},
+      },
+    ];
+    const forecast: Row[] = g.forecast.map((w, i) => {
       const day = g.day + i;
       const wx = WEATHER[w];
       const when = i === 0 ? "Today" : i === 1 ? "Tomorrow" : "The day after";
-      const notes: string[] = [`grazing ×${wx.graze}`];
+      const notes: string[] = [];
+      if (w === "snow") notes.push(owns(g, "byre") ? "grass under snow · in the byre" : "grass under snow");
+      else notes.push(`grazing ×${wx.graze}`);
       notes.push(wx.shear ? "shearing fine" : "no shearing");
       if (isFullMoon(day)) notes.push("full moon");
+      // the forecast can see over the turn of a season, and says so
+      const turns = seasonOf(day).day === 1 && i > 0 ? `${seasonOf(day).name} · ` : "";
       return {
         label: `${when} · ${wx.name}`,
-        detail: `${moonName(day).toLowerCase()} · ${notes.join(" · ")}`,
+        detail: `${turns}${moonName(day).toLowerCase()} · ${notes.join(" · ")}`,
         info: true,
         onPick: () => {},
       };
     });
+    rows.push(...forecast);
 
     const buffs = Object.entries(g.buffs).map(([k, v]) => `${k} (${v}d)`);
     rows.push({
@@ -633,6 +672,21 @@ export class WorldUi {
       tone: "gold",
       closes: true, // the cart rolls off down the road
       onPick: () => this.game.doAction("market"),
+    });
+
+    // hay for the winter: money instead of the summer's taps
+    const lot = hayLotCost(g);
+    const short = Math.max(0, hayNeeded(g) - g.hay);
+    rows.push({
+      label: `Buy ${BALANCE.hayLot} bales of ${lex.hay} · £${lot}`,
+      detail:
+        `${g.hay ? `${g.hay} in the barn, about ${hayNights(g)} nights for the ${lex.flock}` : "The barn is empty"}` +
+        (short > 0
+          ? ` · ${isWinter(g) ? "the rest of the winter" : "a winter"} wants about ${hayNeeded(g)}`
+          : " · enough put by for a winter") +
+        (isWinter(g) ? " · winter price" : ""),
+      disabled: g.money < lot,
+      onPick: () => this.game.buyHay(),
     });
 
     // sell a beast — no tap, and a loss on her

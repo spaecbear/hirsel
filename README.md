@@ -19,6 +19,7 @@ npm run dev
 | `npm run preview` | serve the built output |
 | `npm test` | Vitest over the simulation |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npx vite-node tools/balance.ts [runs] [days]` | seeded headless runs on one policy, per scale — measure before and after a balance change |
 | `node scripts/make-icons.mjs` | regenerate the PWA PNG icons from the pixel design |
 
 ### Why port 5313 and not 5173
@@ -504,6 +505,41 @@ never a surprise. `state.cheated` holds it, and `hydrate` back-fills old saves a
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
 The simulation is untouched — only the words and the sprites swap.
 
+### Seasons
+
+`SEASON_DAYS` (24) a season, spring first: three turns of the moon each, so every season has
+the same three full moons and the wolf's calendar is unchanged. A year is 96 days, and a run
+to the croft is about two and a half of them. **The season is derived from the day** —
+`seasonOf(day)` in `rules.ts` — so it is never stored, a save cannot disagree with it, and
+the forecast can ask about a day that has not come yet.
+
+| | regrowth | fleece | wool price | fox | flystrike | weather |
+| --- | --- | --- | --- | --- | --- | --- |
+| spring | ×1.3 | — | — | — | ×0.6 | the old bag, unchanged |
+| summer | — | ×1.1 | ×0.9 | ×0.9 | ×1.5 | mostly sun |
+| autumn | ×0.6 | ×0.9 | **×1.35** | ×1.1 | ×0.8 | overcast and haar |
+| winter | **none** | ×0.85 | ×1.05 | ×1.1 | none | **snow**, three in eight |
+
+**Spring is the game as it always was.** Same weather bag, same growth, price and fox, so
+the opening a new player learns on — and every test that pins it — is untouched.
+
+**Winter is survived on what was put by.** Nothing regrows. On a day of snow the grass is
+buried altogether. What the ground cannot give, the barn does: hay, fed out at night in
+winter only, a bale for every 10 grass the flock is short. Hay comes the two ways everything
+comes — **taps** (Cut hay: summer, a dry day, 12 bales) or **money** (the cart: 10 bales for
+£5, £9 once winter is on you). A hungry night out in the snow can cost a beast. **The byre
+finally has a job**: on a night of snow the flock is brought in, out of the snow and out of a
+fox's reach.
+
+The game says all this out loud rather than in a manual: a line at dawn when each season
+comes in, a warning six days before winter with the barn's count, the season in the HUD and
+the sky sheet, and a haystack by the croft that grows with the barn. Muck cannot go on frozen
+ground. Settings → Buffs & status lists the four seasons from the same numbers.
+
+Measured with `tools/balance.ts` — see the note above `SEASON_DAYS` in `config.ts`. The
+winter costs time, not lives: median wins are 5–10% later on every scale, busts are no worse,
+and a beast is lost to the snow in about one run in five.
+
 ### Tools beyond the spec
 
 Two additions, both chosen to add a decision without touching the tap economy:
@@ -522,8 +558,9 @@ current values, with notes. Change them there rather than hunting for numbers:
 2. crook vs dog overlap — no flag, needs playtest data
 3. survivors after a wolf mauling (`survivorsAfterWolf`, currently 1)
 4. the wolf punishing the two best early purchases — by design, watch it
-5. the pelt ending the fox game — fine as a victory lap, seasons are the answer
-6. seasons — not built. The day loop is structured so a season layer can sit on top
+5. the pelt ending the fox game — seasons now carry some of the pressure the fox did: the
+   winter, the hay and the snow do not care about the pelt
+6. seasons — built; see **Seasons** above. Season length is still a question (24 days)
 7. dog ageing and retirement — not built; `Sheep.age` exists as the pattern to follow
 
 ### Starting money

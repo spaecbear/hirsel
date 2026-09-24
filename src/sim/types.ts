@@ -22,7 +22,28 @@ export interface Sheep {
   age: number;
 }
 
-export type WeatherId = "sun" | "overcast" | "rain" | "mist";
+export type WeatherId = "sun" | "overcast" | "rain" | "mist" | "snow";
+
+export type SeasonId = "spring" | "summer" | "autumn" | "winter";
+
+export interface Season {
+  id: SeasonId;
+  name: string;
+  /** how fast the pastures come back */
+  regen: number;
+  /** how fast fleece comes on */
+  growth: number;
+  /** foxes are bolder when they are hungry */
+  foxBias: number;
+  /** flystrike wants warmth: none in winter, worst in summer */
+  strike: number;
+  /** what wool fetches — the autumn sales pay, summer is a glut */
+  price: number;
+  /** the weather drawn for a day in this season */
+  weather: WeatherId[];
+  /** said at dawn on the first day of it */
+  arrives: string;
+}
 
 export interface Weather {
   id: WeatherId;
@@ -72,7 +93,8 @@ export type ActionId =
   | "pipe"
   | "music"
   | "pub"
-  | "ask";
+  | "ask"
+  | "hay";
 
 export type BuffId = "tended" | "steady hands" | "settled flock" | "hale" | "fiddled";
 
@@ -92,6 +114,7 @@ export type AnimId =
   | "market"
   | "tend"
   | "muck"
+  | "hay"
   | "build"
   | "pipe"
   | "music"
@@ -165,8 +188,14 @@ export interface GameState {
     spunTwice: boolean;
     /** you have stood in the room and seen the collie settle at the fire — Tippy */
     sawTippy: boolean;
+    /** beasts lost in the snow, hungry and out on the hill */
+    snowLosses: number;
+    /** hay has been cut on a day of sun */
+    hayInSun: boolean;
   };
   achievements: string[];
+  /** bales in the barn, for the winter — cut in summer or bought at the cart */
+  hay: number;
   /**
    * A code that changes the game has been used this run (money, beasts, taps,
    * weather, the wolf on demand, zen). Such a run earns no achievements, and

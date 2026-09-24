@@ -27,6 +27,10 @@ export interface Lexicon {
   driveUp: (place: string) => string;
   hungry: (place: string) => string;
   strike: string;
+  /** a beast lost out on the hill on a hungry night of snow */
+  snowLost: string;
+  /** winter fodder. Hay in both: the skulk grazes the same grass the flock did */
+  hay: string;
   lastGone: { title: string; body: string };
   soldLast: { title: string; body: string };
   maulSurvivors: (lost: number, keep: number) => string;
@@ -79,6 +83,8 @@ export const NORMAL: Lexicon = {
   driveUp: (place) => `You drive the flock up to the ${place}.`,
   hungry: (place) => `Grass is thin on the ${place}. The flock went hungry.`,
   strike: "Strike in a matted fleece. You found her too late.",
+  snowLost: "One of them wandered off into the snow looking for grass, and did not come back.",
+  hay: "hay",
   lastGone: { title: "The last of them gone", body: "You are a shepherd with no sheep. The croft goes quiet." },
   soldLast: { title: "You sold the last of them", body: "There is no shepherd without a flock. You take the road down." },
   maulSurvivors: (lost, keep) =>
@@ -150,6 +156,8 @@ export const INVERSE: Lexicon = {
   driveUp: (place) => `You drive the skulk up to the ${place}.`,
   hungry: (place) => `Grass is thin on the ${place}. The skulk went hungry.`,
   strike: "Canker in a matted brush. You found her too late.",
+  snowLost: "One of them went off over the snow after something to eat, and did not come back.",
+  hay: "hay",
   lastGone: { title: "The last of them gone", body: "You are a tod-keeper with nothing left to keep. The croft goes quiet." },
   soldLast: { title: "You sold the last of them", body: "There is no keeper without a skulk. You take the road down." },
   maulSurvivors: (lost, keep) =>

@@ -2,13 +2,86 @@
  * Pure rules. No state mutation, no DOM, no randomness.
  * Everything here is directly testable and is what the Vitest suite pins down.
  */
-import { BALANCE, DIFFICULTY, BREEDS, FULL_MOON_PHASE, MOON_CYCLE, MOON_NAMES, WEATHER } from "./config";
-import type { GameState, Sheep, WeatherId } from "./types";
+import {
+  BALANCE,
+  DIFFICULTY,
+  BREEDS,
+  FULL_MOON_PHASE,
+  MOON_CYCLE,
+  MOON_NAMES,
+  SEASON_DAYS,
+  SEASON_ORDER,
+  SEASONS,
+  WEATHER,
+} from "./config";
+import type { GameState, Season, Sheep, WeatherId } from "./types";
 
 /* ---------- moon ---------- */
 export const moonPhase = (day: number) => (day - 1) % MOON_CYCLE;
 export const moonName = (day: number) => MOON_NAMES[moonPhase(day)];
 export const isFullMoon = (day: number) => moonPhase(day) === FULL_MOON_PHASE;
+
+/* ---------- the year ---------- */
+
+export interface SeasonAt extends Season {
+  /** 1 on the first day of the season */
+  day: number;
+  /** days left in it after this one */
+  left: number;
+  /** 1 in the first year */
+  year: number;
+}
+
+/**
+ * The season is the day, and nothing else — no state, so it cannot drift, a
+ * save cannot disagree with it, and the forecast can ask about a day that has
+ * not come yet.
+ */
+export function seasonOf(day: number): SeasonAt {
+  const i = Math.floor((day - 1) / SEASON_DAYS);
+  const s = SEASONS[SEASON_ORDER[i % SEASON_ORDER.length]];
+  const dayIn = ((day - 1) % SEASON_DAYS) + 1;
+  return { ...s, day: dayIn, left: SEASON_DAYS - dayIn, year: Math.floor(i / SEASON_ORDER.length) + 1 };
+}
+
+export const season = (g: GameState) => seasonOf(g.day);
+export const isWinter = (g: GameState) => season(g).id === "winter";
+
+/** the season after the one a day falls in */
+export function nextSeason(day: number): Season {
+  const i = SEASON_ORDER.indexOf(seasonOf(day).id);
+  return SEASONS[SEASON_ORDER[(i + 1) % SEASON_ORDER.length]];
+}
+
+/** a night of snow with the byre built: they are brought in */
+export const housed = (g: GameState) => g.forecast[0] === "snow" && owns(g, "byre");
+
+/* ---------- hay ---------- */
+
+/** what one night's hay is for this flock, if the ground gave them nothing */
+export function hayPerNight(g: GameState): number {
+  const want = g.flock.length * BALANCE.grazePerSheep * (owns(g, "saltlick") ? BALANCE.saltlickGraze : 1);
+  return want / BALANCE.hayGrass;
+}
+
+/** how many nights the barn would feed them outright */
+export function hayNights(g: GameState): number {
+  const per = hayPerNight(g);
+  return per === 0 ? Infinity : Math.floor(g.hay / per);
+}
+
+/**
+ * About what a winter asks of the barn for this flock. Not all of it: the
+ * pastures go in with grass on them and only the snow buries it all, so three
+ * quarters of the winter's feed is a fair mark to aim for.
+ */
+export function hayNeeded(g: GameState): number {
+  const nights = isWinter(g) ? season(g).left + 1 : SEASON_DAYS;
+  return Math.ceil(hayPerNight(g) * nights * 0.75);
+}
+
+/** what a lot of hay costs at the cart today */
+export const hayLotCost = (g: GameState) => (isWinter(g) ? BALANCE.hayLotCostWinter : BALANCE.hayLotCost);
 
 /* ---------- wool ---------- */
 export type Grade = { v: number; label: "bare" | "short" | "prime" | "heavy" | "matted" };
@@ -35,8 +108,8 @@ export function priceOn(day: number, mult = 1): number {
   return Math.round(base * mult);
 }
 
-/** what a stone fetches today, on the scale this run is being played at */
-export const woolPrice = (g: GameState) => priceOn(g.day, DIFFICULTY[g.difficulty].price);
+/** what a stone fetches today, on the scale this run is being played at, in this season */
+export const woolPrice = (g: GameState) => priceOn(g.day, DIFFICULTY[g.difficulty].price * season(g).price);
 
 /* ---------- state readers ---------- */
 export const owns = (g: GameState, id: string) => !!g.owned[id as keyof typeof g.owned];
@@ -82,10 +155,18 @@ export function grazing(g: GameState) {
   const p = here(g);
   // the salt lick makes them work the ground less hard for the same fleece
   const want = g.flock.length * BALANCE.grazePerSheep * (owns(g, "saltlick") ? BALANCE.saltlickGraze : 1);
-  const eaten = Math.min(p.grass, want);
-  const fed = want === 0 ? 1 : eaten / want;
+  // under snow, or in the byre, there is no grass to be had at all
+  const reachable = g.forecast[0] === "snow" ? 0 : p.grass;
+  const eaten = Math.min(reachable, want);
+  // in winter the barn makes up what the ground cannot, a whole bale at a time
+  let hayUsed = 0;
+  if (isWinter(g) && eaten < want && g.hay > 0) {
+    hayUsed = Math.min(g.hay, Math.ceil((want - eaten) / BALANCE.hayGrass));
+  }
+  const fed = want === 0 ? 1 : Math.min(1, (eaten + hayUsed * BALANCE.hayGrass) / want);
   const growth =
     fed *
+    season(g).growth *
     p.quality *
     // the collie keeps them moving over the ground rather than standing
     (owns(g, "collie") ? BALANCE.collieGraze : 1) *
@@ -93,7 +174,7 @@ export function grazing(g: GameState) {
     (buffed(g, "settled flock") ? BALANCE.settledGrowth : 1) *
     (buffed(g, "fiddled") ? BALANCE.fiddleGrowth : 1) *
     (buffed(g, "tended") ? BALANCE.tendedGrowth : 1);
-  return { eaten, fed, growth };
+  return { eaten, hayUsed, fed, growth };
 }
 
 /** whichever dog is on the hill, or none */
@@ -103,8 +184,10 @@ export const dogFoxBias = (g: GameState) =>
   owns(g, "dog") ? BALANCE.dogFoxBias : owns(g, "collie") ? BALANCE.collieFoxBias : 1;
 
 export function foxRisk(g: GameState): number {
+  // in the byre on a night of snow: nothing gets at them
+  if (housed(g)) return 0;
   if (owns(g, "pelt")) return BALANCE.peltFoxRisk;
-  let risk = here(g).risk * weatherOn(g).foxBias;
+  let risk = here(g).risk * weatherOn(g).foxBias * season(g).foxBias;
   // more beasts than one man can keep an eye on, or few enough to watch
   const scale = g.flock.length / BALANCE.foxFlockPivot;
   risk *= Math.max(BALANCE.foxFlockMin, Math.min(BALANCE.foxFlockMax, scale));
@@ -116,6 +199,8 @@ export function foxRisk(g: GameState): number {
 }
 
 export function flystrikeExposed(g: GameState): Sheep | null {
+  // flies want warmth: there are none in winter
+  if (season(g).strike === 0) return null;
   if (buffed(g, "tended")) return null;
   if (g.forecast[0] === "rain") return null;
   const heavy = g.flock.filter((s) => s.fleece >= BALANCE.flystrikeFleece);

@@ -113,15 +113,15 @@ tests still pass.
 
 ### 1.4 Steam achievements
 
-The 20 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
+The 22 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
 four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 
-- [ ] Register all 20 in Steamworks with the same ids; hidden flag on the four secret ones,
+- [ ] Register all 22 in Steamworks with the same ids; hidden flag on the four secret ones,
       with their existing `hint` as the post-unlock description
 - [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
 - [x] On start-up, re-send every locally earned id — covers achievements earned offline
       or before Steam was running
-- [ ] **64×64 icons for each, earned and unearned** (40 images). Pixel art, integer-scaled
+- [ ] **64×64 icons for each, earned and unearned** (44 images). Pixel art, integer-scaled
 - [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
@@ -207,7 +207,7 @@ Decide what happens to the free Vercel build once there is a paid one. Recommend
 | library hero | 3840×1240 |
 | library logo | 1280 wide max, transparent |
 | screenshots | at least 5, 1920×1080 |
-| achievement icons | 64×64 × 40 (see §1.4) |
+| achievement icons | 64×64 × 44 (see §1.4) |
 | trailer | optional but strongly recommended; 30–60s |
 
 The Glen interface in landscape is the screenshot view. Good moments: the three pastures
@@ -241,20 +241,24 @@ Everything below lands on `steam`. The original game on `main` stays as it is.
 
 ### 2.1 Seasons — the headline feature (spec §14.6)
 
+> **Built.** 24-day seasons (three moons each), spring first and unchanged; hay cut in summer
+> or bought at the cart; snow in winter; the byre houses the flock on snow nights. Spring
+> lambing waits for §2.2. See "Seasons" in the README for the numbers and the measurement.
+
 The spec calls this the obvious next system and the answer to the pelt ending the fox game.
 It gives a 100-day run a shape.
 
-- [ ] A season layer on top of the day loop: e.g. 28-day seasons, starting in spring
+- [x] A season layer on top of the day loop: e.g. 28-day seasons, starting in spring
 - [ ] **Spring** — lambing (§2.2); grass regrows fast; flystrike begins
-- [ ] **Summer** — the main clip; fleece grows fastest; flystrike peaks
-- [ ] **Autumn** — the big market: better prices for wool and store lambs; the tup sales
-- [ ] **Winter** — nothing grows; snow joins the weather bag; flock must be fed hay (§2.3)
+- [x] **Summer** — the main clip; fleece grows fastest; flystrike peaks
+- [x] **Autumn** — the big market: better prices for wool and store lambs; the tup sales
+- [x] **Winter** — nothing grows; snow joins the weather bag; flock must be fed hay (§2.3)
       or brought into the byre, which gives the byre a mechanical job, not just a milestone
-- [ ] Seasons show on the forecast and change the palette of the glen (the terrain and sky
+- [x] Seasons show on the forecast and change the palette of the glen (the terrain and sky
       are already drawn from constants — winter is a palette pass plus snow)
-- [ ] Night resolution order in spec §2 gains a season step; add it at a fixed point and
+- [x] Night resolution order in spec §2 gains a season step; add it at a fixed point and
       test the order the way the current night is tested
-- [ ] Rebalance after: the headless 30- and 90-day simulations in the README are the tool.
+- [x] Rebalance after: the headless 30- and 90-day simulations in the README are the tool.
       Re-run them per difficulty
 
 ### 2.2 Lambing and breeding
@@ -358,7 +362,8 @@ Like the spec's §14, these are flagged rather than settled:
 3. **Does the run continue after the win?** (§2.6)
 4. **Retro interface on Steam** — hidden (recommended) or supported
 5. **macOS** — worth the notarisation cost only if wishlists show demand
-6. **Season length** — 28 days is a starting point; tune it against how long the croft takes
+6. **Season length** — built at 24 days (three moons); a run is about two and a half years.
+   Worth playtesting whether that feels long
 7. **Does the pelt still end the fox game** once seasons exist, or does it become one
    season's peace?
 8. **What Vercel serves** once Steam exists: the original from `main` (free, unchanged), the

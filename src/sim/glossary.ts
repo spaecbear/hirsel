@@ -5,7 +5,7 @@
  * hand, so a future tuning pass (see the market price and wolf-survivor
  * changes) can't silently leave this appendix describing the wrong game.
  */
-import { BALANCE } from "./config";
+import { BALANCE, SEASON_DAYS, SEASON_ORDER, SEASONS } from "./config";
 import { loadEarned } from "./achievements";
 
 export interface GlossaryEntry {
@@ -69,7 +69,40 @@ export function workGlossary(): GlossaryEntry[] {
       meta: `2 taps past ${BALANCE.bigFlock} beasts, on your own`,
       effect: "A dog does the running for you, and the crook takes a tap off either way.",
     },
+    {
+      id: "hay",
+      name: "Hay",
+      meta: `Cut hay (summer, a dry day): ${BALANCE.hayCutBales} bales · the cart: ${BALANCE.hayLot} for £${BALANCE.hayLotCost}, £${BALANCE.hayLotCostWinter} in winter`,
+      effect: `Fed out at night in winter only, when the ground falls short. A bale stands in for ${BALANCE.hayGrass} grass. On a day of snow the grass is buried and hay is all they have.`,
+    },
   ];
+}
+
+/** what each part of the year does, straight from the numbers */
+export function seasonGlossary(): GlossaryEntry[] {
+  const x = (m: number) => (m === 1 ? null : m === 0 ? "none" : pct(m));
+  return SEASON_ORDER.map((id, i) => {
+    const s = SEASONS[id];
+    const parts = [
+      x(s.regen) && `grass regrowth ${x(s.regen)}`,
+      x(s.growth) && `fleece growth ${x(s.growth)}`,
+      x(s.price) && `wool price ${x(s.price)}`,
+      x(s.foxBias) && `fox risk ${x(s.foxBias)}`,
+      x(s.strike) && `flystrike ${x(s.strike)}`,
+    ].filter(Boolean);
+    const extra =
+      id === "winter"
+        ? " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. No mucking frozen ground."
+        : id === "summer"
+          ? " The only time hay can be cut."
+          : "";
+    return {
+      id,
+      name: s.name,
+      meta: `${SEASON_DAYS} days · days ${i * SEASON_DAYS + 1}–${(i + 1) * SEASON_DAYS} of each year`,
+      effect: `${parts.length ? parts.join(", ") : "The hill as it is"}.${extra}`,
+    };
+  });
 }
 
 export function statusGlossary(): GlossaryEntry[] {

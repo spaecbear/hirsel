@@ -1,5 +1,6 @@
 import type { GameState } from "./types";
 import { owns } from "./rules";
+import { SEASON_DAYS } from "./config";
 import { platform } from "../platform";
 
 export interface Achievement {
@@ -24,8 +25,16 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "byre", name: "Somewhere to put them", hint: "Raise the stone byre.", won: (g) => owns(g, "byre") },
   { id: "ring", name: "In your coat pocket", hint: "Buy the ring in Inverness.", won: (g) => owns(g, "ring") },
   { id: "local", name: "Kent face", hint: "Six evenings at the inn.", won: (g) => g.pubs >= 6 },
-  { id: "thirty", name: "A season on", hint: "Reach day 30.", won: (g) => g.day >= 30 },
+  { id: "thirty", name: "A month on the hill", hint: "Reach day 30.", won: (g) => g.day >= 30 },
   { id: "hundred-days", name: "Still here", hint: "Reach day 100.", won: (g) => g.day >= 100 },
+  { id: "made-hay", name: "Made hay", hint: "Cut hay while the sun shone.", won: (g) => g.stats.hayInSun },
+  {
+    id: "first-winter",
+    name: "Through the winter",
+    hint: "See the flock through a winter to the spring.",
+    // the first day of the second spring, with anything still on the hill
+    won: (g) => g.day > SEASON_DAYS * 4 && g.flock.length > 0,
+  },
   { id: "clean", name: "No fox got in", hint: "Reach day 20 without losing a sheep to a fox.", won: (g) => g.day >= 20 && g.stats.foxLosses === 0 },
   { id: "aye", name: "She said aye", hint: "Finish the croft and ask her.", won: (g) => g.over?.kind === "win" },
   // hidden: the hint is only ever read by someone who has already been there

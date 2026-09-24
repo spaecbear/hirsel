@@ -92,8 +92,10 @@ Each needs a 64×64 icon, earned and unearned.
 | `BYRE` | Somewhere to put them | Raise the stone byre. |  |
 | `RING` | In your coat pocket | Buy the ring in Inverness. |  |
 | `LOCAL` | Kent face | Six evenings at the inn. |  |
-| `THIRTY` | A season on | Reach day 30. |  |
+| `THIRTY` | A month on the hill | Reach day 30. |  |
 | `HUNDRED_DAYS` | Still here | Reach day 100. |  |
+| `MADE_HAY` | Made hay | Cut hay while the sun shone. |  |
+| `FIRST_WINTER` | Through the winter | See the flock through a winter to the spring. |  |
 | `CLEAN` | No fox got in | Reach day 20 without losing a sheep to a fox. |  |
 | `AYE` | She said aye | Finish the croft and ask her. |  |
 | `TIPPY` | Tippy | The collie found the warmest spot in the house before you did. | yes |

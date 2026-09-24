@@ -31,6 +31,7 @@ import {
   shade,
 } from "../sprites";
 import { hasDog, isFullMoon, moonPhase, owns } from "../../sim/rules";
+import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
 import type { GameState, Sheep } from "../../sim/types";
 import type { ArtPack, Scene } from "./types";
 
@@ -234,6 +235,7 @@ function drawWeather(g: Painter, st: GameState, time: number) {
       g.a(0, y, W, 14 + b * 3, 206, 210, 205, 0.13 + b * 0.03);
     }
   }
+  if (w === "snow") drawSnowfall(g, W, H, time);
   if (w === "overcast") g.a(0, 0, W, H, 90, 96, 104, 0.08);
   if (w === "sun") g.a(0, 0, W, H, 240, 214, 150, 0.05);
 }
@@ -402,6 +404,24 @@ function muckScene(g: Painter, p: number) {
     g.px(x - t * 44 + i * 3, GROUND - Math.sin(t * Math.PI) * 15, 3, 3, t < 0.5 ? "#4a3a24" : "#6d8a4b");
   }
   for (let i = 0; i < Math.floor(p * 16); i++) g.px(26 + i * 28, GROUND + 14, 3, 6, "#8fae5f");
+}
+
+/** the in-bye, cut, and the stack going up at the end of it */
+function hayScene(g: Painter, p: number) {
+  const reach = ease(p);
+  for (let r = 0; r < 3; r++) {
+    const len = Math.round((W - 120) * clamp01(reach * 1.2 - r * 0.15));
+    for (let x = 0; x < len; x += 4) g.px(24 + x, GROUND + 6 + r * 6, 3, 2, x % 8 ? "#c9a95a" : "#b08f45");
+  }
+  drawShepherd(g, SHEP_X, GROUND - 26, { walk: p * 3 });
+  const sweep = Math.sin(p * Math.PI * 10);
+  g.px(SHEP_X + 12, GROUND - 18, 2, 16, "#6a5238");
+  g.px(SHEP_X + 6 + Math.round(sweep * 5), GROUND - 3, 12, 2, "#b9bec2");
+  const stack = Math.floor(clamp01((p - 0.3) / 0.7) * 5);
+  for (let i = 0; i < stack; i++) {
+    const w = 22 - i * 4;
+    g.px(W - 70 - w / 2, GROUND + 18 - i * 5, w, 5, i % 2 ? "#c9a95a" : "#b89448");
+  }
 }
 
 function buySheepScene(g: Painter, st: GameState, p: number, breed?: string) {
@@ -640,6 +660,7 @@ export const HIRSEL_ART: ArtPack = {
     else if (k === "music") musicScene(g, p);
     else if (k === "tend") tendScene(g, p);
     else if (k === "muck") muckScene(g, p);
+    else if (k === "hay") hayScene(g, p);
     else if (k === "buysheep") buySheepScene(g, st, p, s.payload?.breed);
     else if (k === "gather") gatherScene(g, st, p);
     else if (k === "move") {
@@ -665,6 +686,8 @@ function drawLand(g: Painter, s: Scene, night: number) {
   drawBen(g);
   drawHills(g, st);
   drawGround(g, st, s.time);
+  drawSeasonLand(g, W, GROUND - 30, H, st);
+  drawHaystack(g, 128, GROUND + 2, st.hay);
   drawCroft(g, st, Math.max(night, 0), s.time);
   // the cart is parked unless it is out on the road to market
   if (owns(st, "cart") && s.anim !== "market") drawParkedCart(g, 118, GROUND - 12, s.time);

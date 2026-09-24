@@ -45,6 +45,7 @@ export const SKY: Record<WeatherId, [string, string]> = {
   overcast: ["#3a4046", "#5c6167"],
   rain: ["#252c33", "#3c464e"],
   mist: ["#454b4a", "#697070"],
+  snow: ["#56616b", "#9aa6ad"],
 };
 
 /* ---------- helpers ---------- */

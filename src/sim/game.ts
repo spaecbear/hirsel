@@ -10,7 +10,6 @@ import {
   PASTURES,
   START_MONEY,
   TOOLS,
-  WEATHER_BAG,
 } from "./config";
 import { makeRng, pick, randInt, type Rng } from "./rng";
 import {
@@ -27,8 +26,14 @@ import {
   foxRisk,
   grade,
   grazing,
+  hayLotCost,
+  hayNights,
   here,
+  housed,
   isFullMoon,
+  isWinter,
+  season,
+  seasonOf,
   owns,
   woolPrice,
   readyToShear,
@@ -84,7 +89,7 @@ export function newGame(opts: GameOptions = {}): GameState {
     });
   }
   const forecast: WeatherId[] = [];
-  for (let i = 0; i < 3; i++) forecast.push(pick(rng, WEATHER_BAG));
+  for (let i = 0; i < 3; i++) forecast.push(pick(rng, seasonOf(1 + i).weather));
 
   return {
     day: 1,
@@ -123,8 +128,11 @@ export function newGame(opts: GameOptions = {}): GameState {
       wolfMaulings: 0,
       spunTwice: false,
       sawTippy: false,
+      snowLosses: 0,
+      hayInSun: false,
     },
     achievements: [],
+    hay: 0,
     cheated: false,
     seed,
   };
@@ -396,6 +404,22 @@ export class Game {
     return Math.max(1, Math.round(BREEDS[sheep.breed].cost * BALANCE.sellbackRate));
   }
 
+  /**
+   * A lot of hay from the cart. Money, not a tap, like every other trade —
+   * the tap-costing way is cutting it yourself in summer. Dearer once the
+   * winter is on you and everyone else wants it too.
+   */
+  buyHay() {
+    const g = this.state;
+    if (g.over) return;
+    const cost = hayLotCost(g);
+    if (g.money < cost) return;
+    g.money -= cost;
+    g.hay += BALANCE.hayLot;
+    this.say(`${BALANCE.hayLot} bales off the cart for £${cost}. ${g.hay} in the barn.`, "gold");
+    this.changed();
+  }
+
   /* ---------- the last wolf ---------- */
 
   /**
@@ -485,16 +509,39 @@ export class Game {
     const wolfCame = wolfSummoned(g);
     if (wolfCame) this.wolf();
 
-    // 1. grazing and fleece growth
-    const { eaten, fed, growth } = grazing(g);
+    // 1. grazing and fleece growth — and in winter, the barn
+    const { eaten, hayUsed, fed, growth } = grazing(g);
     p.grass -= eaten;
+    if (hayUsed) {
+      g.hay -= hayUsed;
+      if (g.hay === 0) this.say(`The last of the ${this.lex.hay} went out tonight. The barn is empty.`, "bad");
+    }
     for (const s of g.flock) {
       s.fleece += growth * breedOf(s).growth;
       s.age++;
     }
     if (g.flock.length && fed < BALANCE.hungryBelow) {
       g.stats.daysHungry++;
-      this.say(this.lex.hungry(p.name), "bad");
+      this.say(
+        w.id === "snow"
+          ? `Snow over the grass and nothing in the barn. The ${this.lex.flock} went hungry.`
+          : this.lex.hungry(p.name),
+        "bad",
+      );
+    }
+
+    /*
+     * 1b. snow. With the byre they are brought in out of it. Without, a hungry
+     * night out in the snow can cost a beast — which is what the hay is for,
+     * and what the byre was always for.
+     */
+    if (housed(g) && g.flock.length) {
+      this.say(`Snow coming on. You bring the ${this.lex.flock} into the byre for the night.`, "cozy");
+    } else if (w.id === "snow" && g.flock.length && fed < BALANCE.hungryBelow && this.rng() < BALANCE.snowLossChance) {
+      const lostIndex = Math.floor(this.rng() * g.flock.length);
+      g.flock.splice(lostIndex, 1);
+      g.stats.snowLosses++;
+      this.say(this.lex.snowLost, "bad");
     }
 
     // 2. the dog brings them in
@@ -538,7 +585,7 @@ export class Game {
 
     // 4. flystrike
     const struck = flystrikeExposed(g);
-    if (struck && this.rng() < BALANCE.flystrikeChance) {
+    if (struck && this.rng() < BALANCE.flystrikeChance * season(g).strike) {
       g.flock.splice(g.flock.indexOf(struck), 1);
       g.stats.strikeLosses++;
       this.say(this.lex.strike, "bad");
@@ -549,9 +596,10 @@ export class Game {
     g.money -= feed;
     if (feed) this.say(`Winter feed and odds and ends: £${feed}.`);
 
-    // 6. regrowth
+    // 6. regrowth — nothing at all in winter
+    const seasonRegen = season(g).regen;
     for (const x of g.pastures) {
-      let r = x.regen;
+      let r = x.regen * seasonRegen;
       if (w.id === "rain") r *= BALANCE.regenRain;
       if (w.id === "sun") r *= BALANCE.regenSun;
       x.grass = Math.min(x.cap, x.grass + r);
@@ -572,7 +620,9 @@ export class Game {
      */
     this.onAnim("dawn", () => {
       g.forecast.shift();
-      g.forecast.push(pick(this.rng, WEATHER_BAG));
+      // the new day on the end of the forecast is three on from today, and
+      // takes its weather from whatever season that day falls in
+      g.forecast.push(pick(this.rng, seasonOf(g.day + 3).weather));
       for (const k of Object.keys(g.buffs) as BuffId[]) {
         const v = (g.buffs[k] ?? 0) - 1;
         if (v <= 0) delete g.buffs[k];
@@ -587,7 +637,18 @@ export class Game {
       g.muckedToday = [];
       g.actsToday = 0;
       g.taps = tapsPerDay(g);
+      const s = season(g);
+      if (s.day === 1) this.say(s.arrives, "gold");
       this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
+      if (s.id === "autumn" && s.left === BALANCE.winterWarnDays) {
+        const nights = hayNights(g);
+        this.say(
+          g.hay === 0
+            ? `The nights are drawing in. Winter in ${s.left + 1} days, and nothing in the barn.`
+            : `The nights are drawing in. Winter in ${s.left + 1} days; ${g.hay} bales in the barn, about ${nights} night${nights === 1 ? "" : "s"} for the ${this.lex.flock}.`,
+          "bad",
+        );
+      }
       if (isFullMoon(g.day) && !owns(g, "pelt")) {
         this.say("Full moon tonight. The high ground is no place to be caught out late.", "bad");
       }
@@ -827,15 +888,35 @@ export const ACTIONS: ActionDef[] = [
     cost: one,
     desc: (g) => {
       const p = here(g);
+      if (isWinter(g)) return "Nothing will take in frozen ground. Spread it come the spring.";
       return p.grass > BALANCE.muckMaxGrass
         ? `The ${p.name} is in good heart already.`
         : `Spread muck and lime on the ${p.name}. Brings the grass back fast.`;
     },
-    can: (g) => here(g).grass <= BALANCE.muckMaxGrass,
+    can: (g) => !isWinter(g) && here(g).grass <= BALANCE.muckMaxGrass,
     run: (game) => {
       const p = here(game.state);
       p.grass = Math.min(p.cap, p.grass + BALANCE.muckGain);
       game.say(`Muck and lime across the ${p.name}. It will come back green.`, "hi");
+    },
+  },
+  {
+    id: "hay",
+    name: "Cut hay",
+    anim: "hay",
+    cost: one,
+    desc: (g, lex) => {
+      const barn = g.hay ? `${g.hay} bales in the barn, about ${hayNights(g)} nights for the ${lex.flock}.` : "The barn is empty.";
+      if (season(g).id !== "summer") return `Hay is a summer job. ${barn}`;
+      if (!weatherOn(g).shear) return `Wet hay only rots in the stack. ${barn}`;
+      return `A day with the scythe on the in-bye: ${BALANCE.hayCutBales} bales for the winter. ${barn}`;
+    },
+    can: (g) => season(g).id === "summer" && weatherOn(g).shear,
+    run: (game) => {
+      const g = game.state;
+      g.hay += BALANCE.hayCutBales;
+      if (weatherOn(g).id === "sun") g.stats.hayInSun = true;
+      game.say(`Cut and stacked. ${BALANCE.hayCutBales} bales more, ${g.hay} in the barn.`, "hi");
     },
   },
   {

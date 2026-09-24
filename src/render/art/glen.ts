@@ -16,6 +16,7 @@ import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldL
 import { driftFor, idleTick } from "../wander";
 import { spinNow } from "../dog-spin";
 import { tippyFrame } from "../tippy";
+import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
 import {
   TERRAIN,
   mix,
@@ -365,6 +366,7 @@ function drawWeather(g: Painter, L: WorldLayout, st: GameState, time: number) {
       g.a(0, y, L.W, 12 + b * 3, 206, 210, 205, 0.12 + b * 0.03);
     }
   }
+  if (w === "snow") drawSnowfall(g, L.W, L.H, time);
   if (w === "overcast") g.a(0, 0, L.W, L.H, 90, 96, 104, 0.07);
   if (w === "sun") g.a(0, 0, L.W, L.H, 240, 214, 150, 0.045);
 }
@@ -791,6 +793,34 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       for (let i = 0; i < 16; i++) {
         const t = (p * 2 + i / 16) % 1;
         g.px(x - t * 40 + i * 3, sy + 12 - Math.sin(t * Math.PI) * 14, 3, 3, t < 0.5 ? "#4a3a24" : "#6d8a4b");
+      }
+      break;
+    }
+    case "hay": {
+      /*
+       * The in-bye, cut: he walks the field with the scythe going, the
+       * swathes lying down gold behind him, and a stack going up at the end.
+       */
+      const reach = ease(p);
+      const x0 = Math.round(L.W * 0.08);
+      const span = Math.round(L.W * 0.6);
+      const row = sy + 24;
+      for (let r = 0; r < 3; r++) {
+        const len = Math.round(span * clamp01(reach * 1.2 - r * 0.15));
+        for (let x = 0; x < len; x += 4) g.px(x0 + x, row + r * 5, 3, 2, x % 8 ? "#c9a95a" : "#b08f45");
+      }
+      const hx = x0 + Math.round(span * reach);
+      drawShepherd(g, hx, sy, { walk: p * 3, facing: 1 });
+      // the scythe: a long snath and a blade that sweeps
+      const sweep = Math.sin(p * Math.PI * 10);
+      g.px(hx + 10, sy + 8, 2, 14, "#6a5238");
+      g.px(hx + 4 + Math.round(sweep * 5), sy + 21, 12, 2, "#b9bec2");
+      // the stack, rising as the day goes
+      const stack = Math.floor(clamp01((p - 0.3) / 0.7) * 5);
+      const stx = x0 + span + 14;
+      for (let i = 0; i < stack; i++) {
+        const w = 18 - i * 3;
+        g.px(stx - w / 2, row + 8 - i * 4, w, 4, i % 2 ? "#c9a95a" : "#b89448");
       }
       break;
     }
@@ -1922,6 +1952,9 @@ export const GLEN_ART: ArtPack = {
     drawBen(g, L, st, s.time);
     drawHills(g, L, st);
     drawGround(g, L, st, s.time);
+    drawSeasonLand(g, L.W, L.horizonY, L.H, st);
+    // the barn's stock, stacked past the byre where it can be seen from the hill
+    drawHaystack(g, L.croft.x + 106, L.croft.y + L.croft.h, st.hay);
     drawCroft(g, L, st, night, s.time);
     /*
      * Not while it is away at market — that animation draws the cart rolling

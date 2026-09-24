@@ -165,6 +165,8 @@ export class Sfx {
       market: "cart",
       tend: "bleat",
       muck: "wind",
+      // the scythe's swish is near enough the shears' snip, a size up
+      hay: "shears",
       build: "build",
       pipe: "pipe",
       // the fiddle has had its own reel in here all along; nothing ever

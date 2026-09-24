@@ -3,6 +3,9 @@ import { ACTIONS, type Game } from "../sim/game";
 import { BALANCE, BREEDS, CROFT, TOOLS } from "../sim/config";
 import {
   canShear,
+  hayLotCost,
+  hayNights,
+  season,
   flockValue,
   grade,
   isFullMoon,
@@ -71,6 +74,7 @@ export class View {
       hud.appendChild(el("div", { class: "stat" }, `<div class="k">${k}</div><div class="v ${cls}">${v}</div>`));
     };
     stat("Day", String(g.day));
+    stat("Season", season(g).name);
     stat("Taps left", String(g.taps), g.taps === 0 ? "warn" : "good");
     stat(flockLabel, String(g.flock.length));
     stat("Purse", `£${g.money}`, g.money < 10 ? "warn" : "");
@@ -253,6 +257,18 @@ export class View {
         ),
       );
     });
+
+    sh.appendChild(el("div", { class: "shead" }, "Hay — for the winter"));
+    const lot = hayLotCost(g);
+    sh.appendChild(
+      button(
+        "act buy",
+        `<span class="n">${BALANCE.hayLot} bales of hay · £${lot}</span>` +
+          `<span class="d">${g.hay ? `${g.hay} in the barn, about ${hayNights(g)} nights for the ${lex.flock}.` : "The barn is empty."} Or cut your own on a dry summer day.</span>`,
+        () => this.game.buyHay(),
+        g.money < lot || this.busy,
+      ),
+    );
 
     sh.appendChild(el("div", { class: "shead" }, "Tools — one of each"));
     for (const t of TOOLS) {
