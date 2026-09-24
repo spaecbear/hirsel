@@ -6,7 +6,7 @@ import { loadSettings, prefersReducedMotion, saveSettings, type Settings } from 
 import { clearSave, exportFile, hasSave, importFile, readSave, saveGame } from "./sim/save";
 import { lexicon } from "./sim/lexicon";
 import { CHEATS, revealNextCheat } from "./sim/cheats";
-import { ACHIEVEMENTS, loadEarned } from "./sim/achievements";
+import { ACHIEVEMENTS, loadEarned, syncAchievements } from "./sim/achievements";
 import { tutorialSetup } from "./sim/tutorial";
 import type { Difficulty, GameState } from "./sim/types";
 import { DIFFICULTY } from "./sim/config";
@@ -36,6 +36,8 @@ const settings: Settings = loadSettings();
 const packs: Record<string, ArtPack> = { glen: GLEN_ART, retro: HIRSEL_ART };
 
 let game = new Game();
+// anything earned while the storefront was not listening is handed over now
+syncAchievements();
 const animator = new Animator();
 const canvas = $<HTMLCanvasElement>("scene");
 const screen = new Screen(canvas, packs[settings.ui] ?? GLEN_ART);
@@ -510,6 +512,7 @@ function showEnd() {
   endShown = true;
   $("over-title").textContent = o.title;
   $("over-body").textContent = o.body;
+  $("over-note").hidden = !game.state.cheated;
 
   const box = $("over-reward");
   box.innerHTML = "";

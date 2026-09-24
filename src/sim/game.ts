@@ -125,6 +125,7 @@ export function newGame(opts: GameOptions = {}): GameState {
       sawTippy: false,
     },
     achievements: [],
+    cheated: false,
     seed,
   };
 }
@@ -192,6 +193,9 @@ export class Game {
   private spend(n: number) {
     const g = this.state;
     if (!this.zen && !this.freeTaps) g.taps -= n;
+    // zen is a setting, not a one-shot code: the run is marked the first time
+    // it actually saves a tap, not merely for having the toggle on somewhere
+    if (this.zen) g.cheated = true;
     g.actsToday++;
     if (wolfWarningDue(g)) {
       this.say(`The ${this.lex.flock} will not settle. Something is watching from above the corrie.`, "bad");

@@ -167,6 +167,12 @@ export interface GameState {
     sawTippy: boolean;
   };
   achievements: string[];
+  /**
+   * A code that changes the game has been used this run (money, beasts, taps,
+   * weather, the wolf on demand, zen). Such a run earns no achievements, and
+   * says so at the end. Never cleared within a run.
+   */
+  cheated: boolean;
   seed: number;
 }
 

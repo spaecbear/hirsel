@@ -1,5 +1,6 @@
 import type { GameState } from "./types";
 import { owns } from "./rules";
+import { platform } from "../platform";
 
 export interface Achievement {
   id: string;
@@ -69,7 +70,7 @@ const KEY = "hirsel.achievements.v1";
 
 export function loadEarned(): string[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = platform.read(KEY);
     return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
@@ -78,7 +79,7 @@ export function loadEarned(): string[] {
 
 export function saveEarned(ids: string[]) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(ids));
+    platform.write(KEY, JSON.stringify(ids));
   } catch {
     /* private mode, or storage full — achievements are not worth throwing over */
   }
@@ -86,20 +87,45 @@ export function saveEarned(ids: string[]) {
 
 export function clearEarned() {
   try {
-    localStorage.removeItem(KEY);
+    platform.remove(KEY);
   } catch {
     /* ignore */
   }
 }
 
-/** returns the ones newly earned by this check */
+/**
+ * Returns the ones newly earned by this check.
+ *
+ * A run that has used a code that changes the game earns nothing — money,
+ * beasts or a wolf on demand would otherwise hand over the croft and the pelt.
+ * Cosmetic codes (RETRO, TOD) and pace (SKELP) never mark a run.
+ */
 export function checkAchievements(g: GameState): Achievement[] {
+  if (g.cheated) return [];
   const earned = new Set(g.achievements);
   const fresh = ACHIEVEMENTS.filter((a) => !earned.has(a.id) && a.won(g));
   if (fresh.length) {
     g.achievements = [...g.achievements, ...fresh.map((a) => a.id)];
     const all = new Set([...loadEarned(), ...g.achievements]);
     saveEarned([...all]);
+    for (const a of fresh) unlock(a.id);
   }
   return fresh;
+}
+
+function unlock(id: string) {
+  try {
+    platform.unlockAchievement(id);
+  } catch {
+    /* the storefront being unavailable is never worth interrupting play for */
+  }
+}
+
+/**
+ * Tell the storefront about everything already earned. Run at start-up: it
+ * covers achievements won while the storefront was not running, and ones won
+ * in the web build before an export was brought across.
+ */
+export function syncAchievements() {
+  for (const id of loadEarned()) unlock(id);
 }

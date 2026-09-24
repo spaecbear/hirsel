@@ -8,6 +8,7 @@
  */
 import type { GameState } from "./types";
 import { newGame } from "./game";
+import { platform } from "../platform";
 
 const SLOT = "hirsel.save.v1";
 export const SAVE_VERSION = 1;
@@ -24,7 +25,7 @@ export function serialise(state: GameState): SaveFile {
 
 export function saveGame(state: GameState): boolean {
   try {
-    localStorage.setItem(SLOT, JSON.stringify(serialise(state)));
+    platform.write(SLOT, JSON.stringify(serialise(state)));
     return true;
   } catch {
     return false;
@@ -33,7 +34,7 @@ export function saveGame(state: GameState): boolean {
 
 export function readSave(): SaveFile | null {
   try {
-    const raw = localStorage.getItem(SLOT);
+    const raw = platform.read(SLOT);
     if (!raw) return null;
     const f = JSON.parse(raw) as SaveFile;
     if (!validate(f)) return null;
@@ -49,7 +50,7 @@ export function hasSave(): boolean {
 
 export function clearSave() {
   try {
-    localStorage.removeItem(SLOT);
+    platform.remove(SLOT);
   } catch {
     /* ignore */
   }

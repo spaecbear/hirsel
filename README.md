@@ -63,6 +63,9 @@ src/
     art/glen.ts    the full-screen scene you play in
     art/hirsel.ts  the older panelled scene (the retro interface)
   audio/      Web Audio: written tunes, rain, one effect per animation
+  platform/   what the game asks of the machine: storage, achievements, quit.
+              The web build uses localStorage; a desktop build supplies its own
+  fonts/      DejaVu Sans Mono, subset to woff2 and shipped with the game
 test/         Vitest over sim/
 ```
 
@@ -487,6 +490,11 @@ Codes show as `?????` until entered, which is what keeps `1680` from giving the 
 to a player who hasn't gone looking for it. It summons the wolf with none of the real
 conditions met — but what happens when he arrives is unchanged, and still decided by whether
 the broadsword is on the wall. The flock is still not cut until the animation has played.
+**A run that uses a code which changes the game earns no achievements** — `SILLER`,
+`HIRSEL`, `LANGDAY`, `HAAR` and `1680` mark it the moment they are used, and `ZEN` the first
+time it saves a tap. `RETRO`, `TOD` and `SKELP` never do. The end screen says so, so it is
+never a surprise. `state.cheated` holds it, and `hydrate` back-fills old saves as clean.
+
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
 The simulation is untouched — only the words and the sprites swap.
 

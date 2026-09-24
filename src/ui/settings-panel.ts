@@ -1,6 +1,6 @@
 import { $, el, toast } from "./dom";
 import { ACHIEVEMENTS, clearEarned, loadEarned } from "../sim/achievements";
-import { CHEATS, findCheat, type CheatContext } from "../sim/cheats";
+import { CHEATS, findCheat, runCheat, type CheatContext } from "../sim/cheats";
 import { buffGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
 import { prefersReducedMotion } from "../sim/settings";
 import type { Settings } from "../sim/settings";
@@ -181,7 +181,7 @@ export function buildSettings(api: SettingsApi) {
         toast("Nothing happens.");
         return;
       }
-      const msg = c.apply(api.cheatContext());
+      const msg = runCheat(c, api.cheatContext());
       const found = new Set([...api.settings.cheatsFound, c.code]);
       api.apply({ cheatsFound: [...found] });
       input.value = "";
@@ -212,7 +212,7 @@ export function buildSettings(api: SettingsApi) {
         `<b class="k">${c.code}${mark}</b><span>${c.blurb}</span>`,
       ) as HTMLButtonElement;
       b.addEventListener("click", () => {
-        toast(c.apply(api.cheatContext()));
+        toast(runCheat(c, api.cheatContext()));
         draw();
       });
       list.appendChild(b);

@@ -1,4 +1,25 @@
 /* Peat and heather. Monospace, wide letter-spacing, uppercase small-caps labels. */
+
+/*
+ * The face is shipped, not assumed. Windows has no DejaVu Sans Mono, so every
+ * Windows player was reading the game in Consolas. Subset to Latin, general
+ * punctuation and arrows (everything the text uses — £, —, ·, ×, →, ✓) and
+ * converted to woff2; the licence is alongside in src/fonts.
+ */
+@font-face {
+  font-family: "DejaVu Sans Mono";
+  src: url("./fonts/DejaVuSansMono.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DejaVu Sans Mono";
+  src: url("./fonts/DejaVuSansMono-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   --peat: #14170f;
   --peat-2: #1e2317;
@@ -1172,6 +1193,10 @@ body.modal {
   line-height: 1.7;
   color: var(--stone);
   margin-bottom: 16px;
+}
+.over p.over-note {
+  font-size: 11px;
+  font-style: italic;
 }
 
 /* settings */
