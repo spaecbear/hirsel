@@ -32,23 +32,28 @@ implementation, which the Steam branch swaps for its own. See §1.2.
 
 ## 1. Ready for Steam
 
+> **Progress.** Phases 1 and 2 of §3 are in: the platform seam, the bundled font and the
+> cheated flag on the game side, and the Electron shell in `desktop/` (see its README). The
+> Linux build is packaged and tested headless; Windows is configured but not yet built.
+> Steamworks is wired against Valve's test app id (480) until Hirsel has its own.
+
 ### 1.1 Desktop wrapper
 
 **Electron + [`steamworks.js`](https://github.com/ceifa/steamworks.js).** Tauri builds are
 far smaller, but Steamworks support there is thinner, and the game is 165 KB of JS — the
 Electron runtime's size is the cost of the mature path, not a problem to solve.
 
-- [ ] `electron/main.ts`: one `BrowserWindow`, loads `dist/index.html` (Vite already builds
+- [x] `desktop/src/main.ts`: one `BrowserWindow`, loads `dist/index.html` (Vite already builds
       with `base: "./"`, so relative paths work from disk)
-- [ ] `electron/preload.ts`: exposes a narrow `window.hirselPlatform` bridge — saves,
+- [x] `desktop/src/preload.ts`: exposes a narrow `window.hirselPlatform` bridge — saves,
       achievements, quit, fullscreen. `contextIsolation: true`, no `nodeIntegration`
-- [ ] Packaging with `electron-builder` for **Windows x64** and **Linux x64**
+- [x] Packaging with `electron-builder` for **Windows x64** and **Linux x64**
       (the Steam Deck runs the Linux build, or the Windows one under Proton); macOS is optional
       and costs a notarisation account
-- [ ] Do not register the service worker under Electron (`public/sw.js` exists to cache a
+- [x] Do not register the service worker under Electron (`public/sw.js` exists to cache a
       web page; on disk it only gets in the way), and drop the manifest's
       `orientation: portrait`
-- [ ] **Bundle the font.** `styles.css` asks for DejaVu Sans Mono, which Windows does not
+- [x] **Bundle the font.** `styles.css` asks for DejaVu Sans Mono, which Windows does not
       have, so every Windows player currently sees Consolas. DejaVu's licence permits
       shipping it; add it as an `@font-face` from `public/`. This one belongs on `main` —
       the web build has the same problem
@@ -76,26 +81,26 @@ export interface Platform {
 }
 ```
 
-- [ ] Web implementation wraps `localStorage` exactly as now, keeping the swallow-errors
+- [x] Web implementation wraps `localStorage` exactly as now, keeping the swallow-errors
       behaviour the README warns about
-- [ ] Steam implementation (Steam branch only) writes JSON files under
+- [x] Steam implementation (Steam branch only) writes JSON files under
       `app.getPath("userData")`, synchronously through the preload bridge so the existing
       call sites do not become async
-- [ ] `test/setup.ts` keeps working — the web platform is what the tests run against
+- [x] `test/setup.ts` keeps working — the web platform is what the tests run against
 
 **Done when:** `main` has no direct `localStorage` call outside `src/platform/`, and all
 tests still pass.
 
 ### 1.3 Saves and Steam Cloud
 
-- [ ] File saves as above: `save.json`, `settings.json`, `achievements.json`
-- [ ] Write atomically (write to `.tmp`, then rename) — a crash mid-write must not eat a run
-- [ ] **Steam Auto-Cloud** in the Steamworks partner site, rooted at the userData folder for
+- [x] File saves as above: `save.json`, `settings.json`, `achievements.json`
+- [x] Write atomically (write to `.tmp`, then rename) — a crash mid-write must not eat a run
+- [x] **Steam Auto-Cloud** in the Steamworks partner site, rooted at the userData folder for
       each OS (`WinAppDataRoaming`, `LinuxXdgDataHome`). No code needed beyond saving to a
       stable path
-- [ ] Settings → Export/Import stays; it becomes a backup rather than the only way to move
+- [x] Settings → Export/Import stays; it becomes a backup rather than the only way to move
       a run
-- [ ] Autosave still writes at the end of a night only (design invariant)
+- [x] Autosave still writes at the end of a night only (design invariant)
 
 ### 1.4 Steam achievements
 
@@ -104,17 +109,17 @@ four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 
 - [ ] Register all 20 in Steamworks with the same ids; hidden flag on the four secret ones,
       with their existing `hint` as the post-unlock description
-- [ ] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
-- [ ] On start-up, re-send every locally earned id — covers achievements earned offline
+- [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
+- [x] On start-up, re-send every locally earned id — covers achievements earned offline
       or before Steam was running
 - [ ] **64×64 icons for each, earned and unearned** (40 images). Pixel art, integer-scaled
-- [ ] **Cheated runs earn nothing** (lands on `main`). Today `SILLER` (+£500) and `1680`
+- [x] **Cheated runs earn nothing** (lands on `main`). Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
       changes the run is used, and skip achievement checks while it is true. Show it on
       the end screen so it is never a surprise. `RETRO`, `TOD` and other purely cosmetic
       codes should not set it
-- [ ] Consider whether `ZEN` (unlimited taps) and `SKELP` (double pace) count: `ZEN` should,
+- [x] Consider whether `ZEN` (unlimited taps) and `SKELP` (double pace) count: `ZEN` should,
       `SKELP` should not
 
 ### 1.5 Input — the largest piece of engineering
@@ -152,9 +157,9 @@ keyboard alone.
 
 ### 1.6 Desktop basics
 
-- [ ] **Quit to desktop** in Settings and on the title screen (Steam build only — the web
+- [x] **Quit to desktop** in Settings and on the title screen (Steam build only — the web
       build has no Quit)
-- [ ] Fullscreen / windowed toggle; remember window size and position
+- [x] Fullscreen / windowed toggle; remember window size and position
 - [ ] Pause the scene clock and duck audio when the window loses focus
 - [ ] **Retro interface:** hide it in the Steam build (keep the `RETRO` code working if you
       like). A second whole interface doubles the controller and Deck QA surface for a

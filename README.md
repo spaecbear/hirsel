@@ -32,6 +32,12 @@ moving to 5174 and showing you somebody else's app.
 Consequence worth knowing: saves live in `localStorage`, so a run started on a different port
 won't appear on this one. Settings → Export file moves a run between origins.
 
+## The Steam build
+
+`desktop/` wraps the web build in Electron with Steamworks — achievements, the overlay and
+cloud saves. It has its own `package.json`, so the web build and Vercel never install
+Electron. See `desktop/README.md`, and `prototype/steam-plan.md` for the whole plan.
+
 ## Deploying to Vercel
 
 It is a static Vite build with no server side. Import the repo in Vercel and it will detect

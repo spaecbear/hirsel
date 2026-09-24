@@ -1,0 +1,56 @@
+{
+  "name": "hirsel-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hirsel for Steam: the web build wrapped in Electron, with Steamworks.",
+  "main": "out/main.js",
+  "scripts": {
+    "build:web": "npm --prefix .. run build",
+    "build:shell": "tsc -p tsconfig.json",
+    "stage": "node scripts/stage-web.mjs",
+    "build": "npm run build:web && npm run stage && npm run build:shell",
+    "start": "npm run build && electron .",
+    "package": "npm run build && electron-builder --dir",
+    "package:linux": "npm run build && electron-builder --linux dir",
+    "package:win": "npm run build && electron-builder --win dir",
+    "achievements": "node scripts/achievements.mjs --md",
+    "test": "npm run build:shell && node --test test/*.mjs"
+  },
+  "dependencies": {
+    "steamworks.js": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.0.0",
+    "typescript": "^5.6.3"
+  },
+  "build": {
+    "appId": "com.spaecbear.hirsel",
+    "productName": "Hirsel",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**",
+      "web/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/steamworks.js/**"
+    ],
+    "icon": "../public/icon-512.png",
+    "linux": {
+      "target": "dir",
+      "category": "Game",
+      "executableName": "hirsel"
+    },
+    "win": {
+      "target": "dir"
+    },
+    "mac": {
+      "target": "dir",
+      "category": "public.app-category.simulation-games"
+    }
+  }
+}
