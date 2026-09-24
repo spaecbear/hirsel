@@ -19,6 +19,7 @@ npm run dev
 | `npm run preview` | serve the built output |
 | `npm test` | Vitest over the simulation |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run build:demo` | the demo: the first 14 days, then a wishlist card, to `dist-demo/` (see `src/demo.ts`) |
 | `npx vite-node tools/balance.ts [runs] [days]` | seeded headless runs on one policy, per scale — measure before and after a balance change |
 | `node scripts/make-icons.mjs` | regenerate the PWA PNG icons from the pixel design |
 

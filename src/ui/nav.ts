@@ -95,6 +95,7 @@ export class Nav {
     if (isOn("credits")) return { kind: "credits", root: byId("credits") };
     if (isOn("settings")) return { kind: "settings", root: byId("settings") };
     if (isOn("over")) return { kind: "over", root: byId("over") };
+    if (isOn("demo-end")) return { kind: "over", root: byId("demo-end") };
     if (isOn("title")) return { kind: "title", root: byId("title") };
     if (isOn("event")) return { kind: "event", root: byId("event") };
     if (isOn("sheet")) return { kind: "sheet", root: byId("sheet") };
@@ -139,7 +140,7 @@ export class Nav {
     // in order of preference: the first that is there and showing wins
     const prefer: Partial<Record<LayerKind, string[]>> = {
       title: ["#title-continue", "#title-new"],
-      over: ["#over-stay", "#over-again"],
+      over: ["#over-stay", "#over-again", "#demo-wishlist"],
       tutorial: [".tut-go"],
       credits: ["#credits-close"],
       event: [".event-choices button:not([disabled])"],

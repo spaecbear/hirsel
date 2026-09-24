@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:demo": "tsc --noEmit && vite build --mode demo --outDir dist-demo"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

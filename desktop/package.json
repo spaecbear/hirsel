@@ -14,7 +14,10 @@
     "package:linux": "npm run build && electron-builder --linux dir",
     "package:win": "npm run build && electron-builder --win dir",
     "achievements": "node scripts/achievements.mjs --md",
-    "test": "npm run build:shell && node --test test/*.mjs"
+    "test": "npm run build:shell && node --test test/*.mjs",
+    "build:demo": "npm --prefix .. run build:demo && node scripts/stage-web.mjs --demo && npm run build:shell",
+    "package:demo:linux": "npm run build:demo && electron-builder --linux dir -c.productName=\"Hirsel Demo\" -c.appId=com.spaecbear.hirsel.demo -c.directories.output=release-demo",
+    "package:demo:win": "npm run build:demo && electron-builder --win dir -c.productName=\"Hirsel Demo\" -c.appId=com.spaecbear.hirsel.demo -c.directories.output=release-demo"
   },
   "dependencies": {
     "steamworks.js": "^0.4.0"

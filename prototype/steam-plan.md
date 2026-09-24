@@ -174,20 +174,22 @@ keyboard alone.
 - [x] **Quit to desktop** in Settings and on the title screen (Steam build only — the web
       build has no Quit)
 - [x] Fullscreen / windowed toggle; remember window size and position
-- [ ] Pause the scene clock and duck audio when the window loses focus
-- [ ] **Retro interface:** hide it in the Steam build (keep the `RETRO` code working if you
-      like). A second whole interface doubles the controller and Deck QA surface for a
-      feature few Steam players will look for
+- [x] Mute when the window loses focus (the desktop build only). Nothing else needs
+      pausing: the day only moves when the player moves it
+- [x] **Retro interface:** hidden from Settings in the Steam build; the `RETRO` code still
+      works there
 
 ### 1.7 The web version and a demo
 
 Decide what happens to the free Vercel build once there is a paid one. Recommended:
 
-- [ ] **Turn it into the demo**: the same game capped at, say, the end of day 10, with a
-      "wishlist on Steam" link on the cap screen. Implement as a build flag on `steam`
-      (`VITE_DEMO_DAYS=10`) so the demo is never a third fork
-- [ ] Ship the same demo on Steam as a separate demo app — a Steam demo, especially during
-      **Steam Next Fest**, is one of the strongest sources of wishlists a small game gets
+- [x] **The demo** is a build flag, not a fork: `npm run build:demo` (`.env.demo`,
+      `VITE_DEMO_DAYS=14`) stops after a fortnight on a card with a wishlist button. Set
+      `VITE_STORE_URL` once the store page exists. Pointing Vercel at it is still to decide
+- [x] The Steam demo: `desktop/` packages it as its own app (`npm run package:demo:*`), with
+      its own app id constant and its own saves folder. Needs a demo app in Steamworks
+- [x] **Builds in CI**: `.github/workflows/builds.yml` tests, then packages the game and the
+      demo for Windows and Linux on every push to `steam`, as downloadable artifacts
 
 ### 1.8 Store and business
 

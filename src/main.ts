@@ -33,6 +33,7 @@ import { TutorialUi } from "./ui/tutorial-ui";
 import { buildSettings } from "./ui/settings-panel";
 import { $, button, el, toast } from "./ui/dom";
 import { eventDef } from "./sim/events";
+import { DEMO_DAYS, IS_DEMO, STORE_URL, demoOver } from "./demo";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
@@ -117,8 +118,40 @@ function render() {
    * mauling that is still playing out.
    */
   if (game.state.over && !animator.busy) showEnd();
+  if (demoOver(game.state.day) && !game.state.over && !animator.busy) showDemoEnd();
   tutorial.refresh();
   updateEvent();
+}
+
+/**
+ * The demo's last card. Comes up once the fortnight has been slept through,
+ * and again on continuing a demo save that is past it — the demo does not go
+ * on, it points at the game that does.
+ */
+function showDemoEnd() {
+  const box = $("demo-end");
+  if (box.classList.contains("on") || $("title").classList.contains("on")) return;
+  world.close();
+  const g = game.state;
+  $("demo-body").textContent =
+    `${DEMO_DAYS} days on the hill, ${g.flock.length} beasts on it and £${g.money} in the purse. ` +
+    "The full game goes on from here: the seasons and the winter, lambing, the dogs growing old, the dealer and the show " +
+    "and your neighbour over the burn — and the croft, and her.";
+  box.classList.add("on");
+}
+$("demo-wishlist").addEventListener("click", () => {
+  // the web opens a tab; the desktop build sends any https link to the browser
+  window.open(STORE_URL, "_blank", "noopener");
+});
+$("demo-again").addEventListener("click", () => {
+  $("demo-end").classList.remove("on");
+  clearSave(); // a finished demo is not something to go back to
+  showTitle();
+});
+if (IS_DEMO) {
+  $("tagline").textContent = `a hill, a flock, and a life to build on it — the demo`;
+  const sub = document.querySelector(".title-sub");
+  if (sub) sub.textContent = `a hill, a flock, and a life to build on it — the first ${DEMO_DAYS} days`;
 }
 
 /**
@@ -131,7 +164,8 @@ const eventEl = $("event");
 let eventKey = "";
 function updateEvent() {
   const g = game.state;
-  const show = !!g.event && !g.over && !animator.busy && !rolling;
+  // nothing comes to the door of a finished demo
+  const show = !!g.event && !g.over && !animator.busy && !rolling && !demoOver(g.day);
   const choices = show ? game.eventChoices() : [];
   const key = show ? `${g.event!.id}:${g.event!.day}:${choices.map((c) => (c.ok ? 1 : 0)).join("")}:${settings.inverse}` : "";
   if (key === eventKey) return;
@@ -530,6 +564,18 @@ for (const evt of ["pointerdown", "keydown", "touchstart"]) {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) audio.resume();
 });
+
+/*
+ * On the desktop the sound goes when the window does. A browser tab is left
+ * playing because that is what tabs do; a game alt-tabbed away from is
+ * expected to go quiet, and a Deck suspended mid-air to stop. There is
+ * nothing else to pause — the day only moves when the player moves it, and
+ * an animation left running behind the window just finishes.
+ */
+if (platform.kind === "steam") {
+  addEventListener("blur", () => audio.setLevels({ muted: true }));
+  addEventListener("focus", () => audio.setLevels({ muted: settings.muted }));
+}
 
 /* ---------- night bookkeeping the UI owns ---------- */
 let lastDay = 1;

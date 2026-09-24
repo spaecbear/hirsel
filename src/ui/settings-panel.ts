@@ -47,11 +47,20 @@ export function buildSettings(api: SettingsApi) {
     const look = group("Look");
     // the interface switch is a real preference now, not a hidden extra:
     // "retro" is the whole panelled build, which some players will prefer
-    look.appendChild(
-      seg("Interface", [["Glen", s.ui === "glen"], ["Retro", s.ui === "retro"]], (i) =>
-        api.apply({ ui: i === 0 ? "glen" : "retro" }),
-      ),
-    );
+    /*
+     * Not on Steam. Retro is the panelled build the balance was first done
+     * in, kept whole for the web; on a Deck it is a second interface to hold
+     * to the controller standard for very little gain. The RETRO code still
+     * works there, for anyone who goes looking.
+     */
+    const steam = platform.kind === "steam";
+    if (!steam) {
+      look.appendChild(
+        seg("Interface", [["Glen", s.ui === "glen"], ["Retro", s.ui === "retro"]], (i) =>
+          api.apply({ ui: i === 0 ? "glen" : "retro" }),
+        ),
+      );
+    }
     look.appendChild(
       seg(
         "Motion",
@@ -70,8 +79,10 @@ export function buildSettings(api: SettingsApi) {
       el(
         "div",
         { class: "note" },
-        "Glen is the full-screen hill: tap the things in it to work them. Retro is the older " +
-          "panelled build, kept as it was. Reduced motion collapses every animation to instant.",
+        (steam
+          ? ""
+          : "Glen is the full-screen hill: tap the things in it to work them. Retro is the older panelled build, kept as it was. ") +
+          "Reduced motion collapses every animation to instant.",
       ),
     );
     /*

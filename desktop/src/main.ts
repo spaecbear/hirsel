@@ -20,17 +20,29 @@ import { FileStore, steamAchievementName } from "./store";
  * launches the game.
  */
 const STEAM_APP_ID = 480;
+/** the demo is its own app on Steam, with its own id. 480 until it has one */
+const STEAM_DEMO_APP_ID = 480;
+
+/** where the staged web build lives: next to out/ in dev, inside the app when packaged */
+const WEB_DIR = join(__dirname, "..", "web");
+
+/** stage-web writes which build it staged: the full game or the demo */
+const IS_DEMO = (() => {
+  try {
+    return Boolean(JSON.parse(readFileSync(join(WEB_DIR, "build.json"), "utf8")).demo);
+  } catch {
+    return false;
+  }
+})();
+const OWN_APP_ID = IS_DEMO ? STEAM_DEMO_APP_ID : STEAM_APP_ID;
+const appId = Number(process.env.SteamAppId) || OWN_APP_ID;
 
 /*
  * The name decides the user-data folder, which is where saves live and what
  * Steam Auto-Cloud is pointed at. Pinned here so a development run and a
- * packaged one use the same folder.
+ * packaged one use the same folder — and the demo keeps its saves apart.
  */
-app.setName("Hirsel");
-const appId = Number(process.env.SteamAppId) || STEAM_APP_ID;
-
-/** where the staged web build lives: next to out/ in dev, inside the app when packaged */
-const WEB_DIR = join(__dirname, "..", "web");
+app.setName(IS_DEMO ? "Hirsel Demo" : "Hirsel");
 
 /* ---------- Steam ---------- */
 
@@ -44,7 +56,7 @@ try {
    * through Steam is relaunched through Steam, which is what makes the overlay,
    * achievements and cloud work. Skipped for the test id and in development.
    */
-  if (app.isPackaged && STEAM_APP_ID !== 480 && steamworks.restartAppIfNecessary(STEAM_APP_ID)) {
+  if (app.isPackaged && OWN_APP_ID !== 480 && steamworks.restartAppIfNecessary(OWN_APP_ID)) {
     app.exit(0);
   }
   steam = steamworks.init(appId);

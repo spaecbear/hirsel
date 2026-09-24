@@ -14,8 +14,23 @@ npm start               # builds the web game, stages it, compiles the shell, op
 npm test                # the file store and achievement names
 npm run package:linux   # release/linux-unpacked/
 npm run package:win     # release/win-unpacked/ (build on Windows, or with Wine)
+npm run package:demo:linux   # the demo, into release-demo/
+npm run package:demo:win
 npm run achievements    # the table below, from the game's own list
 ```
+
+**Every push to `steam` builds all four** — the game and the demo, Windows and Linux — in
+GitHub Actions (`.github/workflows/builds.yml`), after the tests pass. Download them from the
+run's **Artifacts**; each is the unpacked folder Steam's upload tool takes as a depot. They
+are unsigned: there is no code-signing certificate yet, and Steam does not need one.
+
+### The demo
+
+A Steam demo is its own app, with its own id. `stage-web --demo` stages the demo web build
+(`npm run build:demo` at the root: the first 14 days, then a wishlist card) and writes
+`web/build.json`, which is how the shell knows. The demo uses `STEAM_DEMO_APP_ID`, names its
+user-data folder "Hirsel Demo" so its saves never meet the full game's, and packages as
+"Hirsel Demo". Set up Auto-Cloud for it the same way, with `Hirsel Demo/saves`.
 
 Steam does not need to be running. Without it the shell logs one warning and the game plays
 exactly the same; achievements just stay in the game's own list. **F11** toggles fullscreen,
