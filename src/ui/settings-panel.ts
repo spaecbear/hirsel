@@ -7,6 +7,7 @@ import type { Settings } from "../sim/settings";
 import { DIFFICULTY } from "../sim/config";
 import type { Difficulty } from "../sim/types";
 import { platform } from "../platform";
+import { QUICK_KEYS } from "./controls";
 
 export interface SettingsApi {
   settings: Settings;
@@ -182,6 +183,28 @@ export function buildSettings(api: SettingsApi) {
       }
       box.appendChild(win);
     }
+
+    /* ---- the keys: moving, choosing, and the quick ones ---- */
+    const keys = group("Keys");
+    keys.id = "set-keys";
+    // focusable, so "?" can land the selection on the list itself rather than the top of Settings
+    keys.tabIndex = 0;
+    const keyGrid = el("div", { class: "gloss keys" });
+    const keyRow = (k: string, what: string) => keyGrid.appendChild(el("div", {}, `<b><kbd>${k}</kbd></b><span>${what}</span>`));
+    keyRow("Arrows / WASD", "Move the selection — on the hill, between the things you can tap");
+    keyRow("Enter / Space", "Choose it");
+    keyRow("Esc", "Back out; on the hill, these settings");
+    keyRow("F", "The sky: forecast, the season, the barn");
+    for (const q of QUICK_KEYS) keyRow(q.key, q.what);
+    keys.appendChild(keyGrid);
+    keys.appendChild(
+      el(
+        "div",
+        { class: "note" },
+        "The quick keys do the thing outright, and only out on the hill. Anything they cannot do today, they say why. A controller: A chooses, B backs out, Start is this menu, View the sky, the right stick walks.",
+      ),
+    );
+    box.appendChild(keys);
 
     /* ---- buffs & status: what the HUD's terse "tended (3d)" actually means ---- */
     const gloss = group("Buffs & status");

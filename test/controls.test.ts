@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { keyIntent, PadReader, REPEAT_EVERY, REPEAT_FIRST, stickDir, type PadLike } from "../src/ui/controls";
+import { keyFor, keyIntent, PadReader, QUICK_KEYS, quickKey, REPEAT_EVERY, REPEAT_FIRST, stickDir, type PadLike } from "../src/ui/controls";
+import { ACTIONS } from "../src/sim/game";
 import { nearestInDirection, type Box } from "../src/ui/spatial";
 
 function pad(pressed: number[] = [], axes: number[] = [0, 0, 0, 0]): PadLike {
@@ -93,5 +94,40 @@ describe("picking the next thing in a direction", () => {
     expect(nearestInDirection(from, grid, "down")?.id).toBe("s");
     expect(nearestInDirection(from, grid, "left")?.id).toBe("w");
     expect(nearestInDirection(from, grid, "right")?.id).toBe("e");
+  });
+});
+
+describe("quick keys", () => {
+  it("never take a key the movement, choosing or the sky already use", () => {
+    for (const q of QUICK_KEYS) {
+      expect(keyIntent(q.key), q.key).toBeNull();
+      expect(keyIntent(q.key.toLowerCase()), q.key).toBeNull();
+    }
+  });
+
+  it("are one key each, and answer in either case", () => {
+    const keys = QUICK_KEYS.map((q) => q.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(quickKey("g")).toEqual({ act: "gather" });
+    expect(quickKey("G")).toEqual({ act: "gather" });
+    expect(quickKey("2")).toEqual({ move: 1 });
+    expect(quickKey("z")).toEqual({ go: "sleep" });
+    expect(quickKey("?")).toEqual({ go: "keys" });
+    expect(quickKey("q")).toBeNull();
+  });
+
+  it("only name actions the game has", () => {
+    for (const q of QUICK_KEYS) {
+      if ("act" in q.quick) {
+        const act = q.quick.act;
+        expect(ACTIONS.some((a) => a.id === act), act).toBe(true);
+      }
+    }
+  });
+
+  it("can be looked up for printing beside a row", () => {
+    expect(keyFor((q) => "act" in q && q.act === "shear")).toBe("C");
+    expect(keyFor((q) => "move" in q && q.move === 2)).toBe("3");
+    expect(keyFor((q) => "act" in q && q.act === "ask")).toBeNull();
   });
 });

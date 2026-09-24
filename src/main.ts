@@ -663,6 +663,17 @@ const nav = new Nav({
   },
   closeSettings,
   closeCredits,
+  showKeys: () => {
+    firstGesture();
+    const already = $("settings").classList.contains("on");
+    openSettings();
+    const keys = document.getElementById("set-keys");
+    if (!keys) return;
+    if (already) {
+      keys.focus({ preventScroll: true });
+      keys.scrollIntoView({ block: "start" });
+    } else keys.dataset.land = "1"; // nav lands the selection on it as Settings opens
+  },
   spotlight: () => (tutorial.pointingAtBed ? "bed" : tutorial.spotlight),
   // the Deck has no keyboard: a text field chosen with the pad asks Steam for its on-screen one
   textInput: platform.textInput
@@ -707,6 +718,7 @@ function updatePrompts() {
     parts.push(b(move, "arrows", "look"), b("A", "Enter", "choose"));
     parts.push(world.interior ? b("B", "Esc", "outside") : b("B", "Esc", "menu"));
     if (!world.interior) parts.push(b("View", "F", "the sky"), pad ? b("R", "", "walk") : "");
+    if (!pad) parts.push(b("", "?", "quick keys"));
   } else {
     parts.push(b(move, "arrows", "move"), b("A", "Enter", "choose"));
     if (L === "sheet" || L === "settings" || L === "credits") parts.push(b("B", "Esc", "back"));

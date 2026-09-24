@@ -13,7 +13,8 @@
  * is used again.
  */
 import { Controls } from "./controls-host";
-import type { Device, Dir, Intent } from "./controls";
+import type { Device, Dir, Intent, Quick } from "./controls";
+import { toast } from "./dom";
 import { nearestInDirection, type Box } from "./spatial";
 import type { WorldUi } from "./world-ui";
 
@@ -30,6 +31,8 @@ export interface NavHooks {
   openSettings: () => void;
   closeSettings: () => void;
   closeCredits: () => void;
+  /** Settings, opened at the list of keys */
+  showKeys: () => void;
   /** the walkthrough's target, which is where the cursor should start */
   spotlight: () => string | null;
   /** a text field was chosen with the pad: ask for the words some other way (the Deck's keyboard) */
@@ -77,6 +80,7 @@ export class Nav {
   constructor(private hooks: NavHooks) {
     this.controls.onIntent = (i, native) => this.handle(i, native);
     this.controls.onDevice = (d) => this.deviceChanged(d);
+    this.controls.onQuick = (q) => this.quick(q);
     this.controls.onWalk = (x, y, now) => {
       if (this.layer().kind === "hill") this.hooks.world.stride(x, y, now);
     };
@@ -106,6 +110,7 @@ export class Nav {
     const key = `${L.kind}:${this.hooks.world.interior}`;
     const using = this.device !== "pointer";
     this.hooks.world.focusSheets = using;
+    this.hooks.world.showKeys = this.device === "keys";
     if (key !== this.lastLayer) {
       this.lastLayer = key;
       if (using) this.landFocus(L);
@@ -139,6 +144,14 @@ export class Nav {
       sheet: [".sheet-body button:not([disabled]):not([data-no-landing])", ".sheet-x"],
     };
     let pick: HTMLElement | null = null;
+    // something asked to be landed on (the list of keys, opened by "?"): it wins, once
+    const asked = L.root.querySelector<HTMLElement>("[data-land]");
+    if (asked) {
+      delete asked.dataset.land;
+      asked.focus({ preventScroll: true });
+      asked.scrollIntoView({ block: "start" });
+      return;
+    }
     for (const sel of prefer[L.kind] ?? []) {
       pick = [...L.root.querySelectorAll<HTMLElement>(sel)].find((e) => visible(e) && !(e as HTMLButtonElement).disabled) ?? null;
       if (pick) break;
@@ -187,6 +200,24 @@ export class Nav {
       return;
     }
     this.move(root, i, native);
+  }
+
+  /**
+   * A quick key does its thing on the hill, or from over a sheet (which it
+   * closes), or in the retro panels. Anywhere else — Settings, the title, the
+   * end of a run — the letters mean nothing, so a stray key cannot spend a
+   * tap from behind a menu.
+   */
+  private quick(q: Quick) {
+    const L = this.layer().kind;
+    if ("go" in q && q.go === "keys") {
+      if (L === "hill" || L === "sheet" || L === "retro" || L === "title") this.hooks.showKeys();
+      return;
+    }
+    if (L !== "hill" && L !== "sheet" && L !== "retro") return;
+    if (L === "retro" && "go" in q && (q.go === "house" || q.go === "cart")) return;
+    const why = this.hooks.world.quick(q);
+    if (why) toast(why);
   }
 
   private hill(i: Intent) {

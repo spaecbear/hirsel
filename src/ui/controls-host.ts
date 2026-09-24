@@ -2,7 +2,7 @@
  * The listening half of ui/controls.ts: keys from the window, the pad polled
  * once a frame, and the pointer only to notice it is back in use.
  */
-import { keyIntent, PadReader, type Device, type Intent } from "./controls";
+import { keyIntent, PadReader, quickKey, type Device, type Intent, type Quick } from "./controls";
 
 const EDITABLE = (t: EventTarget | null): t is HTMLInputElement | HTMLTextAreaElement =>
   (t instanceof HTMLInputElement && (t.type === "text" || t.type === "search")) || t instanceof HTMLTextAreaElement;
@@ -13,6 +13,8 @@ export class Controls {
   onDevice: (d: Device) => void = () => {};
   /** the right stick, every frame it is pushed */
   onWalk: (x: number, y: number, now: number) => void = () => {};
+  /** a quick key: a thing done outright */
+  onQuick: (q: Quick) => void = () => {};
   private pad = new PadReader();
 
   constructor() {
@@ -55,7 +57,14 @@ export class Controls {
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
     }
     const intent = keyIntent(e.key);
-    if (!intent) return;
+    if (!intent) {
+      const q = quickKey(e.key);
+      if (!q || e.repeat) return;
+      this.use("keys");
+      e.preventDefault();
+      this.onQuick(q);
+      return;
+    }
     if (e.repeat && (intent === "confirm" || intent === "back")) return;
     this.use("keys");
 

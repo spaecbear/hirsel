@@ -11,6 +11,8 @@
  * was asked and which device asked it.
  */
 
+import type { ActionId } from "../sim/types";
+
 export type Dir = "up" | "down" | "left" | "right";
 export type Intent = Dir | "confirm" | "back" | "menu" | "sky";
 /** which of the three ways in was used last — decides whether a focus ring shows */
@@ -141,4 +143,49 @@ export class PadReader {
   static active(pad: PadLike): boolean {
     return pad.buttons.some((b) => b.pressed) || pad.axes.some((a) => Math.abs(a) > DEADZONE);
   }
+}
+
+/* ---------- quick keys ---------- */
+
+
+/** a single key that does a thing outright, rather than moving a selection to it */
+export type Quick = { act: ActionId } | { move: number } | { go: "sleep" | "house" | "cart" | "keys" };
+
+/**
+ * The quick keys, for a player who has learned the game and would rather not
+ * walk the cursor to the flock every morning. None of them overlaps the
+ * movement keys (WASD, the arrows) or F for the sky, and each is the first
+ * letter of the thing where it can be: G gather, T tend, M market, P pipe,
+ * I inn, H hay, B build. Where that letter was taken it is the next honest
+ * one — C for the clip (S is down), U for mUck, N for a tuNe, Z for sleep,
+ * E to go in or out, K for the cart.
+ */
+export const QUICK_KEYS: { key: string; quick: Quick; what: string }[] = [
+  { key: "G", quick: { act: "gather" }, what: "Gather the flock" },
+  { key: "C", quick: { act: "shear" }, what: "Shear — the clip" },
+  { key: "T", quick: { act: "tend" }, what: "Tend the flock" },
+  { key: "M", quick: { act: "market" }, what: "Sell the wool" },
+  { key: "U", quick: { act: "muck" }, what: "Muck the pasture" },
+  { key: "H", quick: { act: "hay" }, what: "Cut hay" },
+  { key: "B", quick: { act: "build" }, what: "Work on the croft" },
+  { key: "P", quick: { act: "pipe" }, what: "Smoke a pipe" },
+  { key: "N", quick: { act: "music" }, what: "Strike up a tune" },
+  { key: "I", quick: { act: "pub" }, what: "A pint at the inn" },
+  { key: "Z", quick: { go: "sleep" }, what: "Sleep the night" },
+  { key: "1", quick: { move: 0 }, what: "Move them to the Low Field" },
+  { key: "2", quick: { move: 1 }, what: "Move them to the Hill Slope" },
+  { key: "3", quick: { move: 2 }, what: "Move them to the High Corrie" },
+  { key: "E", quick: { go: "house" }, what: "Into the house, or back out" },
+  { key: "K", quick: { go: "cart" }, what: "The cart" },
+  { key: "?", quick: { go: "keys" }, what: "This list" },
+];
+
+export function quickKey(key: string): Quick | null {
+  const k = key.length === 1 ? key.toUpperCase() : key;
+  return QUICK_KEYS.find((q) => q.key === k)?.quick ?? null;
+}
+
+/** the key for an action, to print beside it on a sheet */
+export function keyFor(test: (q: Quick) => boolean): string | null {
+  return QUICK_KEYS.find((q) => test(q.quick))?.key ?? null;
 }

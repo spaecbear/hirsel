@@ -541,6 +541,17 @@ played with nothing but Enter.
 The pointer is never switched off. The last device used decides whether the focus ring and
 the prompts along the bottom show; a click or a touch hides them again.
 
+**Quick keys** do a thing outright, for a player who has learned the game: G gather, C shear
+(the clip — S is down), T tend, M sell the wool, U muck, H cut hay, B work on the croft, P pipe,
+N a tune, I the inn, Z sleep, 1–3 move them to a pasture, E in or out of the house, K the cart,
+and ? opens Settings at the list of them (`QUICK_KEYS` in `ui/controls.ts`, pinned by a test
+never to take a movement key). They pass through `WorldUi.quick`, which checks what a tap on
+the row would — the walkthrough's lock on the thing it is teaching, the day's taps, whether
+the action can be done at all — and says why when it cannot. They work on the hill, over a
+sheet (which they close) and in the retro panels; behind Settings, the title or the end of a
+run the letters mean nothing, so a stray key cannot spend a tap. While the keyboard is in use
+each sheet row shows its key.
+
 The one text field (the cheat codes) asks Steam for its on-screen keyboard when chosen with a
 pad on the desktop build (`platform.textInput`), and falls back to the field itself.
 

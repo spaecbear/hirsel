@@ -1575,3 +1575,22 @@ body.input-pad * {
   padding: 0 4px;
   margin-right: 6px;
 }
+/* a quick key's badge beside a sheet row, and in the list of keys */
+.act kbd,
+.gloss.keys kbd {
+  font: inherit;
+  font-size: 10px;
+  color: var(--gorse);
+  border: 1px solid var(--gorse);
+  padding: 0 4px;
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+.gloss.keys kbd {
+  margin-left: 0;
+}
+/* the prompts sit where a toast would: lift the toast clear of them while they show */
+body.input-keys .toast,
+body.input-pad .toast {
+  bottom: calc(52px + env(safe-area-inset-bottom));
+}

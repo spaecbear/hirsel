@@ -42,7 +42,7 @@ import {
 } from "../sim/rules";
 import { boundsOf, hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
 import { nearestInDirection, type Box } from "./spatial";
-import type { Dir } from "./controls";
+import { keyFor, type Dir, type Quick } from "./controls";
 import { Walk } from "./walk";
 import type { Screen } from "../render/screen";
 import type { Animator } from "../render/animator";
@@ -72,6 +72,21 @@ interface Row {
   noLanding?: boolean;
   onPick: () => void;
 }
+
+/** which target on the hill an action belongs to — what the walkthrough's lock is asked about */
+const ACTION_HOME: Partial<Record<ActionId, HotspotId>> = {
+  gather: "flock",
+  shear: "flock",
+  tend: "flock",
+  muck: "ground",
+  hay: "ground",
+  market: "cart",
+  build: "croft",
+  pipe: "shepherd",
+  music: "shepherd",
+  pub: "shepherd",
+  ask: "shepherd",
+};
 
 export class WorldUi {
   /** what the pointer is over, for the hint line */
@@ -422,6 +437,86 @@ export class WorldUi {
   focusId: HotspotId | null = null;
   /** a sheet opened by keys or a pad takes focus, so the selection lands in it */
   focusSheets = false;
+  /** print each row's quick key beside it — only while the keyboard is what is in use */
+  showKeys = false;
+
+  /** a key's badge for a sheet row, or nothing */
+  private kbd(test: (q: Quick) => boolean): string {
+    if (!this.showKeys) return "";
+    const k = keyFor(test);
+    return k ? ` <kbd>${k}</kbd>` : "";
+  }
+
+  /**
+   * A quick key. Everything a tap on the row would check is checked here too
+   * — the walkthrough's lock on the thing it is teaching, a day's taps, the
+   * weather — and anything refused says why rather than nothing happening.
+   * Returns that reason, for the caller to show, or null.
+   */
+  quick(q: Quick): string | null {
+    const g = this.game.state;
+    if (g.over) return null;
+    if (this.busy) return "Not while that is playing out.";
+    const lex = this.game.lex;
+
+    if ("act" in q) {
+      const a = ACTIONS.find((x) => x.id === q.act);
+      if (!a) return null;
+      const home = ACTION_HOME[q.act] ?? "shepherd";
+      if (!this.canInteract(home)) {
+        this.onBlocked();
+        return null;
+      }
+      const name = actionName(lex, a.id, owns(g, "fiddle")) || a.name;
+      const cost = this.game.costOf(a);
+      if (!a.can(g)) return `${name}: ${a.desc(g, lex)}`;
+      if (g.taps < cost) return `${name}: no taps left in the day for it.`;
+      this.close();
+      if (q.act === "build") this.interior = false; // the work is outside, where it can be watched
+      this.game.doAction(a.id);
+      if (a.id === "muck") this.onNote("did-muck");
+      if (a.cozy) this.onNote("did-comfort");
+      this.onChange();
+      return null;
+    }
+
+    if ("move" in q) {
+      const p = g.pastures[q.move];
+      if (!p) return null;
+      if (!this.canInteract("hills")) {
+        this.onBlocked();
+        return null;
+      }
+      if (q.move === g.at) return `They are already on the ${p.name}.`;
+      if (g.taps <= 0) return "No taps left in the day to move them.";
+      this.close();
+      this.walk.reset();
+      this.game.moveTo(q.move);
+      this.onChange();
+      return null;
+    }
+
+    switch (q.go) {
+      case "sleep":
+        if (!this.canInteract("bed")) {
+          this.onBlocked();
+          return null;
+        }
+        this.close();
+        this.interior = false;
+        this.game.sleep();
+        return null;
+      case "house":
+        this.activate({ id: this.interior ? "door" : "croft" });
+        return null;
+      case "cart":
+        if (this.interior) this.activate({ id: "door" });
+        this.activate({ id: "cart" });
+        return null;
+      default:
+        return null;
+    }
+  }
 
   /**
    * Where each target on screen is, as a box to navigate between.
@@ -669,7 +764,7 @@ export class WorldUi {
       return {
         // a cost above one has to be on the button: the whole decision is
         // whether a day with three taps in it can afford this
-        label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : cost > 1 ? ` · ${cost} taps` : ""}`,
+        label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : cost > 1 ? ` · ${cost} taps` : ""}${this.kbd((q) => "act" in q && q.act === a.id)}`,
         done,
         detail: a.desc(g, lex),
         disabled: g.taps < cost || !a.can(g),
@@ -718,7 +813,7 @@ export class WorldUi {
   private pastureRows(): Row[] {
     const g = this.game.state;
     return g.pastures.map((p, i) => ({
-      label: `${p.name}${i === g.at ? " · they are here" : ""}`,
+      label: `${p.name}${i === g.at ? " · they are here" : ""}${this.kbd((q) => "move" in q && q.move === i)}`,
       detail: `grass ${Math.round(p.grass)}% · feed ×${p.quality} · fox risk ${Math.round(p.risk * 100)}%`,
       disabled: i === g.at || g.taps <= 0,
       onPick: () => {
@@ -738,7 +833,7 @@ export class WorldUi {
       const build = ACTIONS.find((a) => a.id === "build")!;
       const left = m.work - g.building.done;
       rows.push({
-        label: `${m.id === "ring" ? "Walk down for the ring" : `Work on it · ${g.building.done}/${m.work}`}`,
+        label: `${m.id === "ring" ? "Walk down for the ring" : `Work on it · ${g.building.done}/${m.work}`}${this.kbd((q) => "act" in q && q.act === "build")}`,
         detail: build.desc(g, this.lexicon),
         disabled: g.taps < this.game.costOf(build),
         tone: "gold",
@@ -838,7 +933,7 @@ export class WorldUi {
     const market = ACTIONS.find((a) => a.id === "market")!;
     const cost = this.game.costOf(market);
     rows.push({
-      label: `Sell the ${lex.wool}${cost === 0 ? " · free" : ""}`,
+      label: `Sell the ${lex.wool}${cost === 0 ? " · free" : ""}${this.kbd((q) => "act" in q && q.act === "market")}`,
       detail: market.desc(g, this.lexicon),
       disabled: g.taps < cost || !market.can(g),
       tone: "gold",

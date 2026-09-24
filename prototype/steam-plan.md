@@ -152,8 +152,8 @@ built on the same list.
 - [x] Sheets, Settings, the title, the end screen, the walkthrough card and the credits:
       spatial navigation over their buttons; sliders take left/right; a sheet that is only
       for reading scrolls
-- [x] **Keyboard:** arrows/WASD, Enter/Space, Escape/Backspace, F for the sky. The direct
-      keys (sleep, market) are not built
+- [x] **Keyboard:** arrows/WASD, Enter/Space, Escape/Backspace, F for the sky, and quick
+      keys for every day's action, the pastures, sleep, the house and the cart (? lists them)
 - [x] **Gamepad:** d-pad/left stick move (with repeat), A choose, B back (out of the house;
       the menu on the hill), Start settings, View the sky, right stick walks him
 - [x] Button prompts along the bottom, for keys or pad, saying what does something where
