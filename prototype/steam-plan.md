@@ -12,21 +12,30 @@ never explained, and the sim stays free of the DOM.
 
 ## 0. Branch strategy
 
-The Steam build lives on its own branch. That is the right call for the platform work
-(Electron, Steamworks, file saves), which the web build should never carry. The risk of a
-long-lived branch is drift — two copies of the game that slowly stop being the same game.
-Three rules keep it one game:
+Two games, two branches:
 
-1. **Game content lands on `main` first.** Seasons, lambing, new actions, balance changes,
-   art and audio all go to `main` and are merged *into* the Steam branch. The web build is
-   where they get played first, which is also a free playtest.
-2. **The Steam branch only adds a platform layer.** Anything it changes outside that layer
-   is a smell — ask whether it belongs on `main` behind a flag instead.
-3. **Merge `main` into the Steam branch often** — at least after every feature — rather
-   than once before launch. Merge, never rebase: a merge keeps both histories honest.
+| branch | what it is | where it runs |
+| --- | --- | --- |
+| `main` | **the original Hirsel**, as it was before this plan: the web game | Vercel |
+| `steam` | **the Steam version**: everything in this plan — the desktop shell, and the seasons, breeding and other new content | Steam |
 
-A small seam on `main` makes rule 2 cheap: a `src/platform/` module with a web
-implementation, which the Steam branch swaps for its own. See §1.2.
+`main` is kept as it is. All new work in this document — platform, input and content
+alike — lands on `steam`. The original stays playable on the web, unchanged, rather than
+turning into the Steam game one feature at a time.
+
+What that means in practice:
+
+1. **New work branches from `steam` and merges back into `steam`.** Nothing here goes to
+   `main`.
+2. **A bug in the original game gets fixed on `main` and merged into `steam`** — a plain
+   merge, never a rebase — so both builds carry the fix. The reverse direction does not
+   happen: `steam` never merges into `main`.
+3. **The web build still exists on `steam`.** `npm run dev` there runs the Steam version in
+   a browser, which remains the quickest way to play-test new content. Only `desktop/`
+   needs Electron.
+4. **The demo (§1.7) is cut from `steam`**, not `main`, since it is a taste of the Steam
+   game. Whether the free web version on Vercel keeps serving `main`, switches to the demo,
+   or comes down is §4's open question 8.
 
 ---
 
@@ -55,8 +64,8 @@ Electron runtime's size is the cost of the mature path, not a problem to solve.
       `orientation: portrait`
 - [x] **Bundle the font.** `styles.css` asks for DejaVu Sans Mono, which Windows does not
       have, so every Windows player currently sees Consolas. DejaVu's licence permits
-      shipping it; add it as an `@font-face` from `public/`. This one belongs on `main` —
-      the web build has the same problem
+      shipping it; add it as an `@font-face` from `public/`. The web build on `main` has the
+      same problem; port it there too if the original should look right on Windows
 - [ ] Steam overlay: `steamworks.js` needs `electronEnableSteamOverlay()` and the overlay is
       known to be fiddly under Electron. Test it early; it is not a launch blocker if it
       misbehaves, but Shift+Tab should not break the game
@@ -64,7 +73,7 @@ Electron runtime's size is the cost of the mature path, not a problem to solve.
 **Done when:** `npm run package` produces a Windows and a Linux build that start, play a
 full day, and quit cleanly.
 
-### 1.2 The platform seam (lands on `main`)
+### 1.2 The platform seam
 
 Today three modules talk to `localStorage` directly: `sim/save.ts`, `sim/settings.ts`,
 `sim/achievements.ts`. Put one interface between them and the storage:
@@ -88,7 +97,7 @@ export interface Platform {
       call sites do not become async
 - [x] `test/setup.ts` keeps working — the web platform is what the tests run against
 
-**Done when:** `main` has no direct `localStorage` call outside `src/platform/`, and all
+**Done when:** `steam` has no direct `localStorage` call outside `src/platform/`, and all
 tests still pass.
 
 ### 1.3 Saves and Steam Cloud
@@ -113,7 +122,7 @@ four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 - [x] On start-up, re-send every locally earned id — covers achievements earned offline
       or before Steam was running
 - [ ] **64×64 icons for each, earned and unearned** (40 images). Pixel art, integer-scaled
-- [x] **Cheated runs earn nothing** (lands on `main`). Today `SILLER` (+£500) and `1680`
+- [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
       changes the run is used, and skip achievement checks while it is true. Show it on
@@ -132,7 +141,7 @@ The good news is the seam already exists: `render/layout.ts` hands back every ta
 a `Hotspot` list, and the art and the hit-testing both read it. Focus navigation can be
 built on the same list.
 
-- [ ] **Focus model** (`ui/focus.ts`, on `main`): a current hotspot; direction input picks
+- [ ] **Focus model** (`ui/focus.ts`): a current hotspot; direction input picks
       the nearest hotspot in that direction from the current one's centre. Sheep are many
       small targets — treat the flock as one stop that expands into per-sheep focus on
       confirm, or the d-pad becomes a slog across twenty animals
@@ -170,7 +179,7 @@ keyboard alone.
 Decide what happens to the free Vercel build once there is a paid one. Recommended:
 
 - [ ] **Turn it into the demo**: the same game capped at, say, the end of day 10, with a
-      "wishlist on Steam" link on the cap screen. Implement as a build flag on `main`
+      "wishlist on Steam" link on the cap screen. Implement as a build flag on `steam`
       (`VITE_DEMO_DAYS=10`) so the demo is never a third fork
 - [ ] Ship the same demo on Steam as a separate demo app — a Steam demo, especially during
       **Steam Next Fest**, is one of the strongest sources of wishlists a small game gets
@@ -228,7 +237,7 @@ wolf. The gap is **the middle of a run**. The croft costs £1,510; the tuned bal
 median purse of £164 at day 90. That is a long stretch of the same loop, and the README's
 own measurement is that spare taps mostly go to filler.
 
-Everything below lands on `main` and is merged into the Steam branch.
+Everything below lands on `steam`. The original game on `main` stays as it is.
 
 ### 2.1 Seasons — the headline feature (spec §14.6)
 
@@ -322,16 +331,16 @@ page) run in parallel with the code.
 
 | phase | what | branch | done when |
 | --- | --- | --- | --- |
-| **1. Foundations** | platform seam, bundled font, cheated flag | `main` | no direct `localStorage` outside `platform/`; tests green |
-| **2. Steam shell** | Electron, file saves, Steamworks, achievements, Quit/fullscreen | Steam | a packaged build plays a full day and unlocks an achievement |
+| **1. Foundations** | platform seam, bundled font, cheated flag | `steam` | no direct `localStorage` outside `platform/`; tests green |
+| **2. Steam shell** | Electron, file saves, Steamworks, achievements, Quit/fullscreen | `steam` | a packaged build plays a full day and unlocks an achievement |
 | **3. Business, started** | pay the fee, fill in tax/bank, start the 30-day clock | — | account active |
-| **4. Input** | focus model, keyboard, gamepad, prompts, Steam Input config | `main` | a full run on controller alone |
-| **5. Seasons** | seasons, winter, hay; rebalance | `main` | 90-day sims per difficulty within target |
+| **4. Input** | focus model, keyboard, gamepad, prompts, Steam Input config | `steam` | a full run on controller alone |
+| **5. Seasons** | seasons, winter, hay; rebalance | `steam` | 90-day sims per difficulty within target |
 | **6. Store page** | capsules, screenshots, copy, Coming Soon live | — | page approved and public |
-| **7. Lambing + work** | tup, lambs, dyke, dipping, peat | `main` | new sims; new achievements |
-| **8. Demo** | demo flag; web demo; Steam demo; Next Fest if timing allows | `main` + Steam | demo live with a wishlist link |
-| **9. Characters** | dog ageing, neighbour, dealer, show, letters, courtship beats | `main` | playtested |
-| **10. Launch** | Deck testing, release build review, release | Steam | out |
+| **7. Lambing + work** | tup, lambs, dyke, dipping, peat | `steam` | new sims; new achievements |
+| **8. Demo** | demo flag; web demo; Steam demo; Next Fest if timing allows | `steam` | demo live with a wishlist link |
+| **9. Characters** | dog ageing, neighbour, dealer, show, letters, courtship beats | `steam` | playtested |
+| **10. Launch** | Deck testing, release build review, release | `steam` | out |
 
 Phases 1–4 are the minimum for a Steam release of the game as it is today. Phases 5 and 7
 are what make it worth the asking price. Phase 9 can be split: some before launch, some in
@@ -352,3 +361,5 @@ Like the spec's §14, these are flagged rather than settled:
 6. **Season length** — 28 days is a starting point; tune it against how long the croft takes
 7. **Does the pelt still end the fox game** once seasons exist, or does it become one
    season's peace?
+8. **What Vercel serves** once Steam exists: the original from `main` (free, unchanged), the
+   demo cut from `steam`, or nothing
