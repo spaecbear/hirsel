@@ -139,7 +139,7 @@ export class Nav {
     // in order of preference: the first that is there and showing wins
     const prefer: Partial<Record<LayerKind, string[]>> = {
       title: ["#title-continue", "#title-new"],
-      over: ["#over-again"],
+      over: ["#over-stay", "#over-again"],
       tutorial: [".tut-go"],
       credits: ["#credits-close"],
       event: [".event-choices button:not([disabled])"],

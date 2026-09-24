@@ -152,6 +152,8 @@ export function newGame(opts: GameOptions = {}): GameState {
     event: null,
     eventDays: {},
     goodwill: 0,
+    married: null,
+    garden: false,
     cheated: false,
     seed,
   };
@@ -315,6 +317,25 @@ export class Game {
       g.dogDays = 0;
       if (g.retiredDogs.length) this.say("The old dog looks up from the fire at the new one, and puts her head back down.", "cozy");
     }
+  }
+
+  /* ---------- after she says aye ---------- */
+
+  /**
+   * Stay on the hill. The run was won and is carried on rather than ended:
+   * the win stays won (its achievement is already earned and nothing takes
+   * it back), she comes to live at the croft, and the day goes on from here.
+   */
+  stayOn() {
+    const g = this.state;
+    if (g.over?.kind !== "win" || g.married !== null) return;
+    g.over = null;
+    g.married = g.day;
+    g.taps = Math.min(BALANCE.maxTaps, g.taps + BALANCE.marriedTaps);
+    this.say("She came up the glen with one bag and her mother's clock, and put the clock on the mantel.", "gold");
+    this.say(`Two pairs of hands on the hill now. The day goes further.`, "cozy");
+    this.award();
+    this.changed();
   }
 
   /* ---------- things that happen ---------- */
@@ -737,6 +758,7 @@ export class Game {
       g.taps = tapsPerDay(g);
       const s = season(g);
       if (s.day === 1) this.say(s.arrives, "gold");
+      if (g.married !== null && g.day === g.married + 1) this.say("The first morning with two in the house. The kettle was on before you were up.", "cozy");
       if (s.id === "winter" && s.day === 1) this.tupping();
       this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
       if (s.id === "autumn" && s.left === BALANCE.winterWarnDays) {
@@ -1163,7 +1185,8 @@ export const ACTIONS: ActionDef[] = [
         return `You hardly know her. ${g.pubs} evening${g.pubs === 1 ? "" : "s"} at the inn so far.`;
       return "The croft is finished and the ring is in your pocket. Go on.";
     },
-    can: (g) => CROFT.every((m) => owns(g, m.id)) && g.pubs >= BALANCE.pubsToAsk,
+    // asked once, and answered: there is no asking again
+    can: (g) => g.married === null && CROFT.every((m) => owns(g, m.id)) && g.pubs >= BALANCE.pubsToAsk,
     run: () => {},
   },
   {
@@ -1224,6 +1247,11 @@ export const ACTIONS: ActionDef[] = [
       game.say(`£${BALANCE.pintCost} gone on beer and talk. Worth it, probably.`, "cozy");
       if (g.pubs === 2) game.say("The lass behind the bar knows your order now.", "cozy");
       if (g.pubs === 4) game.say("She kept you talking well past when she should have been closing.", "cozy");
+      if (g.married !== null) {
+        game.say("She is covering behind the bar tonight. She pours yours, and will not take your money for it.", "cozy");
+        g.money += BALANCE.pintCost;
+        return;
+      }
       // she wants to know there is something to come home to
       if (g.pubs >= 2) {
         if (!owns(g, "roof")) game.say("She asked whether the roof still lets the rain in. You said it did.", "cozy");

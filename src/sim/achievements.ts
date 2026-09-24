@@ -9,6 +9,12 @@ export interface Achievement {
   hint: string;
   /** hidden ones give nothing away until earned — the wolf must stay a secret */
   secret?: boolean;
+  /**
+   * Only to be had by staying on the hill after the win. Left out of what the
+   * credits ask for — they roll at the moment of a win, before any of these
+   * can have happened.
+   */
+  longGame?: boolean;
   won: (g: GameState) => boolean;
 }
 
@@ -41,6 +47,14 @@ export const ACHIEVEMENTS: Achievement[] = [
     hint: "A lamb born on your own ground, and alive in the morning.",
     won: (g) => g.stats.lambsBorn > 0,
   },
+  {
+    id: "year-wed",
+    name: "A year wed",
+    hint: "Stay on the hill with her, and see a year out.",
+    longGame: true,
+    won: (g) => g.married !== null && g.day - g.married >= SEASON_DAYS * 4,
+  },
+  { id: "fifty-lambs", name: "Fifty lambs", hint: "Fifty lambs born on your own ground.", longGame: true, won: (g) => g.stats.lambsBorn >= 50 },
   { id: "rosette", name: "A red rosette", hint: "Take a prize at the Highland show, or the trial.", won: (g) => g.stats.rosettes > 0 },
   { id: "neighbour", name: "Good neighbours", hint: "Have a kindness paid back from over the burn.", won: (g) => g.stats.neighbourGifts > 0 },
   {

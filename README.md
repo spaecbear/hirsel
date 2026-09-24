@@ -252,6 +252,29 @@ every key a fresh game has, so **any new field silently rejected every existing 
 player losing their run to a feature they never asked for. It now checks only the shape the
 game cannot run without, and back-fills the rest from a fresh game.
 
+### Staying on the hill
+
+A win no longer has to end the run. When she says aye the end card offers **Stay on the
+hill** first and **Start again** second; if the credits roll, the card comes back when they
+end instead of the menu dropping you at the title. Staying (`Game.stayOn`) lifts the ending,
+records the day in `state.married`, and saves at once — the night's autosave is a day away, and
+a player who stays and quits should not come back to the evening before the wedding. The win
+is still won: its achievement, and any code it revealed, stand.
+
+Married life is a victory lap with a little more in it:
+
+- **Two pairs of hands**: a tap more a day, still inside the cap of six
+- **She lives at the croft**: out by the door on the hill, wandering a little as the flock
+  does, and between you and the fire indoors — the same woman the inn and the proposal draw
+- The ask is gone from your sheet; at the inn she is covering the bar and will not take your
+  money; the first morning has its own line
+- Three events of its own: **the anniversary** a year on (a day off together, hale for three),
+  **her kale patch** (two taps to dig it, and the feed bill is £1 a night lighter for good),
+  and **her mother** coming up on the post bus. Every one can be declined for nothing
+- The courting events — her afternoon off, the ceilidh — are for before, and stop
+- Two achievements for the long game, **A year wed** and **Fifty lambs**, marked `longGame`
+  and left out of what the credits ask for, since the credits roll at the moment of a win
+
 ### Finishing a run
 
 Finishing a run with **nothing left to find** — every achievement earned and every code known

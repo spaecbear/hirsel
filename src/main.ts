@@ -329,7 +329,8 @@ $("over-again").addEventListener("click", () => {
  */
 function everythingFound(): boolean {
   const earned = new Set(loadEarned());
-  const allAchievements = ACHIEVEMENTS.every((a) => earned.has(a.id));
+  // the long game's achievements come after a win, so they cannot be asked of one
+  const allAchievements = ACHIEVEMENTS.every((a) => a.longGame || earned.has(a.id));
   const found = new Set(settings.cheatsFound);
   const allCheats = CHEATS.every((c) => found.has(c.code));
   return allAchievements && allCheats;
@@ -424,6 +425,17 @@ function closeCredits() {
   quote.classList.remove("on", "out");
   $("credits-scroll").style.opacity = "";
   document.body.classList.remove("rolling");
+  /*
+   * A won run comes back to its end card rather than the menu, so staying on
+   * the hill is still on offer after the credits — they are for having found
+   * everything, not a door shut on the run.
+   */
+  if (game.state.over?.kind === "win") {
+    $("over-again").style.display = "";
+    $("over-stay").style.display = "";
+    $("over").classList.add("on");
+    return;
+  }
   $("over").classList.remove("on");
   showTitle();
 }
@@ -610,7 +622,10 @@ function showEnd() {
    */
   const rolling = wonHard && everythingFound();
   const again = $("over-again");
+  const stay = $("over-stay");
   again.style.display = rolling ? "none" : "";
+  // a win is not the end unless the player wants it to be
+  stay.style.display = o.kind === "win" && !rolling ? "" : "none";
   $("over").classList.add("on");
 
   if (rolling) {
@@ -625,6 +640,21 @@ function showEnd() {
     }, 3800);
   }
 }
+
+/**
+ * Stay on the hill: the won run goes on, with her at the croft. Saved at once
+ * — the night's autosave is a day away, and a player who stays and then
+ * quits should not come back to the evening before the wedding.
+ */
+function stayOnTheHill() {
+  $("over").classList.remove("on");
+  game.stayOn();
+  endShown = false; // the next ending, if there is one, is a new one
+  if (settings.autosave) saveGame(game.state);
+  toast("The two of you, and the hill.");
+  render();
+}
+$("over-stay").addEventListener("click", stayOnTheHill);
 
 /**
  * The cutscene lines, as DOM text rather than canvas pixels.

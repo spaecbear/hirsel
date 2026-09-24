@@ -96,7 +96,10 @@ export type EventId =
   | "stray"
   | "show"
   | "visit"
-  | "ceilidh";
+  | "ceilidh"
+  | "anniversary"
+  | "garden"
+  | "her-mother";
 
 export interface PendingEvent {
   id: EventId;
@@ -242,6 +245,10 @@ export interface GameState {
   eventDays: Partial<Record<EventId, number>>;
   /** what Callum over the burn thinks of you: a hand given is a hand owed */
   goodwill: number;
+  /** the day she said aye and you stayed on the hill together; null until then */
+  married: number | null;
+  /** her kale patch by the door: the feed bill is lighter for it */
+  garden: boolean;
   /**
    * A code that changes the game has been used this run (money, beasts, taps,
    * weather, the wolf on demand, zen). Such a run earns no achievements, and

@@ -231,6 +231,15 @@ export const BALANCE = {
   /** a lamb fetches this much of a grown ewe's cost, and more at the autumn sales */
   lambPrice: 0.4,
   lambPriceAutumn: 2.4,
+
+  /*
+   * Staying on the hill together, after she says aye. The run no longer ends
+   * at the ring: two pairs of hands make the day go a tap further (still
+   * inside maxTaps), and her kale patch, once dug, takes a pound a night off
+   * the feed bill.
+   */
+  marriedTaps: 1,
+  gardenFeed: 1,
 } as const;
 
 /**

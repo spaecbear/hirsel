@@ -81,6 +81,11 @@ export const EVENTS_BALANCE = {
   ceilidhDay: 10,
   ceilidhCost: 4,
   motherMoney: 10,
+  /* after the wedding */
+  gardenAfter: 10,
+  gardenTaps: 2,
+  herMotherAfter: 30,
+  herMotherChance: 0.08,
 } as const;
 
 const E = EVENTS_BALANCE;
@@ -438,6 +443,90 @@ export const EVENTS: GameEvent[] = [
   },
 ];
 
+/* ---- after she says aye: the two of you ---- */
+EVENTS.push(
+  {
+    id: "anniversary",
+    due: (g) => (g.married !== null && g.day - g.married >= SEASON_DAYS * 4 && once(g, "anniversary") ? {} : null),
+    title: () => "A year",
+    body: () =>
+      "A year to the day since she said aye. She has not mentioned it, which is how you know she has not forgotten.",
+    choices: () => [
+      {
+        id: "off",
+        label: "Take the day, the two of you",
+        detail: "Up to the top of the glen with a piece and a flask. You will be the better for it for days.",
+        taps: 1,
+        run: (game) => {
+          game.buff("hale", 3);
+          game.say("You walked to the top of the glen and could see the whole of it. She named every farm.", "cozy");
+        },
+      },
+      {
+        id: "work",
+        label: "The hill will not wait",
+        fallback: true,
+        run: (game) => game.say("She brought your piece out to the field instead, and sat on the dyke while you ate it.", "cozy"),
+      },
+    ],
+  },
+  {
+    id: "garden",
+    due: (g) =>
+      g.married !== null && !g.garden && g.day - g.married >= E.gardenAfter && season(g).id !== "winter" && once(g, "garden")
+        ? {}
+        : null,
+    title: () => "A kale patch",
+    body: () =>
+      "She wants a kale patch by the door — a proper one, dug deep and walled from the wind. Greens for the pot, and the " +
+      "outer leaves for the beasts in the back end of the year.",
+    choices: () => [
+      {
+        id: "dig",
+        label: "Dig it for her",
+        detail: `The feed bill is £${BALANCE.gardenFeed} a night lighter for good.`,
+        taps: E.gardenTaps,
+        run: (game) => {
+          game.state.garden = true;
+          game.say("Dug, dunged and walled. She has it planted before you have the spade cleaned.", "gold");
+        },
+      },
+      {
+        id: "later",
+        label: "Not this year",
+        fallback: true,
+        run: (game) => game.say("She said she would ask again. She will.", "hi"),
+      },
+    ],
+  },
+  {
+    id: "her-mother",
+    due: (g, roll) =>
+      g.married !== null && g.day - g.married >= E.herMotherAfter && once(g, "her-mother") && roll() < E.herMotherChance ? {} : null,
+    title: () => "Her mother",
+    body: (_g, _d, lex) =>
+      `Her mother has come up on the post bus, to see the croft, the ${lex.flock}, and the man. Mostly the man.`,
+    choices: (_g, _d, lex) => [
+      {
+        id: "show",
+        label: `Show her the ${lex.flock}`,
+        detail: "She will want to see every one of them. She will have views.",
+        taps: 1,
+        run: (game) => {
+          game.buff("hale", 2);
+          game.say("She said it was a fine hirsel for a man who used to work in an office. From her, that is a medal.", "cozy");
+        },
+      },
+      {
+        id: "busy",
+        label: "Keep your head down at the work",
+        fallback: true,
+        run: (game) => game.say("She watched you from the window all afternoon. You felt it through the back of your coat.", "hi"),
+      },
+    ],
+  },
+);
+
 /** what the dealer has on him today: a good ewe under the cart price, or a tool you lack */
 function dealerOffer(g: GameState, roll: () => number): Data | null {
   const offers: Data[] = [];
@@ -463,11 +552,14 @@ export const EVENT_ORDER: EventId[] = [
   "letter-sister",
   "show",
   "ceilidh",
+  "anniversary",
+  "garden",
   "neighbour-gift",
   "visit",
   "dealer",
   "neighbour",
   "stray",
+  "her-mother",
 ];
 
 /** the day of the Highland show in a given year */

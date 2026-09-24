@@ -140,12 +140,17 @@ export const here = (g: GameState) => g.pastures[g.at];
 
 export function tapsPerDay(g: GameState): number {
   const t =
-    BALANCE.baseTaps + (owns(g, "boots") ? 1 : 0) + (owns(g, "lamp") ? 1 : 0) + (buffed(g, "hale") ? 1 : 0);
+    BALANCE.baseTaps +
+    (owns(g, "boots") ? 1 : 0) +
+    (owns(g, "lamp") ? 1 : 0) +
+    (buffed(g, "hale") ? 1 : 0) +
+    (g.married !== null ? BALANCE.marriedTaps : 0);
   return Math.min(BALANCE.maxTaps, t);
 }
 
 export function feedCost(g: GameState): number {
-  return Math.ceil(mouths(g) / BALANCE.sheepPerPound);
+  // her kale patch feeds them a little, once it is dug
+  return Math.max(0, Math.ceil(mouths(g) / BALANCE.sheepPerPound) - (g.garden ? BALANCE.gardenFeed : 0));
 }
 
 /* ---------- what the work costs ---------- */

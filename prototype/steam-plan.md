@@ -113,15 +113,15 @@ tests still pass.
 
 ### 1.4 Steam achievements
 
-The 26 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
+The 28 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
 four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 
-- [ ] Register all 26 in Steamworks with the same ids; hidden flag on the four secret ones,
+- [ ] Register all 28 in Steamworks with the same ids; hidden flag on the four secret ones,
       with their existing `hint` as the post-unlock description
 - [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
 - [x] On start-up, re-send every locally earned id — covers achievements earned offline
       or before Steam was running
-- [ ] **64×64 icons for each, earned and unearned** (52 images). Pixel art, integer-scaled
+- [ ] **64×64 icons for each, earned and unearned** (56 images). Pixel art, integer-scaled
 - [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
@@ -212,7 +212,7 @@ Decide what happens to the free Vercel build once there is a paid one. Recommend
 | library hero | 3840×1240 |
 | library logo | 1280 wide max, transparent |
 | screenshots | at least 5, 1920×1080 |
-| achievement icons | 64×64 × 52 (see §1.4) |
+| achievement icons | 64×64 × 56 (see §1.4) |
 | trailer | optional but strongly recommended; 30–60s |
 
 The Glen interface in landscape is the screenshot view. Good moments: the three pastures
@@ -323,11 +323,13 @@ The inn is the only social space and she is the only arc.
 
 Decide whether the game ends at the win or carries on.
 
-- [ ] Recommended: the win ends the story and rolls the proposal cinematic, then offers
-      **"Stay on the hill"** — the run continues with her at the croft, seasons turning, the
-      pelt on your back. Steam players often keep playing past an ending if the game lets
-      them, and reviews notice when it does
-- [ ] A final achievement or two for the long game (a tenth winter, a hundred lambs)
+> **Built** — see "Staying on the hill" in the README.
+
+- [x] The win plays the proposal, then offers **"Stay on the hill"** beside "Start again" —
+      also after the credits. The run continues with her at the croft
+- [x] Married life: a tap more a day, her on the hill and by the fire, a free pint, and three
+      events (the anniversary, her kale patch, her mother)
+- [x] Achievements for the long game: A year wed, Fifty lambs
 
 ### 2.7 Replay and polish
 

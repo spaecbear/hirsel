@@ -644,7 +644,11 @@ export class WorldUi {
       case "ground":
         return this.actionRows(["muck", "hay"]);
       case "shepherd":
-        return [...this.actionRows(["pipe", "music", "pub", "ask"]), ...this.watchRows()];
+        // asked once and answered: the ask goes once she has said aye
+        return [
+          ...this.actionRows(this.game.state.married === null ? ["pipe", "music", "pub", "ask"] : ["pipe", "music", "pub"]),
+          ...this.watchRows(),
+        ];
       case "hills":
         return this.pastureRows();
       case "croft":

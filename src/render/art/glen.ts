@@ -537,6 +537,24 @@ function paintShepherdIdle(g: Painter, L: WorldLayout, s: Scene) {
   });
 }
 
+/**
+ * Her, at home — the same woman the inn and the proposal draw, a little
+ * shorter than him, standing on the ground rather than behind a bar. `cx` is
+ * her centre, `footY` where her feet are.
+ */
+function drawHerAtHome(g: Painter, cx: number, footY: number, time: number) {
+  const figH = SHEPHERD_H - 1;
+  const top = footY - figH;
+  const m = drawBackFigure(g, cx, top, footY, {
+    coat: "#e8e3d2",
+    coatLit: "#f2eee0",
+    hair: "#7a3a24",
+    skirt: "#3d5a4a",
+    sway: Math.sin(time / 900) * 0.25,
+  });
+  drawLassHead(g, m, top);
+}
+
 function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   const st = s.state;
   const k = s.anim;
@@ -564,6 +582,18 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   if (k === null) {
     const cast: Actor[] = [...sheep];
     if (hasDog(st)) cast.push({ feet: L.dogAt.y + DOG_FEET, paint: paintDog });
+    /*
+     * She lives here now: out by the croft door, wandering a little way
+     * from it and back the way the flock does round their marks.
+     */
+    if (st.married !== null) {
+      const hx = L.croft.x + Math.round(L.croft.w * 0.5) + 14;
+      const hy = L.croft.y + L.croft.h + 8;
+      const d = driftFor(77711, s.time, { dx: L.shepherd.x - hx, dy: L.shepherd.y - hy });
+      const x = Math.round(hx + d.dx * 0.6);
+      const feet = Math.round(hy + d.dy * 0.4);
+      cast.push({ feet, paint: () => drawHerAtHome(g, x, feet, s.time) });
+    }
     cast.push({ feet: sy + SHEPHERD_H, paint: () => paintShepherdIdle(g, L, s) });
     cast.sort((a, b) => a.feet - b.feet);
     for (const a of cast) a.paint();
@@ -1883,6 +1913,10 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
    * comes after everything at the wall and before the table, which is nearer
    * the camera than he is.
    */
+  // her, between him and the fire, on the same boards he stands on
+  if (st.married !== null) {
+    drawHerAtHome(g, Math.round((I.hearth.x + I.hearth.w + I.man.x) / 2) + 8, I.man.y, time);
+  }
   drawShepherd(g, I.man.x, I.man.y - SHEPHERD_H, {
     facing: -1, // looking across at the hearth
     tick: idleTick(time) ?? undefined,
