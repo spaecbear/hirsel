@@ -230,12 +230,6 @@ cart at the other; portrait gets a hillside receding upward with more rows of sh
 **The horizon also moves with the pasture** — the Low Field is hemmed in by hills, the High
 Corrie is mostly sky, because standing higher means seeing further.
 
-**The flock starts somewhere different every run.** Its spot is drawn from the run's seed and
-the pasture (`flockCentre` in `render/layout.ts`), so a reload shows the same picture and moving
-them to new ground finds a new spot. The rules in `FLOCK_SPOT`: clear of the croft, byre and
-haystack; clear of the cart; not on top of him; and never further than half the screen from
-where he stands, so a run never opens with a long trek. Buying a ewe doesn't move the flock.
-
 Two things that were bugs and are now rules:
 
 - **Sky and hills must not overlap as hotspots.** Whichever is listed first swallows every tap
@@ -560,7 +554,7 @@ sword, the wolf or how he is called.
 | Callum's ewes are out | now and then | a tap to help him, or not |
 | Callum pays it back | after two kindnesses | 20 bales in the back end of the year, £15 in the front |
 | a stray | now and then, not in winter | walk her back (a tap, and a kindness) or keep her (a ewe, and he knows) |
-| the Highland show | the 18th of each summer | show your best grown ewe (breed, fleece, tended) for £25 or £12, or run the dog in the trial for £20 — the collie is the trials dog, and an old one is slower. The trial takes the rest of the day: home to the fire, where she sleeps on the hearthstone, and the night falls in the room |
+| the Highland show | the 18th of each summer | show your best grown ewe (breed, fleece, tended) for £25 or £12, or run the dog in the trial for £20 — the collie is the trials dog, and an old one is slower |
 | her afternoon off | once, after three evenings at the inn | walk the hill with her: it counts for an evening |
 | the ceilidh | the 10th of each autumn, once you know her | £4 and a tap: an evening, and hale for two days |
 

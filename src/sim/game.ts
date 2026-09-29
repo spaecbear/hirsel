@@ -166,7 +166,7 @@ export class Game {
   rng: Rng;
   private listeners: Listener[] = [];
   /** the UI hands this in: play an animation, call back when it finishes */
-  onAnim: (anim: AnimId, after?: () => void, payload?: { breed?: string; croft?: CroftId; indoors?: boolean }) => void = (_a, after) => after?.();
+  onAnim: (anim: AnimId, after?: () => void, payload?: { breed?: string; croft?: CroftId }) => void = (_a, after) => after?.();
   onAchievement: (a: Achievement) => void = () => {};
   /** true while an animation-driven sequence owns the buttons */
   busy = false;
@@ -369,11 +369,6 @@ export class Game {
     if (c.taps) this.spend(c.taps);
     this.award();
     this.changed();
-    // home, the fire, and the night comes in the room rather than on the hill
-    if (c.endsDay && !g.over) {
-      this.onAnim("fireside");
-      this.sleep({ indoors: true });
-    }
   }
 
   /**
@@ -607,7 +602,7 @@ export class Game {
   }
 
   /* ---------- night ---------- */
-  sleep(opts: { indoors?: boolean } = {}) {
+  sleep() {
     const g = this.state;
     if (g.over) return;
     // the night ends the day, and with it anything the watch was still doing
@@ -619,7 +614,7 @@ export class Game {
      * It used to be one: dusk, dark, sunrise — and then the fox raid played
      * *after* the sun was up, which read as a raid the following morning.
      */
-    this.onAnim("sleep", () => this.changed(), opts.indoors ? { indoors: true } : undefined);
+    this.onAnim("sleep", () => this.changed());
 
     const p = here(g);
     const w = weatherOn(g);

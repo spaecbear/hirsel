@@ -11,8 +11,6 @@ interface Job {
 /** the ewe walking in has not joined the flock yet, so her breed travels here */
 export interface AnimPayload {
   breed?: string;
-  /** the night falls in the room rather than on the hill: after the trial */
-  indoors?: boolean;
 }
 
 /**

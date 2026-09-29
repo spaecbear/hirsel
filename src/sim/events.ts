@@ -32,12 +32,6 @@ export interface EventChoice {
   fallback?: boolean;
   /** anything beyond the taps and the money that would stop it */
   can?: (g: GameState) => boolean;
-  /**
-   * It takes the rest of the day: after it, he goes home and sits by the
-   * fire, and the night falls in the room. The trial — the dog has done a
-   * full day's work in front of a crowd and has earned the hearthstone.
-   */
-  endsDay?: boolean;
   run: (game: Game, data: Data) => void;
 }
 
@@ -269,9 +263,8 @@ export const EVENTS: GameEvent[] = [
           label: "Run the dog in the trial",
           detail: `Three sheep, a pen, and a whistle. ${
             owns(g, "collie") ? "The collie was bred for this." : "The sheltie is keen, if not built for it."
-          }${dogIsOld(g) ? " She is not as quick as she was." : ""} It takes the rest of the day, and she gets the fire after.`,
+          }${dogIsOld(g) ? " She is not as quick as she was." : ""}`,
           taps: 1,
-          endsDay: true,
           run: (game) => {
             const g2 = game.state;
             if (game.rng() < trialChance(g2)) {
@@ -281,7 +274,6 @@ export const EVENTS: GameEvent[] = [
             } else {
               game.say("A fair run. One of the three would not be told, and that was that.", "hi");
             }
-            game.say("Home, and the fire. She was asleep on the hearthstone before you had your boots off.", "cozy");
           },
         });
       }

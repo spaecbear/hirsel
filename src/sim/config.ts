@@ -500,7 +500,6 @@ export const ANIM_MS: Record<string, number> = {
   leaveinn: 1000,
   move: 1200,
   sleep: 2600, // dusk down into the dark
-  fireside: 4200, // the evening in after the trial: long enough to watch her settle
   dawn: 2000, // and back up out of it
   tend: 1700,
   muck: 1600,

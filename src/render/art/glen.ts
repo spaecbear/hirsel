@@ -54,7 +54,7 @@ import {
   shade,
 } from "../sprites";
 import { hasDog, isFullMoon, moonPhase, owns } from "../../sim/rules";
-import type { AnimId, GameState, Sheep } from "../../sim/types";
+import type { GameState, Sheep } from "../../sim/types";
 import type { ArtPack, Scene } from "./types";
 
 const wxOf = (st: GameState) => st.forecast[0];
@@ -1642,45 +1642,11 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
  * ================================================================== */
 
 /**
- * The evening after the trial.
- *
- * A trial is a whole day of work for the dog in front of the glen, and it
- * ended with him straight back out on the hill as if nothing had happened.
- * Now he goes home: the room, the fire lit, and her flat out on the
- * hearthstone. `fireside` comes in from the door and sits; the `sleep`
- * after it, flagged indoors, takes the room down to the embers instead of
- * taking the hill down to the dark.
- */
-function firesideScene(g: Painter, st: GameState, k: AnimId, p: number, time: number) {
-  const I = layoutInterior(g.W, g.H, st);
-  drawInterior(g, I, st, time, true, false, true);
-  if (k === "fireside") {
-    // in from the dark of the doorway
-    const fadeIn = 1 - ease(clamp01(p / 0.14));
-    if (fadeIn > 0) g.a(0, 0, I.W, I.H, 0, 0, 0, fadeIn);
-    return;
-  }
-  // the lamp goes down, and only the fire is left
-  const d = ease(clamp01(p));
-  g.a(0, 0, I.W, I.H, 6, 8, 14, d * 0.84);
-  g.a(I.hearth.x - 10, I.hearth.y - 8, I.hearth.w + 20, I.hearth.h + 16, 240, 140, 60, d * 0.1);
-}
-
-/**
  * The room you sleep in. Everything bought is on the wall or by the fire, so
  * the croft you are paying for is somewhere you actually stand rather than a
  * row of ticks in a shop. The bed is how the day ends.
  */
-function drawInterior(
-  g: Painter,
-  I: InteriorLayout,
-  st: GameState,
-  time: number,
-  isNight: boolean,
-  spotlightBed: boolean,
-  /** the evening after the trial: a fire lit whatever the hearth, and the dog on the stone in front of it */
-  fireside = false,
-) {
+function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number, isNight: boolean, spotlightBed: boolean) {
   const hearthBuilt = owns(st, "hearth");
 
   // walls: rough stone, and floorboards below
@@ -1724,11 +1690,6 @@ function drawInterior(
       g.px(gx0 + 8, by, 3, 3, "#c9a83c"); // the pommel
       g.px(bx - 4, by + 4, bl + 14, 1, "#2a2118"); // the pegs it rests on
     }
-  } else if (fireside) {
-    // no hearth built yet, but there is always a peat fire to be had in the hole
-    g.px(hx + 6, hy + I.hearth.h - 8, I.hearth.w - 12, 6, "#1a1610");
-    drawHearthFire(g, hx + 10, hy + I.hearth.h - 14, I.hearth.w - 20, 10, time);
-    g.a(hx - 8, hy - 6, I.hearth.w + 24, I.hearth.h + 20, 240, 170, 70, 0.08 + Math.sin(time / 230) * 0.02);
   } else {
     g.px(hx + 6, hy + I.hearth.h - 8, I.hearth.w - 12, 6, "#1a1610");
   }
@@ -1793,10 +1754,7 @@ function drawInterior(
     setSpriteState({ kit: { collie: wasCollie } });
   }
 
-  if (hasDog(st) && fireside) {
-    // whichever dog she is, tonight she has earned the hearthstone
-    drawDogCurled(g, fireSpot.x, fireSpot.y, time, 1);
-  } else if (hasDog(st)) {
+  if (hasDog(st)) {
     const collieAtFire = owns(st, "collie") && hearthBuilt;
     const tip = tippyFrame(time, true, collieAtFire);
     if (collieAtFire) {
@@ -2062,9 +2020,6 @@ export const GLEN_ART: ArtPack = {
         saltlick: owns(st, "saltlick"),
       },
     });
-
-    // home from the trial: the evening by the fire, and then the night in the room
-    if (k === "fireside" || (k === "sleep" && s.payload?.indoors)) return firesideScene(g, st, k, p, s.time);
 
     // inside the house: a different room, not a different hill
     if (s.interior) {

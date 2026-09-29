@@ -155,8 +155,6 @@ export type AnimId =
   | "leaveinn"
   | "move"
   | "sleep"
-  /** home by the fire after a long day off the hill — the trial — before the night falls indoors */
-  | "fireside"
   /** the sky coming back up, played after anything that happens in the dark */
   | "dawn"
   | "buysheep"
