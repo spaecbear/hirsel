@@ -12,6 +12,7 @@
  */
 import type { DogKind, GameState } from "../sim/types";
 import { herdCircuit } from "./wander";
+import { makeRng } from "../sim/rng";
 
 export interface Rect {
   x: number;
@@ -145,25 +146,33 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
   const dog = { x: shepherd.x - 26, y: shepherd.y + 16 };
   const saltlick = { x: Math.round(W * 0.18), y: Math.round(groundY + field * 0.45) };
 
-  // the flock grazes across the middle of the field, in rows so they overlap
-  // the way animals on a slope do rather than sitting on one line
-  // more rows in portrait, because there is depth to spread them into
+  /*
+   * The flock grazes together, somewhere different every run.
+   *
+   * They used to be laid out in a grid across the whole width of the field,
+   * the same on every hill of every run. Now they are a cluster round a spot
+   * picked from the run's seed and the pasture they are on — so no two runs
+   * start the same, and moving them to new ground puts them somewhere new.
+   * See `flockCentre` for the rules the spot has to meet.
+   */
   const rows = portrait ? 4 : 3;
   const flock: { x: number; y: number }[] = [];
   const count = Math.max(1, st.flock.length);
   const cols = Math.max(1, Math.ceil(count / rows));
-  const spanX = Math.max(40, W - 46);
+  const stepX = portrait ? 17 : 19;
+  const stepY = Math.max(9, Math.round(field * (portrait ? 0.075 : 0.1)));
+  const centre = flockCentre({ W, H, groundY, field, portrait, croft, byre, cart, home: homeShepherd, seed: st.seed, at: st.at });
+  const topY = groundY + Math.round(field * 0.16);
   for (let i = 0; i < count; i++) {
     const row = i % rows;
     const col = Math.floor(i / rows);
-    // rows offset by half a column, so they read as a scattered flock rather
-    // than a grid, and the whole width of the hill gets used
-    const step = spanX / cols;
-    const spread = portrait ? 0.3 + row * 0.12 : 0.32 + row * 0.17;
-    flock.push({
-      x: Math.round(10 + (col + (row % 2) * 0.5) * step),
-      y: Math.round(groundY + field * spread + (col % 2) * 3),
-    });
+    // rows offset by half a column, and a little jitter, so they read as a
+    // flock rather than a grid
+    const jx = Math.round((hashN(i * 7.3 + 1) - 0.5) * 6);
+    const jy = Math.round((hashN(i * 3.1 + 2) - 0.5) * 4);
+    const x = centre.x + (col - (cols - 1) / 2 + (row % 2) * 0.5) * stepX + jx - 8;
+    const y = centre.y + (row - (rows - 1) / 2) * stepY + jy;
+    flock.push({ x: Math.round(clamp(x, 4, W - 24)), y: Math.round(clamp(y, topY, H - 20)) });
   }
   /*
    * Nothing grazes through a wall. Sheep laid out on top of the croft, the
@@ -247,6 +256,96 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
 }
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+
+/** a steady scatter in [0, 1), so the jitter in the flock does not crawl between frames */
+const hashN = (n: number) => {
+  const x = Math.sin(n * 127.1) * 43758.5453;
+  return x - Math.floor(x);
+};
+
+/**
+ * The rules the flock's spot has to meet, as distances in logical pixels on
+ * whatever screen shape the glen is laid out for. Scaled by the width, so a
+ * phone and a desktop hold the same proportions.
+ */
+export const FLOCK_SPOT = {
+  /** clear of the croft, the byre and the haystack by this much, edge to edge */
+  penClear: 0.04,
+  /** clear of the cart, edge to edge */
+  cartClear: 0.02,
+  /** never on top of him: at least this far from where he stands */
+  nearestToHim: 0.14,
+  /** never off in a far corner: within this of him, so the flock is always easy to reach */
+  furthestFromHim: 0.5,
+  /** the flock's own half-width and half-height as the rules measure it — a dozen head */
+  halfW: 0.08,
+  halfH: 0.08,
+} as const;
+
+interface SpotInputs {
+  W: number;
+  H: number;
+  groundY: number;
+  field: number;
+  portrait: boolean;
+  croft: Rect;
+  byre: Rect;
+  cart: Rect;
+  home: { x: number; y: number };
+  seed: number;
+  at: number;
+}
+
+/** edge-to-edge distance between two boxes, 0 if they overlap */
+function gap(a: Rect, b: Rect): number {
+  const dx = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w));
+  const dy = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h));
+  return Math.hypot(dx, dy);
+}
+
+/**
+ * Where the flock grazes on this pasture, this run.
+ *
+ * Picked from the run's seed and the pasture, so it is the same every time
+ * the game is loaded and different from every other run. It never depends on
+ * how many there are, so buying a ewe does not send the whole flock across
+ * the field. The spot has to be:
+ *
+ * - on the near ground, with the flock fitting inside the frame
+ * - clear of the croft, the byre and the haystack beside them
+ * - clear of the cart
+ * - not on top of him, and not off in a far corner from him either
+ *
+ * Candidates are drawn until one fits; if none does on some odd screen shape,
+ * the old middle-of-the-field spot is used.
+ */
+export function flockCentre(o: SpotInputs): { x: number; y: number } {
+  const F = FLOCK_SPOT;
+  const halfW = Math.round(o.W * F.halfW);
+  const halfH = Math.round(o.field * F.halfH * (o.portrait ? 1.4 : 1));
+  const pen: Rect = { x: o.croft.x, y: o.croft.y, w: o.byre.x + o.byre.w + 24 - o.croft.x, h: o.croft.h };
+  const rng = makeRng((o.seed ^ 0x9e3779b9) + o.at * 7919);
+  const fits = (x: number, y: number) => {
+    const box: Rect = { x: x - halfW, y: y - halfH, w: halfW * 2, h: halfH * 2 };
+    const fromHim = Math.hypot(x - o.home.x, y - o.home.y);
+    return (
+      gap(box, pen) >= o.W * F.penClear &&
+      gap(box, o.cart) >= o.W * F.cartClear &&
+      fromHim >= o.W * F.nearestToHim &&
+      fromHim <= o.W * F.furthestFromHim
+    );
+  };
+  const minX = halfW + 6;
+  const maxX = o.W - halfW - 6;
+  const minY = o.groundY + o.field * 0.22 + halfH;
+  const maxY = o.H - 22 - halfH;
+  for (let i = 0; i < 200; i++) {
+    const x = minX + rng() * Math.max(1, maxX - minX);
+    const y = minY + rng() * Math.max(1, maxY - minY);
+    if (fits(x, y)) return { x: Math.round(x), y: Math.round(y) };
+  }
+  return { x: Math.round(o.W * 0.6), y: Math.round(o.groundY + o.field * 0.45) };
+}
 
 function pad(r: Rect, n: number): Rect {
   return { x: r.x - n, y: r.y - n, w: r.w + n * 2, h: r.h + n * 2 };

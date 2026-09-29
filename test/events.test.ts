@@ -190,6 +190,29 @@ describe("the show", () => {
     const oldCollie = harness({ owned: { collie: true }, dogDays: BALANCE.dogOldDays }).g;
     expect(trialChance(oldCollie)).toBeCloseTo(trialChance(collie) / 2);
   });
+
+  it("ends the day after the trial: home, the fire, and the night falls in the room", () => {
+    const { game, g } = harness({ owned: { collie: true, pelt: true }, day: 40 });
+    const played: { anim: string; indoors?: boolean }[] = [];
+    game.onAnim = (anim, after, payload) => {
+      played.push({ anim, indoors: payload?.indoors });
+      after?.();
+    };
+    pend(g, "show");
+    game.answerEvent("trial");
+    expect(g.day).toBe(41);
+    expect(played.map((a) => a.anim).slice(0, 2)).toEqual(["fireside", "sleep"]);
+    expect(played[1].indoors).toBe(true);
+  });
+
+  it("leaves the rest of the day alone for the ewe at the show, or staying on the hill", () => {
+    for (const pick of ["ewe", "stay"]) {
+      const { game, g } = harness({ owned: { collie: true, pelt: true }, day: 40 });
+      pend(g, "show");
+      game.answerEvent(pick);
+      expect(g.day, pick).toBe(40);
+    }
+  });
 });
 
 describe("her, and the ceilidh", () => {
