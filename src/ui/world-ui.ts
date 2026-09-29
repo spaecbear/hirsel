@@ -105,6 +105,22 @@ export class WorldUi {
   onBark: () => void = () => {};
   /** true once the player has stepped inside the croft */
   interior = false;
+  /** sitting on at the inn after the pint. The hill waits until the player heads back */
+  atInn = false;
+
+  /** the pint is down: stay a while */
+  enterInn() {
+    this.close();
+    this.atInn = true;
+  }
+
+  /** back up the hill, when they are ready */
+  leaveInn() {
+    if (!this.atInn) return;
+    this.atInn = false;
+    this.anim.play("leaveinn");
+    this.onChange();
+  }
   /** hold a finger on the pasture and he walks over */
   readonly walk = new Walk();
   private holdTimer = 0;
@@ -173,6 +189,7 @@ export class WorldUi {
     this.game = game;
     this.walk.reset();
     this.interior = false;
+    this.atInn = false;
     this.close();
   }
 
@@ -208,7 +225,7 @@ export class WorldUi {
 
   /** walk him to a point of open ground; false if that spot isn't walkable */
   private sendHim(clientX: number, clientY: number): boolean {
-    if (this.game.state.over || this.busy) return false;
+    if (this.game.state.over || this.busy || this.atInn) return false;
     // wandering teaches nothing and only muddles the walkthrough
     if (!this.canInteract("ground")) return false;
     const spot = this.spotAt(clientX, clientY);
@@ -237,7 +254,7 @@ export class WorldUi {
    * lives here, so the two can never disagree about what a target does.
    */
   private activate(spot: { id: HotspotId } | null) {
-    if (this.game.state.over) return;
+    if (this.game.state.over || this.atInn) return;
     if (!spot) {
       this.close();
       return;
@@ -372,6 +389,7 @@ export class WorldUi {
   open(id: HotspotId) {
     const rows = this.rowsFor(id);
     if (!rows.length) return;
+    if (id === "sky") this.onNote("did-sky");
     /*
      * A trade rebuilds the sheet in place, which throws away whatever had
      * focus. With a controller that is the whole selection gone after every

@@ -116,6 +116,22 @@ export const TUTORIAL: TutorialStep[] = [
     done: (_g, seen) => seen.has("tools"),
   },
   {
+    /*
+     * The year. Seasons change what every one of the day's actions is worth,
+     * so a player who is never told they exist meets winter as a disaster
+     * rather than a thing to plan for. Taught by tapping the sky, because
+     * that is where the season and the days left in it always are.
+     */
+    id: "seasons",
+    text:
+      "The year turns every twenty-four days, and each season works the hill differently. Spring: the grass comes back fast. " +
+      "Summer: fleece grows quickest and the flies are at their worst — and it is the only time to cut hay. " +
+      "Autumn: wool fetches its best price of the year. Winter: nothing grows, snow buries the grass, and the flock lives on " +
+      "what is in the barn. Tap the sky — the season, and the days left in it, are always there.",
+    target: "sky",
+    done: (_g, seen) => seen.has("did-sky"),
+  },
+  {
     id: "croft",
     text: "That is your house. Tap it and go in — it is in a poor state, but it is yours to fix up, and what you buy for it shows up inside.",
     target: "croft",

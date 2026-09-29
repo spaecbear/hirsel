@@ -86,6 +86,7 @@ export type ToolId =
 export type CroftId = "roof" | "hearth" | "byre" | "ring";
 
 export type EventId =
+  | "callum-intro"
   | "letter-boss"
   | "letter-mother"
   | "letter-friend"
@@ -150,6 +151,8 @@ export type AnimId =
   | "pipe"
   | "music"
   | "pub"
+  /** out of the inn door and back up the road, when the player chooses to go */
+  | "leaveinn"
   | "move"
   | "sleep"
   /** the sky coming back up, played after anything that happens in the dark */

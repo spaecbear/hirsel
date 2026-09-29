@@ -565,6 +565,16 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   if (owns(st, "saltlick")) drawSaltLick(g, L.saltlick.x, L.saltlick.y);
 
   const sheep = flockActors(g, L, s);
+  /*
+   * The barn's stock, stacked past the byre where it can be seen from the
+   * hill. One of the cast rather than the scenery: painted with the ground it
+   * sat under everyone, so a sheep or the man walking behind it came out in
+   * front. Sorted by its foot like the rest, anyone further up the field
+   * than its base now goes behind it.
+   */
+  const stackX = L.croft.x + 106;
+  const stackFoot = L.croft.y + L.croft.h;
+  const stack: Actor | null = st.hay > 0 ? { feet: stackFoot, paint: () => drawHaystack(g, stackX, stackFoot, st.hay) } : null;
 
   /** her idle lap, hoisted so it can be sorted in among everything else */
   const paintDog = () =>
@@ -581,6 +591,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
    */
   if (k === null) {
     const cast: Actor[] = [...sheep];
+    if (stack) cast.push(stack);
     if (hasDog(st)) cast.push({ feet: L.dogAt.y + DOG_FEET, paint: paintDog });
     /*
      * She lives here now: out by the croft door, wandering a little way
@@ -600,6 +611,8 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     return;
   }
 
+  // in a set piece the choreography decides the order: the stack is scenery at the back
+  stack?.paint();
   for (const a of sheep) a.paint();
   let dogAfter = false;
 
@@ -1356,7 +1369,11 @@ function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
   if (inRoom < 1) g.a(0, 0, W, H, 20, 23, 15, 1 - inRoom);
 }
 
-function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
+/** how far through the inn scene the room has settled: the pint down, her arrived */
+const PUB_SETTLED = 0.72;
+
+/** `holding`: sitting on after the pint, so what moves is driven by the clock rather than the scene */
+function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding = false) {
   const inRoom = clamp01(p < 0.12 ? p / 0.12 : p > 0.88 ? (1 - p) / 0.12 : 1);
   g.a(0, 0, L.W, L.H, 20, 23, 15, inRoom);
   if (inRoom < 0.92) return;
@@ -1512,7 +1529,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
    */
   const swaying = walk > 0 && walk < 1;
   const settle = walk >= 1 ? Math.max(0, 1 - (p - 0.5) * 3) : 1;
-  const sway = swaying || settle > 0 ? Math.sin(p * Math.PI * 14) * settle : 0;
+  const sway = holding ? Math.sin(time / 900) * 0.3 : swaying || settle > 0 ? Math.sin(p * Math.PI * 14) * settle : 0;
   const gm = drawBackFigure(g, gxs, gTop, floorY - 1, {
     coat: "#e8e3d2", // her blouse
     coatLit: "#f2eee0",
@@ -1551,7 +1568,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
 
   g.a(0, 0, W, H, 240, 170, 80, 0.05);
   for (let i = 0; i < 4; i++) {
-    const t = (p * 1.1 + i / 4) % 1;
+    const t = ((holding ? time / 3000 : p * 1.1) + i / 4) % 1;
     g.a(W * 0.9 + i * 4, floorY - 22 - t * 24, 3, 3, 224, 163, 60, 0.35 * (1 - t));
   }
 }
@@ -2023,8 +2040,6 @@ export const GLEN_ART: ArtPack = {
     drawHills(g, L, st);
     drawGround(g, L, st, s.time);
     drawSeasonLand(g, L.W, L.horizonY, L.H, st);
-    // the barn's stock, stacked past the byre where it can be seen from the hill
-    drawHaystack(g, L.croft.x + 106, L.croft.y + L.croft.h, st.hay);
     drawCroft(g, L, st, night, s.time);
     /*
      * Not while it is away at market — that animation draws the cart rolling
@@ -2037,9 +2052,25 @@ export const GLEN_ART: ArtPack = {
      */
     if (k !== "market") drawCart(g, L, st, s.time);
 
+    /*
+     * The evening at the inn. The pint plays up to the moment she has set it
+     * down and the room has settled — PUB_SETTLED of the way through the
+     * scene — and then holds there, fire going and her swaying, for as long
+     * as the player sits on. It is a respite: cutting straight back to the
+     * hill read as "get back to work". Leaving plays the last of the scene,
+     * the room fading out, and the hill comes back up.
+     */
     if (k === "pub") {
-      pubScene(g, L, p, s.time);
-          return;
+      pubScene(g, L, p * PUB_SETTLED, s.time);
+      return;
+    }
+    if (k === "leaveinn") {
+      pubScene(g, L, PUB_SETTLED + p * (1 - PUB_SETTLED), s.time, true);
+      return;
+    }
+    if (s.atInn && !k) {
+      pubScene(g, L, PUB_SETTLED, s.time, true);
+      return;
     }
     if (k === "fox") {
       foxRaid(g, L, s);

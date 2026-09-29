@@ -80,6 +80,8 @@ describe("the walkthrough", () => {
     seen.add("did-comfort");
     expect(currentStep(g, seen)?.id).toBe("tools");
     seen.add("tools");
+    expect(currentStep(g, seen)?.id).toBe("seasons");
+    seen.add("did-sky");
     expect(currentStep(g, seen)?.id).toBe("croft");
     seen.add("went-inside");
     // entering the house used to go straight to the bed, so a player was shown
@@ -153,6 +155,12 @@ describe("the walkthrough", () => {
     expect(step.text).toMatch(/two taps/);
     expect(step.text.toLowerCase()).toContain("dog");
     expect(step.text.toLowerCase()).toContain("crook");
+  });
+
+  it("teaches the four seasons and what each is for, and points at the sky where they are shown", () => {
+    const step = TUTORIAL.find((s) => s.id === "seasons")!;
+    for (const word of ["Spring", "Summer", "Autumn", "Winter", "hay", "barn"]) expect(step.text).toContain(word);
+    expect(step.target).toBe("sky");
   });
 
   it("teaches how a run ends badly", () => {

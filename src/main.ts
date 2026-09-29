@@ -33,6 +33,8 @@ import { TutorialUi } from "./ui/tutorial-ui";
 import { buildSettings } from "./ui/settings-panel";
 import { $, button, el, toast } from "./ui/dom";
 import { eventDef } from "./sim/events";
+import { Painter } from "./render/painter";
+import { drawCallum, PORTRAIT_H, PORTRAIT_W } from "./render/portrait";
 import { DEMO_DAYS, IS_DEMO, STORE_URL, demoOver } from "./demo";
 
 /* ---------- state ---------- */
@@ -162,6 +164,15 @@ if (IS_DEMO) {
  */
 const eventEl = $("event");
 let eventKey = "";
+const portraitEl = $<HTMLCanvasElement>("event-portrait");
+const portraitPainter = new Painter(portraitEl.getContext("2d")!, PORTRAIT_W, PORTRAIT_H);
+let portraitSpeaker: string | null = null;
+let portraitSince = 0;
+/** once a frame while a card with someone on it is up */
+function drawPortrait(now: number) {
+  if (!portraitSpeaker || !eventEl.classList.contains("on")) return;
+  if (portraitSpeaker === "callum") drawCallum(portraitPainter, now, now - portraitSince);
+}
 function updateEvent() {
   const g = game.state;
   // nothing comes to the door of a finished demo
@@ -176,6 +187,10 @@ function updateEvent() {
   }
   world.close(); // the card is the thing to look at
   const ev = eventDef(g.event!.id);
+  // his face, if it is him; it pops in with the card (the CSS restarts on unhiding)
+  portraitSpeaker = ev.speaker ?? null;
+  portraitSince = performance.now();
+  portraitEl.hidden = !portraitSpeaker;
   const lex = game.lex;
   $("event-title").textContent = ev.title(g, g.event!.data, lex);
   $("event-body").textContent = ev.body(g, g.event!.data, lex);
@@ -307,6 +322,7 @@ const settingsUi = buildSettings({
   },
   hasSave,
   runDifficulty: () => game.state.difficulty,
+  today: () => game.state.day,
   replayTutorial: () => {
     // clearing the flag is what makes startGame teach it again
     applySettings({ tutorialSeen: false });
@@ -587,6 +603,15 @@ animator.onStart = (anim) => {
   if (anim === "wolf" || anim === "wolflost") score.cue("wolf");
   else if (anim === "fox") score.cue("fox");
 };
+/*
+ * The pint is down and the room has settled: sit on. Not when the watch is
+ * running a recorded day (it chains straight on to the next thing), and only
+ * in the glen — the retro panels keep their own short evening.
+ */
+animator.onFinish = (anim) => {
+  if (anim === "pub" && settings.ui === "glen" && !game.busy && !game.state.over) world.enterInn();
+};
+$("inn-leave-btn").addEventListener("click", () => world.leaveInn());
 animator.onIdle = () => {
   tutorial.suspend(false);
   render();
@@ -751,7 +776,7 @@ function updateSkyLog(now: number) {
 const hintEl = $("hint");
 let hintText = "";
 function updateHint() {
-  const want = settings.ui === "glen" && !animator.busy ? world.hintText() : "";
+  const want = settings.ui === "glen" && !animator.busy && !world.atInn ? world.hintText() : "";
   if (want === hintText) return;
   hintText = want;
   hintEl.textContent = want;
@@ -848,8 +873,11 @@ function updatePrompts() {
 }
 
 /* ---------- the frame loop ---------- */
+const innLeave = $("inn-leave");
 function frame(now: number) {
   animator.tick(now);
+  drawPortrait(now);
+  innLeave.classList.toggle("on", world.atInn && !animator.busy);
   nav.tick(now);
   updatePrompts();
   updateCaption(animator.current, animator.p);
@@ -894,7 +922,8 @@ function frame(now: number) {
     interior: settings.ui === "glen" && world.interior,
     spotlight: settings.ui === "glen" && !world.interior ? tutorial.spotlight : null,
     spotlightBed: settings.ui === "glen" && world.interior && tutorial.pointingAtBed,
-    focus: settings.ui === "glen" && nav.device !== "pointer" && !world.active ? world.focusId : null,
+    focus: settings.ui === "glen" && nav.device !== "pointer" && !world.active && !world.atInn ? world.focusId : null,
+    atInn: settings.ui === "glen" && world.atInn,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);

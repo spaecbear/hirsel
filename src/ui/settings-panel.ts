@@ -4,7 +4,8 @@ import { CHEATS, findCheat, runCheat, type CheatContext } from "../sim/cheats";
 import { buffGlossary, seasonGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
 import { prefersReducedMotion } from "../sim/settings";
 import type { Settings } from "../sim/settings";
-import { DIFFICULTY } from "../sim/config";
+import { DIFFICULTY, SEASON_DAYS } from "../sim/config";
+import { seasonOf } from "../sim/rules";
 import type { Difficulty } from "../sim/types";
 import { platform } from "../platform";
 import { QUICK_KEYS } from "./controls";
@@ -22,6 +23,8 @@ export interface SettingsApi {
   replayTutorial: () => void;
   /** the scale the run on the hill just now is being played on */
   runDifficulty: () => Difficulty;
+  /** the day the run on the hill is on, for where it is in the year */
+  today: () => number;
   cheatContext: () => CheatContext;
 }
 
@@ -224,10 +227,38 @@ export function buildSettings(api: SettingsApi) {
       el("div", { class: e.secret && e.name === "?????" ? "locked" : "" }, `<b>${e.name}</b><i>${e.meta}</i><span>${e.effect}</span>`);
     for (const e of buffGlossary()) glossGrid.appendChild(glossEntry(e));
     for (const e of statusGlossary()) glossGrid.appendChild(glossEntry(e));
-    for (const e of workGlossary()) glossGrid.appendChild(glossEntry(e));
-    for (const e of seasonGlossary()) glossGrid.appendChild(glossEntry(e));
+    // the year's own work lives with the year, below
+    for (const e of workGlossary()) if (e.id !== "hay" && e.id !== "lambing") glossGrid.appendChild(glossEntry(e));
     gloss.appendChild(glossGrid);
     box.appendChild(gloss);
+
+    /*
+     * ---- the year: the four seasons, where the run is in them, and the ----
+     * work that belongs to them. Its own section rather than four more cards
+     * among the buffs: it is the thing a player plans a run around.
+     */
+    const year = group("The year");
+    const now = seasonOf(api.today());
+    year.appendChild(
+      el(
+        "div",
+        { class: "note" },
+        `It is ${now.name.toLowerCase()} just now — day ${now.day} of ${SEASON_DAYS}, year ${now.year}. ` +
+          `The season is always in the sky: tap it for the days left and what is in the barn.`,
+      ),
+    );
+    const yearGrid = el("div", { class: "gloss" });
+    for (const e of seasonGlossary()) {
+      const card = glossEntry(e);
+      if (e.id === now.id) {
+        card.classList.add("now");
+        card.querySelector("b")!.insertAdjacentHTML("beforeend", " <em>now</em>");
+      }
+      yearGrid.appendChild(card);
+    }
+    for (const e of workGlossary()) if (e.id === "hay" || e.id === "lambing") yearGrid.appendChild(glossEntry(e));
+    year.appendChild(yearGrid);
+    box.appendChild(year);
 
     /* ---- cheats ---- */
     const cheats = group("Cheat codes");

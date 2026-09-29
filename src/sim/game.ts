@@ -383,8 +383,11 @@ export class Game {
       if (fallback) this.answerEvent(fallback.choice.id);
       else g.event = null;
     }
-    if (g.over || g.day < EVENTS_BALANCE.firstDay) return;
+    if (g.over) return;
+    // Callum comes first, on the third morning; nothing else comes until he has
+    const met = g.eventDays["callum-intro"] !== undefined;
     for (const id of EVENT_ORDER) {
+      if (id !== "callum-intro" && (!met || g.day < EVENTS_BALANCE.firstDay)) continue;
       const data = eventDef(id).due(g, this.rng);
       if (data) {
         g.event = { id, day: g.day, data };
@@ -713,7 +716,11 @@ export class Game {
     // 5. feed
     const feed = feedCost(g);
     g.money -= feed;
-    if (feed) this.say(`Winter feed and odds and ends: £${feed}.`);
+    // what the money went on changes with the year: it is only winter feed in winter
+    if (feed) {
+      const what = { spring: "Salt, dip and odds and ends", summer: "Fly oil, salt and odds and ends", autumn: "Feed and odds and ends", winter: "Winter feed and odds and ends" }[season(g).id];
+      this.say(`${what}: £${feed}.`);
+    }
 
     // 6. regrowth — nothing at all in winter
     const seasonRegen = season(g).regen;

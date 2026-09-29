@@ -156,7 +156,8 @@ canvas {
 }
 
 /* retro: the canvas is a picture inside the frame */
-body.mode-retro canvas {
+/* #scene, not every canvas: the event portrait is a canvas too, and was stretched to fill the card */
+body.mode-retro #scene {
   width: 100%;
   border: 2px solid var(--moss);
   border-top: 0;
@@ -173,7 +174,7 @@ html:has(body.mode-glen) {
   height: 100%;
   overflow: hidden;
 }
-body.mode-glen canvas {
+body.mode-glen #scene {
   width: 100%;
   height: 100%;
   touch-action: none;
@@ -1638,4 +1639,73 @@ body.input-pad .toast {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+/* whoever is at the door: a small portrait at 3×, popping up with the card */
+.event-portrait {
+  float: left;
+  width: 120px;
+  height: 132px;
+  margin: 0 14px 8px 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border: 2px solid var(--moss);
+  animation: portrait-in 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.event-portrait[hidden] {
+  display: none;
+}
+.event-choices {
+  clear: both;
+}
+@keyframes portrait-in {
+  from {
+    transform: translateY(18px) scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+body.no-motion .event-portrait {
+  animation: none;
+}
+@media (max-width: 420px) {
+  .event-portrait {
+    width: 80px;
+    height: 88px;
+  }
+}
+
+/* the way out of the inn, when the evening is done — not before */
+.inn-leave {
+  position: absolute;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(320px, calc(100vw - 32px));
+  display: none;
+  z-index: 9;
+}
+.inn-leave.on {
+  display: block;
+  animation: portrait-in 0.4s ease-out both;
+}
+body.input-keys .inn-leave,
+body.input-pad .inn-leave {
+  bottom: calc(60px + env(safe-area-inset-bottom));
+}
+/* the season the run is in, picked out among the four */
+.gloss div.now {
+  border-color: var(--gorse);
+}
+.gloss div b em {
+  font-style: normal;
+  font-size: 9px;
+  color: var(--peat);
+  background: var(--gorse);
+  padding: 0 4px;
+  margin-left: 4px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }

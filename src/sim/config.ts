@@ -496,7 +496,8 @@ export const ANIM_MS: Record<string, number> = {
   // the pub and the night are the two set pieces worth sitting in: an £8
   // pint should feel like an evening, and the dark is where the game's
   // tension lives. SKELP halves all of this for anyone in a hurry.
-  pub: 4200,
+  pub: 3400, // the walk in: the evening then lasts as long as the player likes
+  leaveinn: 1000,
   move: 1200,
   sleep: 2600, // dusk down into the dark
   dawn: 2000, // and back up out of it

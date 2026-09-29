@@ -76,6 +76,15 @@ describe("the year", () => {
     for (const d of snowy) expect(seasonOf(d).id, `snow on day ${d}`).toBe("winter");
   });
 
+  it("names the night's spending for the season — it is only winter feed in winter", () => {
+    for (const [id, words] of [["spring", "Salt, dip"], ["summer", "Fly oil"], ["autumn", "Feed and odds"], ["winter", "Winter feed"]] as const) {
+      const { game, g } = harness({ day: dayOf(id, 5), flock: flockOf(6), money: 100 });
+      game.sleep();
+      const line = g.log.find((l) => l.t.includes("odds and ends"));
+      expect(line?.t, id).toContain(words);
+    }
+  });
+
   it("says so at dawn when a season comes in", () => {
     const { game, g } = harness({ day: dayOf("summer") - 1, flock: flockOf(6), money: 500 });
     game.sleep();

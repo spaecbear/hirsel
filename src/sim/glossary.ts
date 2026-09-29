@@ -102,12 +102,14 @@ export function seasonGlossary(): GlossaryEntry[] {
       x(s.foxBias) && `fox risk ${x(s.foxBias)}`,
       x(s.strike) && `flystrike ${x(s.strike)}`,
     ].filter(Boolean);
-    const extra =
-      id === "winter"
-        ? " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. No mucking frozen ground."
-        : id === "summer"
-          ? " The only time hay can be cut."
-          : "";
+    // what the season is for, not only what it does to the numbers
+    const extra = {
+      spring: ` The lambing: ewes carrying from the winter lamb in the first ${BALANCE.lambingDays} days. The grass is at its best for putting the flock back on it.`,
+      summer: " The only time hay can be cut, on a dry day. Fleece comes on fastest and the flies with it: shear often, and tend a heavy flock. The Highland show is mid-season.",
+      autumn: " The wool sales, and the lamb sales: the best price of the year for both. The tup goes in with the ewes. Lay in hay before it ends — the barn is what the winter runs on.",
+      winter:
+        " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. Hay is fed out at night. No mucking frozen ground.",
+    }[id];
     return {
       id,
       name: s.name,

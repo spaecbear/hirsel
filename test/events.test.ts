@@ -14,6 +14,8 @@ function harness(patch: Partial<GameState> = {}) {
   const game = new Game(Object.assign(newGame({ seed: 9 }), { money: 500, hay: 500, flock: [ewe(), ewe(), ewe()] }, patch));
   game.onAnim = (_a, after) => after?.();
   game.state.owned.pelt = true; // no fox: this is about the door
+  // Callum has been met: every other event waits on that (tested on its own below)
+  game.state.eventDays["callum-intro"] = 3;
   return { game, g: game.state };
 }
 
@@ -43,12 +45,33 @@ describe("the events", () => {
     }
   });
 
-  it("never come in the first week", () => {
+  it("never come in the first week — only Callum, to say who he is", () => {
     const { game, g } = harness();
+    delete g.eventDays["callum-intro"];
     for (let d = 2; d < E.firstDay; d++) {
+      g.event = null;
       dawnOn(game, d, 0);
-      expect(g.event, `day ${d}`).toBeNull();
+      const ev = g.event as GameState["event"]; // TS narrowed it to null above; the night set it
+      if (d === E.introDay) expect(ev?.id, `day ${d}`).toBe("callum-intro");
+      else expect(ev, `day ${d}`).toBeNull();
     }
+  });
+
+  it("wait for Callum to be met, however late that is", () => {
+    const { game, g } = harness();
+    delete g.eventDays["callum-intro"];
+    g.goodwill = E.goodwillForGift; // a gift is ready…
+    dawnOn(game, 50, 0);
+    expect(g.event?.id).toBe("callum-intro"); // …but he has not been met yet
+    game.answerEvent("shake");
+    dawnOn(game, 51, 0);
+    expect(g.event?.id).not.toBe("callum-intro");
+    expect(g.event).not.toBeNull();
+  });
+
+  it("put his face on the cards he is in, and on no others", () => {
+    const his = EVENTS.filter((e) => e.speaker === "callum").map((e) => e.id).sort();
+    expect(his).toEqual(["callum-intro", "neighbour", "neighbour-gift"]);
   });
 
   it("never mention the sword, the wolf or how he is called, in either vocabulary", () => {
@@ -133,7 +156,7 @@ describe("the letters", () => {
 describe("the show", () => {
   it("is on its day each summer", () => {
     const { game, g } = harness();
-    g.eventDays = { "letter-boss": 1, "letter-mother": 1, "letter-friend": 1 };
+    Object.assign(g.eventDays, { "letter-boss": 1, "letter-mother": 1, "letter-friend": 1 });
     dawnOn(game, showDayOfYear(1));
     expect(g.event?.id).toBe("show");
     expect(showDayOfYear(2)).toBe(showDayOfYear(1) + SEASON_DAYS * 4);
@@ -179,18 +202,18 @@ describe("her, and the ceilidh", () => {
 
   it("comes once, and only once you know her", () => {
     const { game, g } = harness({ pubs: 1, day: 30 });
-    g.eventDays = { "letter-boss": 1, "letter-mother": 1 };
+    Object.assign(g.eventDays, { "letter-boss": 1, "letter-mother": 1 });
     dawnOn(game, 31, 0);
     expect(g.event?.id).not.toBe("visit");
     const h = harness({ pubs: 3 });
-    h.g.eventDays = { "letter-boss": 1, "letter-mother": 1, visit: 20 };
+    Object.assign(h.g.eventDays, { "letter-boss": 1, "letter-mother": 1, visit: 20 });
     dawnOn(h.game, 31, 0);
     expect(h.g.event?.id).not.toBe("visit");
   });
 
   it("is a ceilidh each autumn once you know her: an evening, and hale, for £4 and a tap", () => {
     const { game, g } = harness({ pubs: 2 });
-    g.eventDays = { "letter-boss": 1, "letter-mother": 1 };
+    Object.assign(g.eventDays, { "letter-boss": 1, "letter-mother": 1 });
     dawnOn(game, dayOf("autumn", E.ceilidhDay));
     expect(g.event?.id).toBe("ceilidh");
     const money = g.money;
@@ -237,7 +260,7 @@ describe("Callum, and the dealer", () => {
     const offered = new Set<string>();
     for (let i = 0; i < 60; i++) {
       const { game, g } = harness({ owned: { collie: true, pelt: true }, day: 30 });
-      g.eventDays = { "letter-boss": 1, "letter-mother": 1 };
+      Object.assign(g.eventDays, { "letter-boss": 1, "letter-mother": 1 });
       // the dealer's chance lands, then his pick walks through everything he carries
       const rolls = [0.01, 0.01, 0.01, i / 60];
       g.day = 30;

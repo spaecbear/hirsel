@@ -37,6 +37,8 @@ export interface EventChoice {
 
 export interface GameEvent {
   id: EventId;
+  /** who is at the door, for the portrait on the card. Nobody, for a letter */
+  speaker?: "callum";
   title: (g: GameState, data: Data, lex: Lexicon) => string;
   body: (g: GameState, data: Data, lex: Lexicon) => string;
   choices: (g: GameState, data: Data, lex: Lexicon) => EventChoice[];
@@ -56,6 +58,8 @@ export const NEIGHBOUR = "Callum";
 export const EVENTS_BALANCE = {
   /** no events before this day — the first week is the hill and nothing else */
   firstDay: 6,
+  /** except Callum coming over to say who he is, on the third morning */
+  introDay: 3,
   dealerChance: 0.1,
   dealerEvery: 24,
   dealerEweRate: 0.75,
@@ -125,6 +129,33 @@ export function trialChance(g: GameState): number {
 /* ---------- the events ---------- */
 
 export const EVENTS: GameEvent[] = [
+  /* ---- Callum, before anything else he does ---- */
+  {
+    /*
+     * He was asking for help, paying it back and losing his ewes onto your
+     * ground without ever having been met — a stranger with a name. This is
+     * the meeting: on the third morning, before any other event can come,
+     * so every later card with him on it is someone the player knows.
+     */
+    id: "callum-intro",
+    speaker: "callum",
+    due: (g) => (g.day >= E.introDay && once(g, "callum-intro") ? {} : null),
+    title: () => `${NEIGHBOUR}, over the burn`,
+    body: (_g, _d, lex) =>
+      `A man about your father's age comes over the burn on the stepping stones, a collie at his heel. ${NEIGHBOUR} — ` +
+      `the next hill is his, and his father's before him, and he has come to see who is daft enough to take this one on. ` +
+      `He looks your ${lex.flock} over and says nothing about it, which is a kindness. He will give you a hand when he can, ` +
+      `he says, and he will ask for one when he needs it. Up here nobody gets by on their own.`,
+    choices: () => [
+      {
+        id: "shake",
+        label: "Shake his hand",
+        fallback: true,
+        run: (game) => game.say(`${NEIGHBOUR} went back over the burn. You have a neighbour.`, "cozy"),
+      },
+    ],
+  },
+
   /* ---- letters from the life you left, on their days ---- */
   {
     id: "letter-boss",
@@ -309,6 +340,7 @@ export const EVENTS: GameEvent[] = [
   /* ---- Callum pays back a kindness ---- */
   {
     id: "neighbour-gift",
+    speaker: "callum",
     due: (g) => {
       if (g.goodwill < E.goodwillForGift) return null;
       const s = season(g).id;
@@ -385,6 +417,7 @@ export const EVENTS: GameEvent[] = [
   /* ---- Callum needs a hand ---- */
   {
     id: "neighbour",
+    speaker: "callum",
     due: (g, roll) => (since(g, "neighbour") >= E.neighbourEvery && roll() < E.neighbourChance ? {} : null),
     title: (_g, _d, lex) => `${NEIGHBOUR}'s ${lex.beasts} are out`,
     body: (_g, _d, lex) =>
@@ -546,6 +579,7 @@ export const eventDef = (id: EventId) => EVENTS.find((e) => e.id === id)!;
 
 /** the order they are asked in at dawn: the dated ones first, so a chance one never pushes a letter off its day */
 export const EVENT_ORDER: EventId[] = [
+  "callum-intro",
   "letter-boss",
   "letter-mother",
   "letter-friend",

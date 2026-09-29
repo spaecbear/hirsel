@@ -313,6 +313,14 @@ pixel's x, not by eye.
 
 ### The inn
 
+**The evening lasts as long as the player likes.** The pint plays up to the moment she has
+set it down and the room has settled, and then holds there — the fire going, her swaying —
+with a **Head back up the hill** button, until the player chooses to go (`WorldUi.atInn`).
+Leaving plays the last of the scene, the room fading out. Cutting straight back to the hill
+read as "get back to work!", which is the opposite of what a pint is for. Nothing on the hill
+answers while you sit on; keys and a pad reach the button, and B leaves. Not while the pocket
+watch is running a recorded day, and not in the retro panels.
+
 The one room in the game with other people in it: the landlord behind the bar and the lass
 with her tray — the one the croft is quietly being built for, drawn to be recognised, since
 by the sixth pint the writing assumes you know who is being talked about.
@@ -540,6 +548,7 @@ sword, the wolf or how he is called.
 
 | event | when | the choice |
 | --- | --- | --- |
+| Callum, over the burn | the third morning, before any other event can come | shaking his hand: he is met, and everything else he does is someone the player knows |
 | letters | days 9, 40, 110, 190 — the old office, your mother (with £10), a friend, your sister | mostly words; they are the thread back to the desk in the opening |
 | the dealer | now and then, not in winter | a good ewe at ¾ of the cart price, or a tool you lack at ⅘ — never a second dog, the sword or the watch |
 | Callum's ewes are out | now and then | a tap to help him, or not |
@@ -548,6 +557,11 @@ sword, the wolf or how he is called.
 | the Highland show | the 18th of each summer | show your best grown ewe (breed, fleece, tended) for £25 or £12, or run the dog in the trial for £20 — the collie is the trials dog, and an old one is slower |
 | her afternoon off | once, after three evenings at the inn | walk the hill with her: it counts for an evening |
 | the ceilidh | the 10th of each autumn, once you know her | £4 and a tap: an evening, and hale for two days |
+
+**Callum has a face.** His cards — the introduction, his ewes out, his kindness paid back —
+carry a portrait (`render/portrait.ts`): flat cap, grey beard, tweed, drawn at 40×44 and
+scaled like everything else. It pops up with the card, blinks, and talks for the first
+moments of it. `speaker` on an event says whose face goes on it; he is the only one so far.
 
 The dated ones are asked before the chance ones each dawn, so a letter is never pushed off
 its day by the dealer. The card is its own layer for keys and a pad: focus lands on the first
@@ -634,6 +648,13 @@ comes — **taps** (Cut hay: summer, a dry day, 12 bales) or **money** (the cart
 £5, £9 once winter is on you). A hungry night out in the snow can cost a beast. **The byre
 finally has a job**: on a night of snow the flock is brought in, out of the snow and out of a
 fox's reach.
+
+The walkthrough teaches the year: a step after the tools names the four seasons and what each
+is for, and ends on tapping the sky, which is where the season and the days left in it always
+are. Settings has a section of its own, **The year**, with a card for each season — its
+numbers from the same constants the sim uses, and what the season is for — the current one
+marked, and hay and lambing beside them. The night's spending is named for the season:
+salt and dip in spring, fly oil in summer, feed in autumn, and winter feed only in winter.
 
 The game says all this out loud rather than in a manual: a line at dawn when each season
 comes in, a warning six days before winter with the barn's count, the season in the HUD and
