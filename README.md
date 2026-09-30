@@ -40,6 +40,9 @@ won't appear on this one. Settings → Export file moves a run between origins.
 cloud saves. It has its own `package.json`, so the web build and Vercel never install
 Electron. See `desktop/README.md`, and `prototype/steam-plan.md` for the whole plan.
 
+`store/` has what goes to Steam itself: the store page drafts, the screenshots, the
+upload scripts, and the partner-site setup in order (`store/README.md`).
+
 ## Deploying to Vercel
 
 It is a static Vite build with no server side. Import the repo in Vercel and it will detect

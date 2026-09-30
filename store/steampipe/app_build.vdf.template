@@ -1,0 +1,30 @@
+"AppBuild"
+{
+	"AppID" "@APP_ID@"
+	"Desc" "@DESC@"
+	"ContentRoot" "@CONTENT@"
+	"BuildOutput" "@OUTPUT@"
+	"SetLive" "@BRANCH@"
+
+	"Depots"
+	{
+		"@WIN_DEPOT@"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "@WIN_PATH@/*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+		"@LINUX_DEPOT@"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "@LINUX_PATH@/*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+	}
+}
