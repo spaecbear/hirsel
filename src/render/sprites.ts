@@ -80,7 +80,6 @@ export const KIT = {
   crook: false,
   boots: false,
   shears: false,
-  lamp: false,
   cart: false,
   watch: false,
   oilskin: false,
@@ -298,8 +297,6 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
    */
   const px = (dx: number, dy: number, w: number, h: number, c: string) =>
     g.px(flip ? x + SHEPHERD_SPAN - dx - w : x + dx, y + dy, w, h, c);
-  const al = (dx: number, dy: number, w: number, h: number, r: number, gr: number, b: number, a: number) =>
-    g.a(flip ? x + SHEPHERD_SPAN - dx - w : x + dx, y + dy, w, h, r, gr, b, a);
 
   g.a(x - 1, y + 26, 14, 2, 0, 0, 0, 0.25);
 
@@ -422,27 +419,6 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
     }
   }
 
-  if (KIT.lamp) {
-    // storm lantern in the free hand, burning brighter the darker it gets
-    const lx = -7;
-    const ly = 12;
-    /*
-     * It has to read as the thing you paid £44 for. The window of a built-up
-     * hearth throws real light across the croft at night and this was a faint
-     * smudge beside it — so the pool it casts now grows with the dark, in
-     * three falling-off steps rather than one flat wash.
-     */
-    const glow = 0.45 + NIGHT * 0.55;
-    al(lx - 13, ly - 12, 30, 30, 240, 186, 88, 0.04 + NIGHT * 0.2);
-    al(lx - 8, ly - 7, 20, 21, 244, 196, 100, 0.07 + NIGHT * 0.3);
-    al(lx - 4, ly - 3, 12, 13, 250, 208, 118, 0.1 + NIGHT * 0.4);
-    // and it throws a pool on the ground he is standing on
-    al(lx - 10, ly + 12, 26, 3, 240, 190, 90, 0.05 + NIGHT * 0.3);
-    px(lx + 1, ly - 4, 2, 3, "#6d7263"); // bail
-    px(lx, ly - 1, 5, 6, "#8a8f88"); // body
-    al(lx + 1, ly, 3, 4, 255, 214, 120, glow); // the flame
-    px(lx, ly + 5, 5, 1, "#5a5f58");
-  }
   if (o.crook && KIT.crook) {
     for (let i = 0; i < 11; i++) px(13, 1 + i * 2, 2, 2, "#6b5433");
     px(11, -1, 4, 2, "#6b5433");

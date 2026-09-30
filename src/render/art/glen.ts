@@ -17,6 +17,7 @@ import { driftFor, idleTick } from "../wander";
 import { spinNow } from "../dog-spin";
 import { tippyFrame } from "../tippy";
 import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
+import { drawLampLight, drawLampPost } from "../lamppost";
 import {
   TERRAIN,
   mix,
@@ -575,6 +576,10 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   const stackX = L.croft.x + 106;
   const stackFoot = L.croft.y + L.croft.h;
   const stack: Actor | null = st.hay > 0 ? { feet: stackFoot, paint: () => drawHaystack(g, stackX, stackFoot, st.hay) } : null;
+  // the storm lantern's post: standing in the field like the stack, so it is sorted the same way
+  const post: Actor | null = owns(st, "lamp")
+    ? { feet: L.lampPost.y, paint: () => drawLampPost(g, L.lampPost.x, L.lampPost.y) }
+    : null;
 
   /** her idle lap, hoisted so it can be sorted in among everything else */
   const paintDog = () =>
@@ -592,6 +597,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   if (k === null) {
     const cast: Actor[] = [...sheep];
     if (stack) cast.push(stack);
+    if (post) cast.push(post);
     if (hasDog(st)) cast.push({ feet: L.dogAt.y + DOG_FEET, paint: paintDog });
     /*
      * She lives here now: out by the croft door, wandering a little way
@@ -613,6 +619,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
 
   // in a set piece the choreography decides the order: the stack is scenery at the back
   stack?.paint();
+  post?.paint();
   for (const a of sheep) a.paint();
   let dogAfter = false;
 
@@ -1837,17 +1844,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
       }
     });
   }
-  if (owns(st, "lamp")) {
-    put(() => {
-      g.px(kx + 3, sh.y + 2, 2, 3, "#6d7263"); // the bail
-      g.px(kx + 1, sh.y + 4, 7, 2, "#8a8f88"); // the cap
-      g.px(kx + 1, sh.y + 6, 1, 8, "#8a8f88"); // the frame
-      g.px(kx + 7, sh.y + 6, 1, 8, "#8a8f88");
-      g.px(kx + 2, sh.y + 6, 5, 8, "#3a3f3c"); // the glass
-      g.a(kx + 2, sh.y + 8, 5, 5, 255, 214, 120, 0.55); // the wick, turned low
-      g.px(kx + 1, sh.y + 14, 7, 2, "#6d7263"); // the oil font
-    });
-  }
+  // the storm lantern is not on the shelf: it hangs on its post out in the field
   if (owns(st, "oilskin")) {
     put(() => {
       g.px(kx + 4, sh.y + 2, 3, 2, "#5a5f58"); // the peg
@@ -2012,7 +2009,6 @@ export const GLEN_ART: ArtPack = {
         crook: owns(st, "crook"),
         boots: owns(st, "boots"),
         shears: owns(st, "shears"),
-        lamp: owns(st, "lamp"),
         cart: owns(st, "cart"),
         collie: owns(st, "collie"),
         watch: owns(st, "watch"),
@@ -2080,6 +2076,8 @@ export const GLEN_ART: ArtPack = {
     drawActors(g, L, s);
     drawWeather(g, L, st, s.time);
     if (night > 0) drawNight(g, L, st, night, s.time);
+    // the lantern lights with the dark, and on top of it
+    if (owns(st, "lamp")) drawLampLight(g, L.lampPost.x, L.lampPost.y, night, s.time);
 
     if (s.active) drawHighlight(g, L, s.active, s.time);
     else if (s.focus && !k) drawHighlight(g, L, s.focus, s.time);

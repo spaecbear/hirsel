@@ -32,6 +32,7 @@ import {
 } from "../sprites";
 import { hasDog, isFullMoon, moonPhase, owns } from "../../sim/rules";
 import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
+import { drawLampLight, drawLampPost } from "../lamppost";
 import type { GameState, Sheep } from "../../sim/types";
 import type { ArtPack, Scene } from "./types";
 
@@ -39,6 +40,9 @@ const W = 480;
 const H = 180;
 const GROUND = 120;
 const SHEP_X = 236;
+/** the storm lantern's post, out in the field past the croft */
+const LAMP_X = 196;
+const LAMP_FOOT = GROUND + 12;
 
 /* ---------- palette ---------- */
 
@@ -624,7 +628,6 @@ export const HIRSEL_ART: ArtPack = {
         crook: owns(st, "crook"),
         boots: owns(st, "boots"),
         shears: owns(st, "shears"),
-        lamp: owns(st, "lamp"),
         cart: owns(st, "cart"),
         collie: owns(st, "collie"),
         watch: owns(st, "watch"),
@@ -676,6 +679,7 @@ export const HIRSEL_ART: ArtPack = {
 
     drawWeather(g, st, s.time);
     if (night > 0) drawNight(g, st, night, s.time, 0);
+    if (owns(st, "lamp")) drawLampLight(g, LAMP_X, LAMP_FOOT, night, s.time);
   },
 };
 
@@ -692,4 +696,5 @@ function drawLand(g: Painter, s: Scene, night: number) {
   // the cart is parked unless it is out on the road to market
   if (owns(st, "cart") && s.anim !== "market") drawParkedCart(g, 118, GROUND - 12, s.time);
   if (owns(st, "saltlick")) drawSaltLick(g, 350, GROUND + 20);
+  if (owns(st, "lamp")) drawLampPost(g, LAMP_X, LAMP_FOOT);
 }

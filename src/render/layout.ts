@@ -66,6 +66,8 @@ export interface WorldLayout {
   /** where she is on her circuit this frame, and which way she is looking */
   dogAt: { x: number; y: number; facing: 1 | -1; running: boolean; wagging: boolean };
   saltlick: { x: number; y: number };
+  /** the storm lantern's post, once bought: `y` is where it meets the ground */
+  lampPost: { x: number; y: number };
   flock: { x: number; y: number }[];
   flockBox: Rect;
   hotspots: Hotspot[];
@@ -144,6 +146,14 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     : homeShepherd;
   const dog = { x: shepherd.x - 26, y: shepherd.y + 16 };
   const saltlick = { x: Math.round(W * 0.18), y: Math.round(groundY + field * 0.45) };
+  /*
+   * The lantern's post: out in front of the croft, where the yard meets the
+   * field, so its light falls on the ground between the door and the flock.
+   */
+  const lampPost = {
+    x: Math.round(croft.x + croft.w * 0.5 + (portrait ? 4 : 10)),
+    y: Math.round(Math.min(H - 8, croft.y + croft.h + field * (portrait ? 0.12 : 0.2))),
+  };
 
   // the flock grazes across the middle of the field, in rows so they overlap
   // the way animals on a slope do rather than sitting on one line
@@ -243,7 +253,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "sky", rects: [{ x: 0, y: 0, w: W, h: Math.max(10, horizonY - 8) }], label: "The sky" },
   ];
 
-  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, dogAt, saltlick, flock, flockBox, hotspots };
+  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, dogAt, saltlick, lampPost, flock, flockBox, hotspots };
 }
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
