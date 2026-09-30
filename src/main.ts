@@ -126,7 +126,7 @@ function render() {
 }
 
 /**
- * The demo's last card. Comes up once the fortnight has been slept through,
+ * The demo's last card. Comes up once the last demo day has been slept through,
  * and again on continuing a demo save that is past it — the demo does not go
  * on, it points at the game that does.
  */
@@ -137,8 +137,8 @@ function showDemoEnd() {
   const g = game.state;
   $("demo-body").textContent =
     `${DEMO_DAYS} days on the hill, ${g.flock.length} beasts on it and £${g.money} in the purse. ` +
-    "The full game goes on from here: the seasons and the winter, lambing, the dogs growing old, the dealer and the show " +
-    "and your neighbour over the burn — and the croft, and her.";
+    "The full game goes on from here: the summer and the hay, the Highland show, the autumn sales, the first winter " +
+    "and the lambs in the spring after it, the dogs growing old — and the croft, and her.";
   box.classList.add("on");
 }
 $("demo-wishlist").addEventListener("click", () => {

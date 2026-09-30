@@ -118,7 +118,9 @@ playtest should confirm that before the price is set. $7.99 is a reasonable laun
 
 ## The demo
 
-Its own app on Steam, created under the game's. It is the first 14 days of a run, then a
-card that sends the player to the store page. Saves are kept apart from the full game's.
+Its own app on Steam, created under the game's. It is the first 30 days of a run — the
+first spring and the start of summer — then a card that sends the player to the store page.
+Saves are kept apart from the full game's, and don't carry over: thirty days is quickly
+played again.
 The store link in the demo comes from `VITE_STORE_URL` in `.env.demo` — set it once the
 store page exists, then rebuild the demo.

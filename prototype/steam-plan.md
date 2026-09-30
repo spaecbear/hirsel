@@ -184,7 +184,7 @@ keyboard alone.
 Decide what happens to the free Vercel build once there is a paid one. Recommended:
 
 - [x] **The demo** is a build flag, not a fork: `npm run build:demo` (`.env.demo`,
-      `VITE_DEMO_DAYS=14`) stops after a fortnight on a card with a wishlist button. Set
+      `VITE_DEMO_DAYS=30`) stops at the turn into summer on a card with a wishlist button. Set
       `VITE_STORE_URL` once the store page exists. Pointing Vercel at it is still to decide
 - [x] The Steam demo: `desktop/` packages it as its own app (`npm run package:demo:*`), with
       its own app id constant and its own saves folder. Needs a demo app in Steamworks

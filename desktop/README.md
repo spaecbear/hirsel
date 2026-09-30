@@ -27,7 +27,7 @@ are unsigned: there is no code-signing certificate yet, and Steam does not need 
 ### The demo
 
 A Steam demo is its own app, with its own id. `stage-web --demo` stages the demo web build
-(`npm run build:demo` at the root: the first 14 days, then a wishlist card) and writes
+(`npm run build:demo` at the root: the first 30 days, then a wishlist card) and writes
 `web/build.json`, which is how the shell knows. The demo uses `STEAM_DEMO_APP_ID`, names its
 user-data folder "Hirsel Demo" so its saves never meet the full game's, and packages as
 "Hirsel Demo". Set up Auto-Cloud for it the same way, with `Hirsel Demo/saves`.
