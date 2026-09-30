@@ -12,6 +12,7 @@
  */
 import type { DogKind, GameState } from "../sim/types";
 import { herdCircuit } from "./wander";
+import { haystackTiers } from "./season";
 
 export interface Rect {
   x: number;
@@ -28,6 +29,8 @@ export type HotspotId =
   | "ground"
   | "hills"
   | "sky"
+  /** the haystack past the byre, while there is any hay */
+  | "hay"
   /* inside the house */
   | "bed"
   | "hearth"
@@ -68,6 +71,8 @@ export interface WorldLayout {
   saltlick: { x: number; y: number };
   /** the storm lantern's post, once bought: `y` is where it meets the ground */
   lampPost: { x: number; y: number };
+  /** the middle of the haystack's base, past the byre */
+  haystack: { x: number; y: number };
   flock: { x: number; y: number }[];
   flockBox: Rect;
   hotspots: Hotspot[];
@@ -150,6 +155,14 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
    * The lantern's post: out in front of the croft, where the yard meets the
    * field, so its light falls on the ground between the door and the flock.
    */
+  /*
+   * Past the byre's gable in landscape. A portrait screen is too narrow for
+   * that — the cart is parked there, and the stack came out drawn on top of
+   * it — so there it stands just in front of the byre instead.
+   */
+  const haystack = portrait
+    ? { x: Math.round(byre.x + byre.w / 2), y: byre.y + byre.h + 12 }
+    : { x: croft.x + 106, y: croft.y + croft.h };
   const lampPost = {
     x: Math.round(croft.x + croft.w * 0.5 + (portrait ? 4 : 10)),
     y: Math.round(Math.min(H - 8, croft.y + croft.h + field * (portrait ? 0.12 : 0.2))),
@@ -235,6 +248,14 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "croft", rects: [pad(croft, 4)], label: "The croft" },
     { id: "cart", rects: [pad(cart, 6)], label: "The cart" },
     { id: "shepherd", rects: [{ x: shepherd.x - 10, y: shepherd.y - 8, w: 34, h: 40 }], label: "Yourself" },
+    // the stack, sized to what is in it; gone with the last bale
+    ...(st.hay > 0
+      ? [{
+          id: "hay" as const,
+          rects: [{ x: haystack.x - 11, y: haystack.y - haystackTiers(st.hay) * 4 - 4, w: 22, h: haystackTiers(st.hay) * 4 + 6 }],
+          label: "The hay",
+        }]
+      : []),
     /*
      * She has no tap target out here, on purpose.
      *
@@ -253,7 +274,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "sky", rects: [{ x: 0, y: 0, w: W, h: Math.max(10, horizonY - 8) }], label: "The sky" },
   ];
 
-  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, dogAt, saltlick, lampPost, flock, flockBox, hotspots };
+  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, dogAt, saltlick, lampPost, haystack, flock, flockBox, hotspots };
 }
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);

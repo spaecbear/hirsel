@@ -632,6 +632,8 @@ export class WorldUi {
         return "Where to graze them";
       case "sky":
         return "Word of the glen";
+      case "hay":
+        return `The ${this.game.lex.hay} · ${this.game.state.hay} bales`;
       case "hearth":
         return "The croft";
       case "kit":
@@ -675,6 +677,8 @@ export class WorldUi {
         return this.cartRows();
       case "sky":
         return this.skyRows();
+      case "hay":
+        return this.hayRows();
       case "hearth":
         return this.croftRows();
       case "kit":
@@ -690,6 +694,23 @@ export class WorldUi {
    * plannable rather than reactive and must not be hidden — in a UI with no
    * panels, the sky is where it belongs.
    */
+  /** the stack itself: what is in it, how far it goes, and where more comes from */
+  private hayRows(): Row[] {
+    const g = this.game.state;
+    const lex = this.game.lex;
+    const want = hayNeeded(g);
+    const short = Math.max(0, want - g.hay);
+    const info = (label: string, detail: string): Row => ({ label, detail, info: true, onPick: () => {} });
+    return [
+      info("In the barn", `${g.hay} bales, about ${hayNights(g)} nights for the ${lex.flock} as it is now`),
+      info(
+        isWinter(g) ? "The rest of the winter" : "A winter",
+        short > 0 ? `wants about ${want} — ${short} short` : `wants about ${want} — enough put by`,
+      ),
+      info("More", "cut on the open ground on a dry summer day, or bought at the cart any time but spring"),
+    ];
+  }
+
   private skyRows(): Row[] {
     const g = this.game.state;
     const s = season(g);
@@ -1100,9 +1121,17 @@ export class WorldUi {
         return "The hills — move them";
       case "sky":
         return "Word of the glen";
+      case "hay":
+        return `The ${this.lexicon.hay} — ${this.barnLine()}`;
       default:
         return "";
     }
+  }
+
+  /** what is in the barn, and how far it goes: said on the stack, in the sky and at the cart */
+  private barnLine(): string {
+    const g = this.game.state;
+    return g.hay > 0 ? `${g.hay} bales, about ${hayNights(g)} nights for the ${this.game.lex.flock}` : "the barn is empty";
   }
 
   /** the hint line under the scene, for players who haven't found a target yet */

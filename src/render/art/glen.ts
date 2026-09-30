@@ -573,8 +573,8 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
    * front. Sorted by its foot like the rest, anyone further up the field
    * than its base now goes behind it.
    */
-  const stackX = L.croft.x + 106;
-  const stackFoot = L.croft.y + L.croft.h;
+  const stackX = L.haystack.x;
+  const stackFoot = L.haystack.y;
   const stack: Actor | null = st.hay > 0 ? { feet: stackFoot, paint: () => drawHaystack(g, stackX, stackFoot, st.hay) } : null;
   // the storm lantern's post: standing in the field like the stack, so it is sorted the same way
   const post: Actor | null = owns(st, "lamp")

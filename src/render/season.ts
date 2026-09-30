@@ -73,9 +73,12 @@ export function drawSnowfall(g: Painter, W: number, H: number, time: number) {
  * The barn's stock, stacked where it can be seen: nothing when the barn is
  * empty, up to four courses when it will see a big flock through.
  */
+/** how many tiers the stack stands, from what is in the barn: the drawing and its hover box share it */
+export const haystackTiers = (bales: number) => (bales <= 0 ? 0 : Math.min(4, 1 + Math.floor(bales / 30)));
+
 export function drawHaystack(g: Painter, x: number, baseY: number, bales: number) {
   if (bales <= 0) return;
-  const tiers = Math.min(4, 1 + Math.floor(bales / 30));
+  const tiers = haystackTiers(bales);
   for (let i = 0; i < tiers; i++) {
     const w = 16 - i * 3;
     const y = baseY - (i + 1) * 4;
