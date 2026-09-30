@@ -1,7 +1,7 @@
 # Getting Hirsel onto Steam
 
-Everything for the store and the Steamworks partner site in one place. The code side —
-the desktop shell, file saves, achievements, controller play, the demo, CI builds — is
+Everything for the store and the Steamworks partner site in one place. The code side
+(the desktop shell, file saves, achievements, controller play, the demo, CI builds) is
 done; what is left is the partner site, the art, and testing on real machines.
 
 | file | what it is |
@@ -13,12 +13,12 @@ done; what is left is the partner site, the art, and testing on real machines.
 
 ## The order, and the waits Valve sets
 
-1. **Partner account** — sign up at partner.steamgames.com, sign the distribution
+1. **Partner account**: sign up at partner.steamgames.com, sign the distribution
    agreement, tax interview, bank details, identity check.
 2. **Pay the $100 app fee.** That creates Hirsel's App ID. **A 30-day clock starts here**:
    nothing can be released until it runs out. Create the demo app under the game's (free).
-3. **Put the App IDs in the game** — `STEAM_APP_ID` and `STEAM_DEMO_APP_ID` in
-   `desktop/src/main.ts` (both are 480, Valve's test app, until then) — and the depot ids
+3. **Put the App IDs in the game**: `STEAM_APP_ID` and `STEAM_DEMO_APP_ID` in
+   `desktop/src/main.ts` (both are 480, Valve's test app, until then), and the depot ids
    in `steampipe/ids.env`.
 4. **Set the app up** (below), and upload a first build to a beta branch.
 5. **Store page**: text from `store-page.md`, the screenshots, capsule art, a trailer if
@@ -47,7 +47,7 @@ the first depot for you; add the second and set each one's operating system.
 
 **Why `--no-sandbox` on Linux.** Electron's Chromium sandbox needs its `chrome-sandbox`
 helper to be setuid root, which a Steam depot cannot deliver, and Steam's Linux runtime
-container usually blocks the fallback it would try next — so without the flag the game is
+container usually blocks the fallback it would try next, so without the flag the game is
 likely to exit at launch on the Deck. The game only ever loads its own files (see the
 Content-Security-Policy in `desktop/src/main.ts`), so there is nothing untrusted for the
 sandbox to contain. **Confirm this on a Deck**: try it without the flag first; if it starts,
@@ -69,7 +69,7 @@ For the demo the same, with `Hirsel Demo/saves`. The saves are written atomicall
 
 28, listed with their exact API names in `desktop/README.md` (regenerate with
 `npm run achievements` in `desktop/`). Tick **Hidden** on the four secret ones. Each wants
-two 64×64 icons, earned and locked — 56 images, the biggest art job left.
+two 64×64 icons, earned and locked: 56 images, the biggest art job left.
 
 ### Steam Input
 
@@ -122,5 +122,5 @@ On a Steam Deck:
 - Capsule art, the achievement icons, and the executable's icon
 - A trailer
 - A playtest to a first win, to confirm the length and set the price
-- Mac: left out of the launch — it needs an Apple developer account ($99 a year), code
+- Mac: left out of the launch; it needs an Apple developer account ($99 a year), code
   signing and notarisation, and a Mac to test on

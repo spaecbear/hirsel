@@ -7,11 +7,11 @@ export interface Achievement {
   id: string;
   name: string;
   hint: string;
-  /** hidden ones give nothing away until earned — the wolf must stay a secret */
+  /** hidden ones give nothing away until earned: the wolf must stay a secret */
   secret?: boolean;
   /**
    * Only to be had by staying on the hill after the win. Left out of what the
-   * credits ask for — they roll at the moment of a win, before any of these
+   * credits ask for; they roll at the moment of a win, before any of these
    * can have happened.
    */
   longGame?: boolean;
@@ -70,7 +70,7 @@ export const ACHIEVEMENTS: Achievement[] = [
    * Two dogs I knew. Tippy was a border collie who lay in front of the fire
    * every time it was lit; Arrow was a sheltie who spun in circles whenever
    * she was pleased to see you. Both are in the game now, and both of these
-   * are found the way you would find them in life — by having the dog, and
+   * are found the way you would find them in life, by having the dog, and
    * noticing what she does.
    */
   {
@@ -118,7 +118,7 @@ export function saveEarned(ids: string[]) {
   try {
     platform.write(KEY, JSON.stringify(ids));
   } catch {
-    /* private mode, or storage full — achievements are not worth throwing over */
+    /* private mode, or storage full: achievements are not worth throwing over */
   }
 }
 
@@ -133,7 +133,7 @@ export function clearEarned() {
 /**
  * Returns the ones newly earned by this check.
  *
- * A run that has used a code that changes the game earns nothing — money,
+ * A run that has used a code that changes the game earns nothing: money,
  * beasts or a wolf on demand would otherwise hand over the croft and the pelt.
  * Cosmetic codes (RETRO, TOD) and pace (SKELP) never mark a run.
  */

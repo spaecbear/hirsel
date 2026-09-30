@@ -1,5 +1,5 @@
 /**
- * "Hirsel" art pack — the default look.
+ * "Hirsel" art pack: the default look.
  *
  * Ideas the original scene didn't have, and the reasons for them:
  *  - the croft is *in* the picture, and it gets built. Roof, hearth-smoke, byre
@@ -461,7 +461,7 @@ function foxRaidScene(g: Painter, st: GameState, p: number, time: number) {
     drawSheep(g, h.x + (h.x < fx ? -1 : 1) * flee * 40, h.y - flee * 4, s, { run: flee, flip: h.x > fx });
   });
 
-  // it turns round when it heads back up the hill, carrying one — which the
+  // it turns round when it heads back up the hill, carrying one, which the
   // fox always did and the ram never did, since it took no facing at all
   const facing = outbound ? 1 : -1;
   if (isInverse()) drawRam(g, fx, fy - 2, p, facing);
@@ -500,7 +500,7 @@ function wolfScene(g: Painter, st: GameState, p: number, armed: boolean) {
   /*
    * The entrance. Nothing is on the skyline but two gold eyes, which open,
    * hold, and blink once. Only then does the rest of him fade up around them
-   * and start moving. He waits where he is while the eyes are all there is —
+   * and start moving. He waits where he is while the eyes are all there is:
    * a shape that slid downhill invisibly would give the game away.
    */
   const EYES_OPEN = 0.1; // eyes up
@@ -566,7 +566,7 @@ function wolfScene(g: Painter, st: GameState, p: number, armed: boolean) {
   void st;
 }
 
-/** the pub leaves the glen entirely — that is what makes £8 feel like an event */
+/** the pub leaves the glen entirely; that is what makes £8 feel like an event */
 function pubScene(g: Painter, p: number, time: number) {
   const inRoom = clamp01(p < 0.15 ? p / 0.15 : p > 0.85 ? (1 - p) / 0.15 : 1);
   g.a(0, 0, W, H, 20, 23, 15, inRoom);
@@ -623,7 +623,7 @@ export const HIRSEL_ART: ArtPack = {
       inverse: s.inverse,
       night: k === "sleep" ? ease(clamp01(p)) : k === "dawn" ? 1 - ease(clamp01(p)) : 0,
       kit: {
-        // he is not wearing it during the fight — the set piece hands it to him
+        // he is not wearing it during the fight: the set piece hands it to him
         pelt: owns(st, "pelt") && k !== "wolf",
         crook: owns(st, "crook"),
         boots: owns(st, "boots"),

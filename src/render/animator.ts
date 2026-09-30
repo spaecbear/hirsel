@@ -29,7 +29,7 @@ export class Animator {
   /** SKELP: 2 runs everything at double pace */
   speed = 1;
   onStart: (anim: AnimId) => void = () => {};
-  /** one has played to its end — before the next in the queue begins */
+  /** one has played to its end, before the next in the queue begins */
   onFinish: (anim: AnimId) => void = () => {};
   onIdle: () => void = () => {};
 
@@ -73,7 +73,7 @@ export class Animator {
     else this.onIdle();
   }
 
-  /** cut everything short — used when starting a new game mid-animation */
+  /** cut everything short: used when starting a new game mid-animation */
   clear() {
     this.queue.length = 0;
     this.current = null;

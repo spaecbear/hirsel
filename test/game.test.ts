@@ -58,9 +58,9 @@ describe("the day", () => {
     expect(state.at).toBe(1);
   });
 
-  it("buffs refresh rather than stack — playing twice doesn't extend or double them", () => {
+  it("buffs refresh rather than stack: playing twice doesn't extend or double them", () => {
     // player question: does the bagpipes' fox-risk cut get better if you
-    // play twice in a day? No — every buff goes through Game.buff(), which
+    // play twice in a day? No: every buff goes through Game.buff(), which
     // is Math.max(existing, days), always. The second use just re-confirms
     // the same clock, it never adds to it.
     const { game, state } = harness({ taps: 6 });
@@ -169,7 +169,7 @@ describe("the night", () => {
   it("does not always take the most recently bought ewe", () => {
     // player report: replace a stolen sheep and the fox takes the new one
     // next, every time. Cause: flock.pop() removes the array's last element,
-    // and buyEwe always appends — so the newest purchase was always the
+    // and buyEwe always appends, so the newest purchase was always the
     // casualty. This runs the real risk roll across many seeds on the
     // highest-risk ground and checks who actually gets taken.
     const N = 300;
@@ -200,7 +200,7 @@ describe("the night", () => {
     expect(raids, "sanity check: max-risk ground should raid often across 300 seeds").toBeGreaterThan(N * 0.4);
     // this is the bug, made concrete: it was 0 before the fix, every time
     expect(takenOther).toBeGreaterThan(0);
-    // picked by chance out of twelve, the newest should come up about 1 in 12 —
+    // picked by chance out of twelve, the newest should come up about 1 in 12,
     // not a tight bound, just far from the old 100%
     expect(takenNewest / raids).toBeLessThan(0.4);
   });
@@ -246,7 +246,7 @@ describe("the last wolf", () => {
       flock: [sheep(4), sheep(4), sheep(4), sheep(4)],
     });
 
-  it("does not come while the day is still being worked — he comes at night", () => {
+  it("does not come while the day is still being worked; he comes at night", () => {
     const { game, played } = armed(true);
     for (let i = 0; i < 5; i++) game.doAction("pipe");
     expect(played).not.toContain("wolf"); // five actions on the corrie, and nothing yet
@@ -333,7 +333,7 @@ describe("the last wolf", () => {
 });
 
 describe("the croft and the ask", () => {
-  /** pay for it, then put the days in — the croft is built, not bought */
+  /** pay for it, then put the days in: the croft is built, not bought */
   function raise(game: Game, id: "roof" | "hearth" | "byre" | "ring") {
     game.buyCroft(id);
     const m = CROFT.find((c) => c.id === id)!;
@@ -480,7 +480,7 @@ describe("the pocket watch, interrupted", () => {
 
     game.sleep(); // the reported interruption
     expect(game.busy, "the day must not stay frozen").toBe(false);
-    // the day turns with the dawn now, not the moment he lies down — the
+    // the day turns with the dawn now, not the moment he lies down: the
     // weather has to hold through the dusk it is being watched in
     expect(state.day, "still today until the sun comes up").toBe(1);
 
@@ -577,7 +577,7 @@ describe("the dog and the instrument are slots, not a shopping list", () => {
     expect(fiddle.state.buffs.fiddled).toBe(BALANCE.fiddleDays);
     expect(fiddle.state.buffs["settled flock"], "no stacking with the pipes").toBeUndefined();
 
-    // more growth, and nothing against a fox — the trade we designed
+    // more growth, and nothing against a fox: the trade we designed
     expect(grazing(fiddle.state).growth).toBeGreaterThan(grazing(pipes.state).growth);
     expect(foxRisk(fiddle.state)).toBeGreaterThan(foxRisk(pipes.state));
   });
@@ -617,7 +617,7 @@ describe("what has been done today", () => {
   /**
    * Both reported: the fiddle could be played over and over because it never
    * showed as done, and mucking showed as already done on ground nobody had
-   * touched. Both came of inferring "you did this" from side effects — the
+   * touched. Both came of inferring "you did this" from side effects: the
    * fiddle sets a different buff from the pipes, and muck was reading "the
    * grass is high" as "you mucked it".
    */
@@ -704,11 +704,11 @@ describe("the economy", () => {
   /**
    * A modest, non-optimal policy: gather without the crook, shear and sell
    * when possible, muck thin ground, otherwise sleep. No tool purchases, no
-   * pub, no pipe — a player who hasn't found the fast strategies yet.
+   * pub, no pipe: a player who hasn't found the fast strategies yet.
    *
    * This test exists because of a direct player report: "a run of rain and I
    * can't get to market before I starve." Simulating this policy at the
-   * spec's original 62±32p market found the report was right — median final
+   * spec's original 62±32p market found the report was right: median final
    * money after 30 days was £40, flat against the start, worst case £2.
    * Rain and haar together are ~43% of WEATHER_BAG, so a multi-day dead
    * streak isn't a tail case. Raised to 80±34p; this pins the fix down so a

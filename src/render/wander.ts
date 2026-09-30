@@ -4,7 +4,7 @@
  * Sheep and the dog stood on exact marks, which made the flock read as
  * furniture. They drift now: each animal wanders a little around its own
  * spot, and over a day the whole flock edges towards wherever the shepherd
- * is standing — slowly, and never all the way, so they gather round him
+ * is standing: slowly, and never all the way, so they gather round him
  * without piling into one heap.
  *
  * None of this touches the simulation. It is pure presentation, computed
@@ -33,7 +33,7 @@ export interface Drift {
 /**
  * Where one animal is relative to its mark.
  *
- * `seed` keeps each animal on its own rhythm — without it the whole flock
+ * `seed` keeps each animal on its own rhythm, without it the whole flock
  * sways in unison like a chorus line. The periods are deliberately not
  * multiples of each other so the pattern does not visibly repeat.
  */
@@ -47,7 +47,7 @@ export function driftFor(seed: number, time: number, toward?: { dx: number; dy: 
   let dy = Math.cos(slower + b) * ROAM_Y;
   /*
    * Which way it is *going*, not where it happens to be. dx is a sine, so the
-   * direction of travel is the sign of its derivative — the cosine. Facing was
+   * direction of travel is the sign of its derivative: the cosine. Facing was
    * read off the position before, which is why a whole flock could be walking
    * left while every animal faced right.
    */
@@ -83,7 +83,7 @@ export interface Circuit {
 }
 
 /**
- * A dog does not stand about near her shepherd — she works the outside of the
+ * A dog does not stand about near her shepherd; she works the outside of the
  * flock, which is the whole picture of a hirsel. She runs a lap round them,
  * then holds at the edge and watches, then goes again.
  *
@@ -109,7 +109,7 @@ export function herdCircuit(time: number, cx: number, cy: number, rx: number, ry
   // during the hold she sits at the top of the lap, where it began
   const th = (running ? cycle / LAP_MS : 0) * Math.PI * 2;
   /*
-   * A working dog does not wag while she is working — she is watching the
+   * A working dog does not wag while she is working; she is watching the
    * flock, and a tail going the whole way round the circuit read as a toy
    * being pulled along on a string. The wag belongs to the stop: she comes
    * in, stands a moment, wags, stands again, and goes back out.
@@ -147,7 +147,7 @@ const TICK_FOR = 3000;
  *
  * Derived from the clock like everything else in this file, so it holds no
  * state and cannot drift. `look` turns him to face out over the hill, which
- * is why it hands back a facing as well — a man looking at a view is not
+ * is why it hands back a facing as well: a man looking at a view is not
  * looking at the camera.
  */
 export function idleTick(time: number): { kind: TickKind; t: number; facing: 1 | -1 } | null {

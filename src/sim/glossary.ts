@@ -13,7 +13,7 @@ export interface GlossaryEntry {
   name: string;
   meta: string; // duration and how it's got
   effect: string;
-  /** true if this entry describes something the wolf gates — masked until earned */
+  /** true if this entry describes something the wolf gates: masked until earned */
   secret?: boolean;
 }
 
@@ -37,7 +37,7 @@ export function buffGlossary(): GlossaryEntry[] {
       id: "fiddled",
       name: "Fiddled",
       meta: `${BALANCE.fiddleDays} days · Strike up the fiddle`,
-      effect: `${pct(BALANCE.fiddleGrowth)} fleece growth. Nothing against a fox — that is the trade.`,
+      effect: `${pct(BALANCE.fiddleGrowth)} fleece growth. Nothing against a fox: that is the trade.`,
     },
     {
       id: "settled flock",
@@ -79,7 +79,7 @@ export function workGlossary(): GlossaryEntry[] {
       id: "lambing",
       name: "Lambing",
       meta: `The tup goes in over the autumn · lambs over the first ${BALANCE.lambingDays} days of spring`,
-      effect: `About ${Math.round(BALANCE.tupRate * 100)}% of the ewes are in lamb by winter; a hungry winter night can cost one her lamb. About one ewe in ${Math.round(1 / BALANCE.twinChance)} has twins. In the byre every lamb lives; out on a wet night ${Math.round(BALANCE.lambLossBadNight * 100)}% are lost, half that if the flock is tended. Lambs carry half a fleece, are grown after ${BALANCE.lambGrowDays} days, and sell for ${Math.round(BALANCE.lambPrice * 100)}% of a ewe's price — ${Math.round(BALANCE.lambPrice * BALANCE.lambPriceAutumn * 100)}% at the autumn sales.`,
+      effect: `About ${Math.round(BALANCE.tupRate * 100)}% of the ewes are in lamb by winter; a hungry winter night can cost one her lamb. About one ewe in ${Math.round(1 / BALANCE.twinChance)} has twins. In the byre every lamb lives; out on a wet night ${Math.round(BALANCE.lambLossBadNight * 100)}% are lost, half that if the flock is tended. Lambs carry half a fleece, are grown after ${BALANCE.lambGrowDays} days, and sell for ${Math.round(BALANCE.lambPrice * 100)}% of a ewe's price, or ${Math.round(BALANCE.lambPrice * BALANCE.lambPriceAutumn * 100)}% at the autumn sales.`,
     },
     {
       id: "hay",
@@ -106,7 +106,7 @@ export function seasonGlossary(): GlossaryEntry[] {
     const extra = {
       spring: ` The lambing: ewes carrying from the winter lamb in the first ${BALANCE.lambingDays} days. The grass is at its best for putting the flock back on it.`,
       summer: " The only time hay can be cut, on a dry day. Fleece comes on fastest and the flies with it: shear often, and tend a heavy flock. The Highland show is mid-season.",
-      autumn: " The wool sales, and the lamb sales: the best price of the year for both. The tup goes in with the ewes. Lay in hay before it ends — the barn is what the winter runs on.",
+      autumn: " The wool sales, and the lamb sales: the best price of the year for both. The tup goes in with the ewes. Lay in hay before it ends; the barn is what the winter runs on.",
       winter:
         " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. Hay is fed out at night. No mucking frozen ground.",
     }[id];

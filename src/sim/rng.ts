@@ -1,4 +1,4 @@
-/** mulberry32 — small, seedable, good enough, and makes the sim testable */
+/** mulberry32: small, seedable, good enough, and makes the sim testable */
 export function makeRng(seed: number) {
   let a = seed >>> 0;
   return function rng(): number {

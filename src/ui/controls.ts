@@ -15,7 +15,7 @@ import type { ActionId } from "../sim/types";
 
 export type Dir = "up" | "down" | "left" | "right";
 export type Intent = Dir | "confirm" | "back" | "menu" | "sky";
-/** which of the three ways in was used last — decides whether a focus ring shows */
+/** which of the three ways in was used last: decides whether a focus ring shows */
 export type Device = "pointer" | "keys" | "pad";
 
 /**
@@ -86,7 +86,7 @@ export function stickDir(x: number, y: number, dead = DEADZONE): Dir | null {
   return y > 0 ? "down" : "up";
 }
 
-/** the parts of a Gamepad this reads — so tests can hand it a plain object */
+/** the parts of a Gamepad this reads, so tests can hand it a plain object */
 export interface PadLike {
   buttons: ReadonlyArray<{ pressed: boolean }>;
   axes: ReadonlyArray<number>;
@@ -139,7 +139,7 @@ export class PadReader {
     return { intents, walk };
   }
 
-  /** anything at all being pressed or pushed — the pad has been picked up */
+  /** anything at all being pressed or pushed: the pad has been picked up */
   static active(pad: PadLike): boolean {
     return pad.buttons.some((b) => b.pressed) || pad.axes.some((a) => Math.abs(a) > DEADZONE);
   }
@@ -157,12 +157,12 @@ export type Quick = { act: ActionId } | { move: number } | { go: "sleep" | "hous
  * movement keys (WASD, the arrows) or F for the sky, and each is the first
  * letter of the thing where it can be: G gather, T tend, M market, P pipe,
  * I inn, H hay, B build. Where that letter was taken it is the next honest
- * one — C for the clip (S is down), U for mUck, N for a tuNe, Z for sleep,
+ * one: C for the clip (S is down), U for mUck, N for a tuNe, Z for sleep,
  * E to go in or out, K for the cart.
  */
 export const QUICK_KEYS: { key: string; quick: Quick; what: string }[] = [
   { key: "G", quick: { act: "gather" }, what: "Gather the flock" },
-  { key: "C", quick: { act: "shear" }, what: "Shear — the clip" },
+  { key: "C", quick: { act: "shear" }, what: "Shear the clip" },
   { key: "T", quick: { act: "tend" }, what: "Tend the flock" },
   { key: "M", quick: { act: "market" }, what: "Sell the wool" },
   { key: "U", quick: { act: "muck" }, what: "Muck the pasture" },

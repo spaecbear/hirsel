@@ -76,7 +76,7 @@ describe("the year", () => {
     for (const d of snowy) expect(seasonOf(d).id, `snow on day ${d}`).toBe("winter");
   });
 
-  it("names the night's spending for the season — it is only winter feed in winter", () => {
+  it("names the night's spending for the season; it is only winter feed in winter", () => {
     for (const [id, words] of [["spring", "Salt, dip"], ["summer", "Fly oil"], ["autumn", "Feed and odds"], ["winter", "Winter feed"]] as const) {
       const { game, g } = harness({ day: dayOf(id, 5), flock: flockOf(6), money: 100 });
       game.sleep();
@@ -185,7 +185,7 @@ describe("hay", () => {
     expect(g.hay).toBe(BALANCE.hayLot * 2);
   });
 
-  it("is not sold in spring — and so cannot spend the first day's ewe money", () => {
+  it("is not sold in spring, and so cannot spend the first day's ewe money", () => {
     const { game, g } = harness({ day: 1, money: 30 });
     game.buyHay();
     expect(g.hay).toBe(0);
@@ -259,7 +259,7 @@ describe("snow", () => {
     expect(g.stats.snowLosses).toBe(0);
   });
 
-  it("cannot touch them in the byre — nor can a fox", () => {
+  it("cannot touch them in the byre, nor can a fox", () => {
     const { game, g } = harness({
       day: dayOf("winter", 3),
       flock: flockOf(5),

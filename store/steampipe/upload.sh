@@ -8,7 +8,7 @@
 # Before the first run:
 #   1. Install SteamCMD (https://developer.valvesoftware.com/wiki/SteamCMD).
 #   2. cp ids.env.example ids.env, and fill in the app and depot ids.
-#   3. Put the packaged builds in place — the CI artifacts, unzipped:
+#   3. Put the packaged builds in place: the CI artifacts, unzipped:
 #        content/game/win/    ← hirsel-win         (Hirsel.exe and the rest,
 #        content/game/linux/  ← hirsel-linux        with or without the *-unpacked folder)
 #        content/demo/win/    ← hirsel-demo-win
@@ -16,7 +16,7 @@
 #
 # With a branch name the build goes live on that beta branch (make the
 # branch in the partner site first). Without one it is uploaded and left
-# for you to set live by hand — Steam never lets a script set the public
+# for you to set live by hand: Steam never lets a script set the public
 # default branch live, which is as it should be.
 set -euo pipefail
 
@@ -51,8 +51,8 @@ pick() { if [[ -d "$content/$1/$1-unpacked" ]]; then echo "$1/$1-unpacked"; else
 winPath="$(pick win)"
 linuxPath="$(pick linux)"
 # the right thing in the right place, or nothing is uploaded
-[[ -f "$content/$winPath/$exe" ]] || { echo "Missing $content/$winPath/$exe — unzip the Windows build into content/$kind/win/." >&2; exit 1; }
-[[ -f "$content/$linuxPath/hirsel" ]] || { echo "Missing $content/$linuxPath/hirsel — unzip the Linux build into content/$kind/linux/." >&2; exit 1; }
+[[ -f "$content/$winPath/$exe" ]] || { echo "Missing $content/$winPath/$exe: unzip the Windows build into content/$kind/win/." >&2; exit 1; }
+[[ -f "$content/$linuxPath/hirsel" ]] || { echo "Missing $content/$linuxPath/hirsel: unzip the Linux build into content/$kind/linux/." >&2; exit 1; }
 chmod +x "$content/$linuxPath/hirsel"
 
 version="$(node -p "require('$here/../../package.json').version" 2>/dev/null || echo unknown)"

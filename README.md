@@ -20,14 +20,14 @@ npm run dev
 | `npm test` | Vitest over the simulation |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run build:demo` | the demo: the first 30 days (spring and into summer), then a wishlist card, to `dist-demo/` (see `src/demo.ts`) |
-| `npx vite-node tools/balance.ts [runs] [days]` | seeded headless runs on one policy, per scale — measure before and after a balance change |
+| `npx vite-node tools/balance.ts [runs] [days]` | seeded headless runs on one policy, per scale: measure before and after a balance change |
 | `node scripts/make-icons.mjs` | regenerate the PWA PNG icons from the pixel design |
 
 ### Why port 5313 and not 5173
 
 `localhost:5173` is a single origin shared by every Vite project on a machine, and service
 workers, caches and `localStorage` are all scoped per origin. A worker left behind by another
-project will happily serve this one a stale page — which presents as "my changes aren't showing
+project will happily serve this one a stale page, which presents as "my changes aren't showing
 up". Hirsel gets its own port, with `strictPort` so a clash fails loudly instead of quietly
 moving to 5174 and showing you somebody else's app.
 
@@ -36,7 +36,7 @@ won't appear on this one. Settings → Export file moves a run between origins.
 
 ## The Steam build
 
-`desktop/` wraps the web build in Electron with Steamworks — achievements, the overlay and
+`desktop/` wraps the web build in Electron with Steamworks: achievements, the overlay and
 cloud saves. It has its own `package.json`, so the web build and Vercel never install
 Electron. See `desktop/README.md`, and `prototype/steam-plan.md` for the whole plan.
 
@@ -54,13 +54,13 @@ to `hirsel`.
 
 ```
 src/
-  sim/        the game itself — no DOM, no canvas, fully testable
+  sim/        the game itself; no DOM, no canvas, fully testable
     config.ts   every tuned number, and the §14 open questions as flags
     rules.ts    pure functions: grading, moon, fox risk, wolf conditions
     game.ts     state machine: actions, the night, the watch, the wolf
     save.ts     versioned save slot + export/import
     cheats.ts   the codes in the settings menu
-    glossary.ts what each buff/status does, in Settings — built from BALANCE,
+    glossary.ts what each buff/status does, in Settings: built from BALANCE,
                 not a second hand-written copy of the numbers
   ui/
     world-ui.ts    playing by touching the hill: hotspots and sheets
@@ -68,7 +68,7 @@ src/
     sky-feed.ts    the log, drifting up the sky and fading
   render/     canvas: integer scaling, animation queue, two interfaces
     layout.ts      where everything in the glen sits, for any screen shape,
-                   and the tap targets — art and hit-testing share it
+                   and the tap targets: art and hit-testing share it
     sprites.ts     every sprite, shared by both interfaces
     text.ts        pixel type: rendered at 1x, threshold-hardened, blitted
     art/glen.ts    the full-screen scene you play in
@@ -82,7 +82,7 @@ test/         Vitest over sim/
 
 ## Starting a run
 
-A title screen, and then the day you walked out: three beats — the desk you are leaving, the
+A title screen, and then the day you walked out: three beats: the desk you are leaving, the
 door, and the hill you are climbing. It is the only time the game shows you anywhere but the
 glen, which is the point. It plays on a new run only, is skipped under reduced motion, and
 never plays when continuing a save.
@@ -97,12 +97,12 @@ done it.
 first clip is rigged to pay for exactly one Blackface: `tutorialSetup` works backwards from
 the ewe's price through day one's fixed market rate to the number of stone needed, then
 spreads that across the flock inside the "prime" band. Being handed the money taught nothing;
-earning it in the first three steps teaches the whole economy — fleece becomes wool, wool
-becomes money, money becomes another beast — before anything is asked of the player.
+earning it in the first three steps teaches the whole economy: fleece becomes wool, wool
+becomes money, money becomes another beast, before anything is asked of the player.
 
 It teaches the loop, the fleece value curve, matting, the weather that blocks shearing, tools,
 the house, the night, and **both ways a run ends badly**. It teaches nothing about how one ends
-*well* — no croft goal, no ring, no her, and nothing whatsoever about the sword or the high
+*well*; no croft goal, no ring, no her, and nothing whatsoever about the sword or the high
 ground on a full moon. `tutorial.test.ts` asserts that, with a word-boundary check over every
 line of the script, so a future edit cannot quietly leak a secret into the opening.
 
@@ -112,14 +112,14 @@ Two things it must keep doing, both learned the hard way:
   undone: moving the flock clears `gatheredToday`, which sent the walkthrough back to "gather
   them in" and looped it there.
 - **A skipped step is retired, not deferred.** Shearing skips itself when nothing is ready, but
-  fleece grows overnight — so it un-skipped and reappeared on day two telling the player to
+  fleece grows overnight, so it un-skipped and reappeared on day two telling the player to
   shear. Passing a step retires it for good.
 
 Settings → The game → **Replay the first day** starts a fresh run with the walkthrough on, for
 anyone who skipped it or wants to see it again.
 
 **The walkthrough locks the scene to its lesson.** Prompted to shear, you could tap the house
-instead, sleep the day away, and the lesson never happened — the run carried on with the
+instead, sleep the day away, and the lesson never happened: the run carried on with the
 walkthrough still pointing at the flock. `allowsInteraction` now answers for exactly one
 target at a time, a refused tap nudges the prompt rather than saying nothing, and wandering
 is off for the duration. Two things stay open regardless: the door, so nobody is ever shut
@@ -130,7 +130,7 @@ Every step still keeps its skip guard even though day one is rigged: nothing sho
 park a new player on a step the weather or an empty hill has made impossible.
 
 The first day's weather is forced fair. Shearing and selling are the whole economy, and with
-rain rolled for day one the walkthrough skipped both — a new player could finish it never
+rain rolled for day one the walkthrough skipped both: a new player could finish it never
 having been shown where money comes from. Everything after day one is as random as ever.
 
 ## Two interfaces
@@ -142,28 +142,28 @@ by touching the things in it, and the narration surfaces in the sky rather than 
 | --- | --- |
 | a sheep | gather, shear, tend |
 | open grass | the pasture's own work (muck) |
-| yourself | the comforts — pipe, pipes, pint, the ask — and the pocket watch |
+| yourself | the comforts (pipe, pipes, pint, the ask) and the pocket watch |
 | the croft | the four croft milestones, and sleeping the night |
 | the cart | sell wool, sell a beast, buy stock, buy tools |
 | the hills | which pasture to graze |
 | the sky | the three-day forecast, the moon, what's running in you, recent word |
 
 The door out of the house carries a standing **OUT** label. Hover labels only exist on a
-mouse, so on a phone the way back to the hill was invisible — you had to guess the door was
+mouse, so on a phone the way back to the hill was invisible; you had to guess the door was
 tappable.
 
-Tapping the croft **goes inside it**. Everything bought is on the wall or by the fire — the
+Tapping the croft **goes inside it**. Everything bought is on the wall or by the fire: the
 broadsword above the hearth exactly as its description says, the dog stretched out in front of
-it, the ring on the mantel — because a croft you are paying for should be somewhere you stand,
+it, the ring on the mantel, because a croft you are paying for should be somewhere you stand,
 not a row of ticks in a shop. **You sleep by going to the bed**, which is why the interior
 exists at all.
 
 **Hold** a finger on open ground and he walks there. It costs no tap and touches nothing in
-the sim — a hill you can only look at reads as a menu; one you can wander reads as a place.
+the sim: a hill you can only look at reads as a menu; one you can wander reads as a place.
 The position deliberately lives in `ui/walk.ts` rather than the game state, so it is never
 something a save has to carry or a player can lose progress over.
 
-**Retro** is the older panelled build — HUD, small scene, tabs, sub-tabs. Kept whole rather
+**Retro** is the older panelled build: HUD, small scene, tabs, sub-tabs. Kept whole rather
 than deleted: it is the version that was balanced and playtested. Settings → Look → Interface,
 or the `RETRO` code.
 
@@ -184,20 +184,20 @@ colour, which is what makes distance read rather than just stacking silhouettes.
 ### The sky
 
 Flat bands with a dithered seam at each join, rather than dithering every row. `paintSkyBands`
-is shared by the glen and the opening — the intro kept its own copy of the old row dither, so
+is shared by the glen and the opening: the intro kept its own copy of the old row dither, so
 the sky the game opened on did not match the sky it then played in. Mixing the
 whole sky produced a field of horizontal dashes that read as scan lines over the top half of
-the screen — the noise was louder than the picture, and it made the narration unreadable.
+the screen: the noise was louder than the picture, and it made the narration unreadable.
 Ordered dither belongs at the joins, where it blends two flat colours. Cloud is drawn as
 shapes with a lit top edge and a ragged dithered underside; haar is deliberately flat and
 featureless, because that is the character of it.
 
 Heather is stippled, never blocked out. Drawn as rectangles with a lit top edge and a dark
 bottom it was built exactly like the scree in the same file, and read as purple rocks lying on
-the grass — a player said so. It is a soft mat now: a dark woody base with bloom speckled over
+the grass: a player said so. It is a soft mat now: a dark woody base with bloom speckled over
 it in banks, so there is no silhouette to mistake for a stone.
 
-Sky messages carry a dark backing plate — over open sky bare text was fine, but over cloud, a
+Sky messages carry a dark backing plate, over open sky bare text was fine, but over cloud, a
 hillside or the moon it disappeared.
 
 **The HUD and the two cutscene lines are DOM text, not canvas pixels.** The bitmap font renders at 7px and
@@ -213,12 +213,12 @@ the hover hint, the cutscene lines, the walkthrough and every sheet.
 This took four rounds of "I still can't read that" to land, so it is worth stating plainly:
 the pixel font was a mistake for anything longer than a word. It rendered at 7px and was
 hard-thresholded to 1-bit, which no backing plate could rescue. `render/text.ts` has been
-deleted rather than left lying around for someone to reach for again — if a future feature
+deleted rather than left lying around for someone to reach for again, if a future feature
 wants text on the hill, it wants a DOM element positioned over the canvas, not a bitmap font.
 
 The walkthrough is suspended for the length of the opening, so its first prompt lands when he
 has actually arrived on the hill rather than over the top of the cutscene. Over open sky bare text was fine, but over cloud, a
-hillside or the moon it disappeared — and it is the game's whole voice.
+hillside or the moon it disappeared, and it is the game's whole voice.
 
 The HUD offsets itself by the top safe-area inset, measured from a zero-size probe element,
 since the glen canvas runs full-bleed under the notch and status bar.
@@ -230,7 +230,7 @@ at a narrower logical width in portrait, so a phone is closer to the hill) and t
 falls out of it, which keeps the pixel grid honest at any viewport. `render/layout.ts` then
 composes for the orientation: landscape gets a wide vista with the croft at one end and the
 cart at the other; portrait gets a hillside receding upward with more rows of sheep in depth.
-**The horizon also moves with the pasture** — the Low Field is hemmed in by hills, the High
+**The horizon also moves with the pasture**: the Low Field is hemmed in by hills, the High
 Corrie is mostly sky, because standing higher means seeing further.
 
 Two things that were bugs and are now rules:
@@ -239,7 +239,7 @@ Two things that were bugs and are now rules:
   meant for the other.
 - **The flock is many small targets, not one box.** As a single bounding box it covered the
   whole field, so tapping grass between two sheep opened flock work and the pasture's own work
-  was unreachable. Each animal is its own target and the gaps fall through to the ground —
+  was unreachable. Each animal is its own target and the gaps fall through to the ground:
   measured at 73% of the field reaching the pasture, 9% the sheep.
 
 ### Done today
@@ -252,7 +252,7 @@ nobody had touched. `didToday` counts actions and `muckedToday` holds pasture in
 cleared at the end of the night.
 
 Adding those two fields is also why `save.ts` gained `hydrate`. `validate` used to require
-every key a fresh game has, so **any new field silently rejected every existing save** — a
+every key a fresh game has, so **any new field silently rejected every existing save**: a
 player losing their run to a feature they never asked for. It now checks only the shape the
 game cannot run without, and back-fills the rest from a fresh game.
 
@@ -261,7 +261,7 @@ game cannot run without, and back-fills the rest from a fresh game.
 A win no longer has to end the run. When she says aye the end card offers **Stay on the
 hill** first and **Start again** second; if the credits roll, the card comes back when they
 end instead of the menu dropping you at the title. Staying (`Game.stayOn`) lifts the ending,
-records the day in `state.married`, and saves at once — the night's autosave is a day away, and
+records the day in `state.married`, and saves at once: the night's autosave is a day away, and
 a player who stays and quits should not come back to the evening before the wedding. The win
 is still won: its achievement, and any code it revealed, stand.
 
@@ -269,34 +269,34 @@ Married life is a victory lap with a little more in it:
 
 - **Two pairs of hands**: a tap more a day, still inside the cap of six
 - **She lives at the croft**: out by the door on the hill, wandering a little as the flock
-  does, and between you and the fire indoors — the same woman the inn and the proposal draw
+  does, and between you and the fire indoors: the same woman the inn and the proposal draw
 - The ask is gone from your sheet; at the inn she is covering the bar and will not take your
   money; the first morning has its own line
 - Three events of its own: **the anniversary** a year on (a day off together, hale for three),
   **her kale patch** (two taps to dig it, and the feed bill is £1 a night lighter for good),
   and **her mother** coming up on the post bus. Every one can be declined for nothing
-- The courting events — her afternoon off, the ceilidh — are for before, and stop
+- The courting events (her afternoon off, the ceilidh) are for before, and stop
 - Two achievements for the long game, **A year wed** and **Fifty lambs**, marked `longGame`
   and left out of what the credits ask for, since the credits roll at the moment of a win
 
 ### Finishing a run
 
-Finishing a run with **nothing left to find** — every achievement earned and every code known
-— rolls the credits. Not for winning; for finishing it.
+Finishing a run with **nothing left to find** (every achievement earned and every code known)
+rolls the credits. Not for winning; for finishing it.
 
-Marrying reveals a cheat code you did not have, for the next run — one per win, and `1680`
+Marrying reveals a cheat code you did not have, for the next run; one per win, and `1680`
 is held back until every other code is known, since it is the only one that gives the wolf
 away. `revealNextCheat` is tested for exactly that ordering.
 
 ### The hill is alive
 
 `render/wander.ts`. Sheep and the dog drift around their marks and edge towards the shepherd
-when he is near — each on its own rhythm, from a hash of its id, so the flock does not sway in
+when he is near; each on its own rhythm, from a hash of its id, so the flock does not sway in
 unison. It is computed from the clock and needs no state, so it survives a reload and cannot
 desync from the simulation, which never sees it.
 
 The shepherd has idle ticks from the same file: he takes his bunnet off and wipes his brow,
-stretches, or turns and looks out over the hill — about one minute in six, and only when he is
+stretches, or turns and looks out over the hill: about one minute in six, and only when he is
 genuinely idle, never mid-animation or walking. At 13 seconds apart it read as fidgeting.
 
 **Nothing here touches the sim.** If a future change wants animals to actually move between
@@ -305,7 +305,7 @@ pastures, that belongs in `sim/`, not in this file.
 ### Facing
 
 `drawShepherd` takes `facing` (1, -1 or 0) and mirrors the whole sprite about its own width.
-Square-on he shows two eyes, which read as "looking at you" whatever he was doing — including
+Square-on he shows two eyes, which read as "looking at you" whatever he was doing, including
 squaring up to a wolf coming down the hill. In profile he shows one eye and the bunnet's peak
 leads. `back` is a third view, used for the intro's climb.
 
@@ -317,7 +317,7 @@ pixel's x, not by eye.
 ### The inn
 
 **The evening lasts as long as the player likes.** The pint plays up to the moment she has
-set it down and the room has settled, and then holds there — the fire going, her swaying —
+set it down and the room has settled, and then holds there: the fire going, her swaying,
 with a **Head back up the hill** button, until the player chooses to go (`WorldUi.atInn`).
 Leaving plays the last of the scene, the room fading out. Cutting straight back to the hill
 read as "get back to work!", which is the opposite of what a pint is for. Nothing on the hill
@@ -325,20 +325,20 @@ answers while you sit on; keys and a pad reach the button, and B leaves. Not whi
 watch is running a recorded day, and not in the retro panels.
 
 The one room in the game with other people in it: the landlord behind the bar and the lass
-with her tray — the one the croft is quietly being built for, drawn to be recognised, since
+with her tray: the one the croft is quietly being built for, drawn to be recognised, since
 by the sixth pint the writing assumes you know who is being talked about.
 
 Everyone in there is sized from the room rather than drawn at a fixed size, because the canvas
 has no fixed resolution. Two things learned building it: a figure is **mostly leg with a small
-head** (roughly 18/42/40, and never more than a third as wide as it is tall) — blocked out at
+head** (roughly 18/42/40, and never more than a third as wide as it is tall): blocked out at
 half its height wide it reads as furniture, not a person. And the two at the near side are
 drawn taller than the landlord: at the same height their heads sat against the dark bar front
 where nothing could be made out.
 
 ### The dog and the instrument are slots
 
-One dog, ever, and one instrument. A hirsel *is* the ground one shepherd and one dog can work
-— the game is named after the constraint — and letting both be owned would compound the
+One dog, ever, and one instrument. A hirsel *is* the ground one shepherd and one dog can work:
+the game is named after the constraint, and letting both be owned would compound the
 deterrents to ×0.51 and quietly delete the fox, while owning both instruments would turn a
 choice of playing style into a shopping list. `Game.slotTaken` refuses the second, and the
 cart shows the closed option with the reason rather than hiding it.
@@ -356,7 +356,7 @@ fixed policy:
 
 A sheep costs £24 and up, so in both pairs the productive pick's extra income is roughly paid
 for by the extra animal it fails to save. The choice is flock safety against income, not a
-better and a worse option — `collieFoxBias` was 0.75 first, which left the collie ahead on
+better and a worse option: `collieFoxBias` was 0.75 first, which left the collie ahead on
 both counts, and 0.9 made her not worth having.
 
 **The bark is the dog's receipt.** Her whole worth is the raids that never happen, which meant
@@ -366,7 +366,7 @@ without her and misses with her, she gets the credit out loud.
 ### Work scales with the flock
 
 Measured before it was changed: across 25 seeded 30-day runs, only about **one tap a day** had
-genuinely productive work in it — 64% of taps spare on day one with no tools, and 89% spare
+genuinely productive work in it: 64% of taps spare on day one with no tools, and 89% spare
 with the full kit. The day is gated by fleece growth, not by taps, so four days in five held
 nothing but gathering and the spare taps always went to the same filler.
 
@@ -381,16 +381,16 @@ The crook takes a tap off either way.
 | + dog | 86% | 58% |
 | + lantern (5 taps) | 89% | 66% |
 
-**The first measurement showed no change at all**, because the simulation never bought sheep —
+**The first measurement showed no change at all**, because the simulation never bought sheep:
 the flock stayed at six and the scaling never engaged. That is the honest shape of this change:
 it does nothing until the flock grows, which is the point. Growth was pure upside before; it
 costs a day now.
 
-The starting flock is deliberately untouched — six beasts is one tap to shear and one to
+The starting flock is deliberately untouched: six beasts is one tap to shear and one to
 gather, exactly as before, and `game.test.ts` pins that so the early game cannot drift.
 
 Still open: 66% is narrower, not tight. The next levers are actions that fill the empty days
-with investment rather than filler — repairing a dyke, dipping the flock — and the spec's own
+with investment rather than filler (repairing a dyke, dipping the flock) and the spec's own
 §14.5, that the pelt ends the fox game outright (measured: 7.3% risk → 1.0%, permanently).
 
 ### Design invariants
@@ -400,12 +400,12 @@ Things that are easy to break by accident:
 - **Three taps is the game.** Tools buy the day back; nothing else should loosen it.
 - **The fox takes its sheep only after the raid animation ends.** Same for the wolf mauling.
   Watching the counter drop before the animal arrives was a real playtest complaint.
-- **Which sheep the fox takes is chance, not position.** It used to be `flock.pop()` — the
+- **Which sheep the fox takes is chance, not position.** It used to be `flock.pop()`: the
   array's last element, which is always the most recently bought ewe, since `buyEwe` appends.
   A player reported replacing a stolen sheep only to have the fox take the replacement next,
   every time; it wasn't bad luck, it was the code. Fixed to a uniform pick via the seeded rng
   at the moment the raid lands. `flystrikeExposed` staying targeted at the heaviest fleece is
-  correct and unrelated — the spec calls that out by name as the mechanic that stops hoarding
+  correct and unrelated: the spec calls that out by name as the mechanic that stops hoarding
   fleece; it never said anything of the kind about the fox.
 - **The sword, the wolf and the summon conditions are never explained in the UI.**
   Not in tooltips, not in achievements (those two are hidden), not in cheat codes. The pelt
@@ -413,16 +413,16 @@ Things that are easy to break by accident:
 - **Both wolf warnings stay.** Dawn of the full moon, and the fourth action on the corrie
   with one tap still in hand.
 - **`test/setup.ts` installs a real in-memory `localStorage` for every test run, unconditionally.**
-  This machine's Node has a global `localStorage` that exists but is broken — a bare `{}`
+  This machine's Node has a global `localStorage` that exists but is broken: a bare `{}`
   with no methods, downstream of the experimental `--localstorage-file` flag pointing nowhere
   valid. `saveEarned`/`saveSettings`/`saveGame` all swallow storage errors on purpose (a failed
   save shouldn't crash the game), so a broken global fails silently: a test can call
   `saveEarned(["pelt"])`, get no error, and read an empty array back. Found via the glossary
-  appendix's own test for the pelt reveal — trust the polyfill, not the host's Node build.
+  appendix's own test for the pelt reveal: trust the polyfill, not the host's Node build.
 - **The three-day forecast is public.** It is what makes the game plannable.
-- **Autosave writes at the end of a night only** — never mid-day, never mid-animation.
+- **Autosave writes at the end of a night only**, never mid-day, never mid-animation.
 - **`showEnd` must stay idempotent.** It writes settings (the revealed code), which triggers a
-  render, which is one of the things that raises it — without the guard a single win recursed
+  render, which is one of the things that raises it, without the guard a single win recursed
   through the whole cheat list and handed over every code at once.
 - **A run can end with no animation playing** (selling the last beast at the cart). The end
   screen is raised from the render signal as well as from the animator going idle, or those
@@ -434,20 +434,20 @@ Things that are easy to break by accident:
 
 ### Audio
 
-Everything is synthesized at runtime — there are no audio files anywhere in the project.
+Everything is synthesized at runtime; there are no audio files anywhere in the project.
 
 The soundtrack is a written tune, not a random walk: **The Hirsel**, a slow air in D Dorian at
-68bpm, in `src/audio/tunes.ts` as note data. It moves between D and C rather than D and A —
+68bpm, in `src/audio/tunes.ts` as note data. It moves between D and C rather than D and A:
 the double tonic, which is the most Scottish thing you can do to a tune. `tunes.test.ts`
 checks every bar fills exactly and every pitch is in the mode, so a mistyped duration fails
 the suite instead of quietly knocking the tune out of time.
 
-There is a second tune. With the `TOD` code on — foxes kept, sheep coming off the hill — the
+There is a second tune. With the `TOD` code on (foxes kept, sheep coming off the hill) the
 score switches to **The Tod**, written in the idiom of the old folk song about the fox that
 goes out on a chilly night: a 6/8 lilt, brisk and loping, in D mixolydian with the flat
 seventh doing the work. It is an original tune, not that one: the traditional melody is public
 domain but every recorded arrangement of it belongs to somebody, so this way the tune is ours.
-Everything about it is the opposite of the air — compound time instead of four, a major third
+Everything about it is the opposite of the air: compound time instead of four, a major third
 instead of a minor one, and a bar going by in 1.2s against the air's 3.5s.
 
 Metre-specific things (the harp's chord shapes, its spacing, which beats the drum lands on)
@@ -468,55 +468,55 @@ bar, and a faint periodic high ping is indistinguishable from an audio watermark
 a low bodhrán thud for that reason.
 
 Two cues take the glen over when they fire, ducking the air out through its own bus and
-bringing it back afterwards: the **wolf** (D against A flat — the tritone, about as far from a
-Dorian air as two notes get — over a heartbeat that quickens as he comes down the hill) and the
+bringing it back afterwards: the **wolf** (D against A flat: the tritone, about as far from a
+Dorian air as two notes get, over a heartbeat that quickens as he comes down the hill) and the
 **fox** (tense rather than evil: the tonic with a minor second rubbing against it, and four
 clipped notes falling). They are triggered from the animation, not the game state.
 
 The engine exposes `setRecordedBed(buffer)`, which plays a recorded loop on the same music bus
-with the same reverb and tape roll-off — a real recorded theme drops in *alongside* the synth
+with the same reverb and tape roll-off: a real recorded theme drops in *alongside* the synth
 layer rather than replacing the system.
 
 ### Rain
 
 `src/audio/rain.ts`. A steady lowpass-filtered noise hush, plus individual drip ticks layered
-over it, both generated at runtime — no files. Fades in and out over 1.4s as the day's weather
+over it, both generated at runtime; no files. Fades in and out over 1.4s as the day's weather
 changes, driven by the same `forecast[0] === "rain"` check the score already uses to thin
 itself, and routed through the existing `sfxBus` so the Effects slider and Mute already
 control it without a new setting.
 
 The drips are short and high-frequency, which is the exact shape that read as a watermark last
-time (see the pulse note above) — the difference is the schedule. Each drip's timing is drawn
+time (see the pulse note above): the difference is the schedule. Each drip's timing is drawn
 from a randomised interval (`DRIP_MIN_GAP + random × DRIP_JITTER`), never a fixed subdivision.
-`AudioEngine.noiseBed()` is the reusable piece — a persistent looping filtered-noise source
-whose gain the caller fades — so a future ambience layer (wind for the haar, the burn in
+`AudioEngine.noiseBed()` is the reusable piece: a persistent looping filtered-noise source
+whose gain the caller fades, so a future ambience layer (wind for the haar, the burn in
 spate) can reuse it rather than growing its own noise-loop plumbing.
 
 ### Buffs & status appendix
 
-Settings → Buffs & status. The HUD only ever shows a buff as `tended (3d)` — this is where
+Settings → Buffs & status. The HUD only ever shows a buff as `tended (3d)`; this is where
 "tended" gets explained. `src/sim/glossary.ts` builds the four buff entries and two status
 entries (Gathered, and the pelt) from the live `BALANCE` constants rather than a hand-written
 second copy of the numbers, so a future tuning pass can't leave it describing a game that no
-longer exists — the same discipline as the market-price fix.
+longer exists: the same discipline as the market-price fix.
 
 The pelt entry stays masked as `?????` until the `pelt` achievement has ever been earned
 (checked via the same `loadEarned()` the Achievements section already reads), matching the
 design invariant above: nothing about the wolf is explained before it's earned. Once revealed
-it names the ground and the moon, matching the existing owned-pelt shop tile — a place and a
+it names the ground and the moon, matching the existing owned-pelt shop tile: a place and a
 time, not the summon recipe. `glossary.test.ts` pins that distinction directly: it asserts the
 revealed text never contains `crook`, `boots`, `sword`, `five action`, or `summon`, while a
 separate test confirms mentioning the crook's ordinary, already-public effect elsewhere (the
-Gathered entry) is fine — the rule is "never state the trigger," not "never say the word."
+Gathered entry) is fine: the rule is "never state the trigger," not "never say the word."
 
-Buffs refresh rather than stack — see `Game.buff()` below.
+Buffs refresh rather than stack: see `Game.buff()` below.
 
 ### Buffs don't stack
 
 `Game.buff(id, days)` is `Math.max(existing, days)`, always. Playing the bagpipes twice in one
-day does not double the fox-risk reduction or extend past `cozyBuffDays` — the second pipe
+day does not double the fox-risk reduction or extend past `cozyBuffDays`: the second pipe
 just re-confirms the same 2 days already running. This is spec behaviour (§3: "Buff durations
-are set with `max(existing, n)` — they refresh, they don't stack"), and every temporary buff
+are set with `max(existing, n)`; they refresh, they don't stack"), and every temporary buff
 (`tended`, `steady hands`, `settled flock`, `hale`) goes through the same one method, so there's
 no per-buff special case to accidentally get wrong.
 
@@ -524,27 +524,27 @@ no per-buff special case to accidentally get wrong.
 
 Settings → Cheat codes. `RETRO`, `SILLER`, `TOD`, `HIRSEL`, `LANGDAY`, `HAAR`, `1680`.
 
-A code stays found for good — `cheatsFound` lives in settings, not the save file — and every
+A code stays found for good (`cheatsFound` lives in settings, not the save file) and every
 found code becomes a button in that list, so later runs work them from the menu instead of
 retyping. `RETRO` and `TOD` hold state and show `on`/`off`; the rest are one-shots marked `use`.
 
 Codes show as `?????` until entered, which is what keeps `1680` from giving the secret away
 to a player who hasn't gone looking for it. It summons the wolf with none of the real
-conditions met — but what happens when he arrives is unchanged, and still decided by whether
+conditions met, but what happens when he arrives is unchanged, and still decided by whether
 the broadsword is on the wall. The flock is still not cut until the animation has played.
-**A run that uses a code which changes the game earns no achievements** — `SILLER`,
+**A run that uses a code which changes the game earns no achievements**: `SILLER`,
 `HIRSEL`, `LANGDAY`, `HAAR` and `1680` mark it the moment they are used, and `ZEN` the first
 time it saves a tap. `RETRO`, `TOD` and `SKELP` never do. The end screen says so, so it is
 never a surprise. `state.cheated` holds it, and `hydrate` back-fills old saves as clean.
 
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
-The simulation is untouched — only the words and the sprites swap.
+The simulation is untouched, only the words and the sprites swap.
 
 ### Things that happen
 
 `sim/events.ts`. The world comes to the door: at most one event a dawn, rolled from the run's
 seed like everything else, none in the first week. Each is a card over the hill with a few
-choices, and every choice says what it costs — a tap out of today, money, or nothing. **Every
+choices, and every choice says what it costs: a tap out of today, money, or nothing. **Every
 event offers a choice that costs nothing**, so none can leave a player stuck, and one left
 unanswered overnight takes that choice at the next dawn (a test pins both). None mentions the
 sword, the wolf or how he is called.
@@ -552,16 +552,16 @@ sword, the wolf or how he is called.
 | event | when | the choice |
 | --- | --- | --- |
 | Callum, over the burn | the third morning, before any other event can come | shaking his hand: he is met, and everything else he does is someone the player knows |
-| letters | days 9, 40, 110, 190 — the old office, your mother (with £10), a friend, your sister | mostly words; they are the thread back to the desk in the opening |
-| the dealer | now and then, not in winter | a good ewe at ¾ of the cart price, or a tool you lack at ⅘ — never a second dog, the sword or the watch |
+| letters | days 9, 40, 110, 190: the old office, your mother (with £10), a friend, your sister | mostly words; they are the thread back to the desk in the opening |
+| the dealer | now and then, not in winter | a good ewe at ¾ of the cart price, or a tool you lack at ⅘, never a second dog, the sword or the watch |
 | Callum's ewes are out | now and then | a tap to help him, or not |
 | Callum pays it back | after two kindnesses | 20 bales in the back end of the year, £15 in the front |
 | a stray | now and then, not in winter | walk her back (a tap, and a kindness) or keep her (a ewe, and he knows) |
-| the Highland show | the 18th of each summer | show your best grown ewe (breed, fleece, tended) for £25 or £12, or run the dog in the trial for £20 — the collie is the trials dog, and an old one is slower |
+| the Highland show | the 18th of each summer | show your best grown ewe (breed, fleece, tended) for £25 or £12, or run the dog in the trial for £20: the collie is the trials dog, and an old one is slower |
 | her afternoon off | once, after three evenings at the inn | walk the hill with her: it counts for an evening |
 | the ceilidh | the 10th of each autumn, once you know her | £4 and a tap: an evening, and hale for two days |
 
-**Callum has a face.** His cards — the introduction, his ewes out, his kindness paid back —
+**Callum has a face.** His cards (the introduction, his ewes out, his kindness paid back)
 carry a portrait (`render/portrait.ts`): flat cap, grey beard, tweed, drawn at 40×44 and
 scaled like everything else. It pops up with the card, blinks, and talks for the first
 moments of it. `speaker` on an event says whose face goes on it; he is the only one so far.
@@ -572,7 +572,7 @@ choice that can be afforded, and quick keys do nothing behind it.
 
 Measured with `tools/balance.ts` (the policy helps Callum, walks strays back, shows a ewe,
 goes to the dance, and buys off the dealer only with money to spare): median wins 182 / 214 /
-233 against 203 / 226 / 266 without events — a run is about a tenth shorter for a player who
+233 against 203 / 226 / 266 without events: a run is about a tenth shorter for a player who
 answers the door, with no more lost. Every number is in `EVENTS_BALANCE`. With the events
 switched off the tool reproduces the old figures exactly, so the difference is theirs.
 
@@ -580,7 +580,7 @@ switched off the tool reproduces the old figures exactly, so the difference is t
 
 The game was built for a finger and a mouse; a Steam Deck needs it to be playable with a pad
 alone, and a desktop player may want the keys. `ui/controls.ts` reduces both to a handful of
-intents — move, choose, back, menu, the sky — and `ui/nav.ts` decides what each does in
+intents (move, choose, back, menu, the sky) and `ui/nav.ts` decides what each does in
 whichever **layer** is on top: the credits, Settings, the end of a run, the title, a sheet, a
 walkthrough card waiting on "Go on", the retro panels, or the hill.
 
@@ -591,20 +591,20 @@ walkthrough card waiting on "Go on", the retro panels, or the hill.
 | back | Escape / Backspace | B |
 | settings | Escape on the hill | Start |
 | the sky | F | View |
-| walk | — | right stick |
+| walk | - | right stick |
 
 **In a DOM layer** a direction moves focus to the nearest button that way
-(`ui/spatial.ts` — distance along the direction counts once, drift across it twice, so down
+(`ui/spatial.ts`: distance along the direction counts once, drift across it twice, so down
 means the thing under you). Sliders take left and right. A sheet that is only for reading
 scrolls when there is nothing further to move to. Each layer lands focus on the obvious
-choice when it opens — "Go back to it" on the title, "Start again" at the end, the first live
-row of a sheet — and **never on selling stock**: a sale is one press from a second press, so
+choice when it opens: "Go back to it" on the title, "Start again" at the end, the first live
+row of a sheet, and **never on selling stock**: a sale is one press from a second press, so
 those rows are reached on purpose, not arrived at.
 
 **On the hill** a cursor moves between the things you can tap, drawn with the same outline the
 tap highlight uses, and the hint line names it. The flock is one stop; the ground and the
 hills, which are bands the width of the screen, navigate by a box in the open grass and the
-middle of the band rather than their centres. Choosing is a tap on that target — `WorldUi`'s
+middle of the band rather than their centres. Choosing is a tap on that target: `WorldUi`'s
 `activate` is the one path for both, so they cannot disagree. Indoors B goes back out of the
 door. The cursor follows the walkthrough's target as it moves on, so the first day can be
 played with nothing but Enter.
@@ -613,12 +613,12 @@ The pointer is never switched off. The last device used decides whether the focu
 the prompts along the bottom show; a click or a touch hides them again.
 
 **Quick keys** do a thing outright, for a player who has learned the game: G gather, C shear
-(the clip — S is down), T tend, M sell the wool, U muck, H cut hay, B work on the croft, P pipe,
+(the clip: S is down), T tend, M sell the wool, U muck, H cut hay, B work on the croft, P pipe,
 N a tune, I the inn, Z sleep, 1–3 move them to a pasture, E in or out of the house, K the cart,
 and ? opens Settings at the list of them (`QUICK_KEYS` in `ui/controls.ts`, pinned by a test
 never to take a movement key). They pass through `WorldUi.quick`, which checks what a tap on
-the row would — the walkthrough's lock on the thing it is teaching, the day's taps, whether
-the action can be done at all — and says why when it cannot. They work on the hill, over a
+the row would: the walkthrough's lock on the thing it is teaching, the day's taps, whether
+the action can be done at all, and says why when it cannot. They work on the hill, over a
 sheet (which they close) and in the retro panels; behind Settings, the title or the end of a
 run the letters mean nothing, so a stray key cannot spend a tap. While the keyboard is in use
 each sheet row shows its key.
@@ -630,32 +630,32 @@ pad on the desktop build (`platform.textInput`), and falls back to the field its
 
 `SEASON_DAYS` (24) a season, spring first: three turns of the moon each, so every season has
 the same three full moons and the wolf's calendar is unchanged. A year is 96 days, and a run
-to the croft is about two and a half of them. **The season is derived from the day** —
-`seasonOf(day)` in `rules.ts` — so it is never stored, a save cannot disagree with it, and
+to the croft is about two and a half of them. **The season is derived from the day**:
+`seasonOf(day)` in `rules.ts`, so it is never stored, a save cannot disagree with it, and
 the forecast can ask about a day that has not come yet.
 
 | | regrowth | fleece | wool price | fox | flystrike | weather |
 | --- | --- | --- | --- | --- | --- | --- |
-| spring | ×1.3 | — | — | — | ×0.6 | the old bag, unchanged |
-| summer | — | ×1.1 | ×0.9 | ×0.9 | ×1.5 | mostly sun |
+| spring | ×1.3 | - | - | - | ×0.6 | the old bag, unchanged |
+| summer | - | ×1.1 | ×0.9 | ×0.9 | ×1.5 | mostly sun |
 | autumn | ×0.6 | ×0.9 | **×1.35** | ×1.1 | ×0.8 | overcast and haar |
 | winter | **none** | ×0.85 | ×1.05 | ×1.1 | none | **snow**, three in eight |
 
 **Spring is the game as it always was.** Same weather bag, same growth, price and fox, so
-the opening a new player learns on — and every test that pins it — is untouched.
+the opening a new player learns on, and every test that pins it, is untouched.
 
 **Winter is survived on what was put by.** Nothing regrows. On a day of snow the grass is
 buried altogether. What the ground cannot give, the barn does: hay, fed out at night in
 winter only, a bale for every 10 grass the flock is short. Hay comes the two ways everything
-comes — **taps** (Cut hay: summer, a dry day, 12 bales) or **money** (the cart: 10 bales for
+comes: **taps** (Cut hay: summer, a dry day, 12 bales) or **money** (the cart: 10 bales for
 £5, £9 once winter is on you). A hungry night out in the snow can cost a beast. **The byre
 finally has a job**: on a night of snow the flock is brought in, out of the snow and out of a
 fox's reach.
 
 The walkthrough teaches the year: a step after the tools names the four seasons and what each
 is for, and ends on tapping the sky, which is where the season and the days left in it always
-are. Settings has a section of its own, **The year**, with a card for each season — its
-numbers from the same constants the sim uses, and what the season is for — the current one
+are. Settings has a section of its own, **The year**, with a card for each season; its
+numbers from the same constants the sim uses, and what the season is for: the current one
 marked, and hay and lambing beside them. The night's spending is named for the season:
 salt and dip in spring, fly oil in summer, feed in autumn, and winter feed only in winter.
 
@@ -664,7 +664,7 @@ comes in, a warning six days before winter with the barn's count, the season in 
 the sky sheet, and a haystack by the croft that grows with the barn. Muck cannot go on frozen
 ground. Settings → Buffs & status lists the four seasons from the same numbers.
 
-Measured with `tools/balance.ts` — see the note above `SEASON_DAYS` in `config.ts`. The
+Measured with `tools/balance.ts`: see the note above `SEASON_DAYS` in `config.ts`. The
 winter costs time, not lives: median wins are 5–10% later on every scale, busts are no worse,
 and a beast is lost to the snow in about one run in five.
 
@@ -672,14 +672,14 @@ and a beast is lost to the snow in about one run in five.
 
 `state.dogDays` counts the nights the working dog has worked, reset when a new one is taken
 on. For a year of work (96 days) she is in her prime. Then she is **getting on**: she still
-gathers, but her worth against a fox — and the collie's over the grass — is half what it
+gathers, but her worth against a fox, and the collie's over the grass, is half what it
 was. At 120 days she **retires to the house** rather than dying: she is removed from
 `owned`, added to `state.retiredDogs`, and the slot is free, so the cart sells another dog
 of either kind. One working dog on the hill at a time is still the rule; the retired ones
 do not count against it.
 
-The retired dogs lie along the hearthstone in their own coats — the visible record of the
-years the hill has been worked — and each still lifts her head at anything moving outside
+The retired dogs lie along the hearthstone in their own coats: the visible record of the
+years the hill has been worked, and each still lifts her head at anything moving outside
 at night: fox risk ×0.95, for up to two of them. A retired collie at a built hearth counts
 for Tippy; the fire is where she went.
 
@@ -700,15 +700,15 @@ every ewe in lamb lambs somewhere in it, the last night taking whoever is left, 
 in three has twins. A lamb takes its mother's breed.
 
 **The byre makes lambing safe.** Born under cover, every lamb lives. Born out on the hill on a
-night of rain or haar, 40% do not — half that if the flock is being tended, which is what the
+night of rain or haar, 40% do not: half that if the flock is being tended, which is what the
 Tend button says during the lambing. On a fair night nothing is lost either way. The byre is
 the third croft milestone, finished around day 170–230, so most runs lamb out on the hill at
 least once and feel what the byre is for when it comes.
 
 **Lambs** eat half what a grown beast does (the grass, the barn and the feed bill all count
-them as half a mouth — they are mostly on their mothers), carry half a fleece, and are grown
+them as half a mouth; they are mostly on their mothers), carry half a fleece, and are grown
 after 72 days: by the winter they are ewes. They sell for 40% of a grown ewe's price, and for
-nearly all of it (×2.4) at **the autumn sales** — so the choice each autumn is which to keep
+nearly all of it (×2.4) at **the autumn sales**, so the choice each autumn is which to keep
 and which to sell. The fox and the gathering count every head.
 
 Everything turns over in TOD: a dog fox, cubs, in cub. The tup is drawn at the edge of the
@@ -717,16 +717,16 @@ how many lambs there are and how many are in lamb.
 
 Measured: a lamb that ate a full ration cost more to keep to the autumn than it fetched, and
 lambing made every run slower. At half a ration, a better autumn price and one ewe in three
-twinning, it pays a little — median wins 203/226/266 against 206/227/269 without it, about ten
+twinning, it pays a little: median wins 203/226/266 against 206/227/269 without it, about ten
 lambs a run.
 
 ### Tools beyond the spec
 
 Two additions, both chosen to add a decision without touching the tap economy:
 
-- **Salt lick** (£28) — the flock takes a quarter less grass for the same growth, which makes
+- **Salt lick** (£28): the flock takes a quarter less grass for the same growth, which makes
   thin ground and the High Corrie survivable for longer.
-- **Waxed oilskin** (£36) — lets you shear through a haar. Rain is still rain, so it converts
+- **Waxed oilskin** (£36): lets you shear through a haar. Rain is still rain, so it converts
   one of the two dead weather types into a working day rather than both.
 
 ### Open questions
@@ -734,30 +734,30 @@ Two additions, both chosen to add a decision without touching the tap economy:
 `src/sim/config.ts` → `OPEN_QUESTIONS` holds the ones the design doc flagged, at their
 current values, with notes. Change them there rather than hunting for numbers:
 
-1. opening difficulty at £40 (`startMoney`) — now the live default, so this one is under test
-2. crook vs dog overlap — no flag, needs playtest data
+1. opening difficulty at £40 (`startMoney`): now the live default, so this one is under test
+2. crook vs dog overlap; no flag, needs playtest data
 3. survivors after a wolf mauling (`survivorsAfterWolf`, currently 1)
-4. the wolf punishing the two best early purchases — by design, watch it
-5. the pelt ending the fox game — seasons now carry some of the pressure the fox did: the
-   winter, the hay and the snow do not care about the pelt
-6. seasons — built; see **Seasons** above. Season length is still a question (24 days)
-7. dog ageing and retirement — built; see **The dog grows old** above
+4. the wolf punishing the two best early purchases, by design, watch it
+5. the pelt ending the fox game: seasons now carry some of the pressure the fox did (the
+   winter, the hay and the snow do not care about the pelt)
+6. seasons: built; see **Seasons** above. Season length is still a question (24 days)
+7. dog ageing and retirement: built; see **The dog grows old** above
 
 ### Starting money
 
 £40, the ship value, with no test mode. The spec's §13 £1000 test purse has been removed
-along with its settings toggle — testing is done with the `SILLER` code (+£500), which keeps
+along with its settings toggle: testing is done with the `SILLER` code (+£500), which keeps
 one code path through the opening instead of two.
 
 The number lives in `OPEN_QUESTIONS.startMoney`. It is open question §14.1: if reaching the
-crook takes more than about fifteen days, raise this. Never hand out taps — the scarcity is
+crook takes more than about fifteen days, raise this. Never hand out taps: the scarcity is
 the game.
 
-### Market price — raised after a player report
+### Market price: raised after a player report
 
 The spec's 62±32p (30–95p) was simulated headlessly: a modest, tool-free policy across 40
-seeded 30-day runs came out with a **median final purse of £40** — flat against the £40
-start — and a **worst case of £2**, one bad-weather streak from starving. That matched a
+seeded 30-day runs came out with a **median final purse of £40**: flat against the £40
+start, and a **worst case of £2**, one bad-weather streak from starving. That matched a
 direct report ("a run of rain and I can't get to market before I starve"). Rain and haar
 together are ~43% of days in `WEATHER_BAG`, so a multi-day dead streak isn't a tail case; the
 per-sheep margin over feed has to survive it, not just the average day.

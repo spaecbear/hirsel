@@ -3,7 +3,7 @@
  *
  * Navigations are network-first: a cache-first HTML document will happily serve
  * a stale build forever, which looks exactly like "my changes aren't showing up".
- * Hashed assets under /assets/ are safe to serve cache-first — their names change
+ * Hashed assets under /assets/ are safe to serve cache-first: their names change
  * whenever their contents do.
  */
 const VERSION = "v2";

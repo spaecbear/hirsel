@@ -261,7 +261,7 @@ export class View {
 
     // not in spring: see the cart's note in world-ui.ts
     const lot = hayLotCost(g);
-    if (season(g).id !== "spring") sh.appendChild(el("div", { class: "shead" }, "Hay — for the winter"));
+    if (season(g).id !== "spring") sh.appendChild(el("div", { class: "shead" }, "Hay for the winter"));
     if (season(g).id !== "spring") sh.appendChild(
       button(
         "act buy",
@@ -272,7 +272,7 @@ export class View {
       ),
     );
 
-    sh.appendChild(el("div", { class: "shead" }, "Tools — one of each"));
+    sh.appendChild(el("div", { class: "shead" }, "Tools: one of each"));
     for (const t of TOOLS) {
       const has = owns(g, t.id);
       sh.appendChild(
@@ -304,7 +304,7 @@ export class View {
       );
     }
 
-    sh.appendChild(el("div", { class: "shead" }, "The croft — what it is all for"));
+    sh.appendChild(el("div", { class: "shead" }, "The croft: what it is all for"));
     for (const m of CROFT) {
       const has = owns(g, m.id);
       const locked = m.need ? !owns(g, m.need) : false;

@@ -1,6 +1,6 @@
 /**
- * Inverse mode ("TOD") swaps who is who. The simulation is untouched — the
- * numbers were tuned and stay tuned — but the words and the sprites turn over:
+ * Inverse mode ("TOD") swaps who is who. The simulation is untouched (the
+ * numbers were tuned and stay tuned), but the words and the sprites turn over:
  * you keep a skulk of foxes, and it is sheep that come off the hill at night.
  */
 import type { BreedId } from "./types";
@@ -69,7 +69,7 @@ export const NORMAL: Lexicon = {
   woolCap: "Wool",
   gather: "Gather the flock",
   shear: "Shear",
-  stock: "Stock — buy as many as you can afford",
+  stock: "Stock: buy as many as you can afford",
   unit: "ewe",
   breeds: {
     blackface: "Scottish Blackface",
@@ -116,9 +116,9 @@ export const NORMAL: Lexicon = {
   toolWhat: {
     shears: "Every fleece comes off a fifth heavier, and you get through more of them in a day.",
     dog: "Works the flock in on her own each night, and foxes think twice about her.",
-    collie: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a fox, but they do better under her.",
+    collie: "Works them in on her own and keeps them grazing steadily. Less of a deterrent to a fox, but they do better under her.",
     fiddle: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a fox off.",
-    crook: "Takes a tap off gathering — and off a big flock, which costs two.",
+    crook: "Takes a tap off gathering (and off a big flock, which costs two).",
     oilskin: "You can shear through a haar in this. Rain is still rain.",
     // §7: gives nothing away, in either vocabulary or either state
     sword: "Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind.",
@@ -148,7 +148,7 @@ export const INVERSE: Lexicon = {
   woolCap: "Brush",
   gather: "Gather the skulk",
   shear: "Comb the brushes",
-  stock: "Earths — take on as many as you can afford",
+  stock: "Earths: take on as many as you can afford",
   unit: "vixen",
   // the same four beasts underneath: growth and value are untouched, so the
   // hill tod is the hardy one and the silver is the one worth the money
@@ -197,9 +197,9 @@ export const INVERSE: Lexicon = {
   toolWhat: {
     shears: "Every brush combs out a fifth heavier, and you get through more of them in a day.",
     dog: "Works the skulk in on her own each night, and rams think twice about her.",
-    collie: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a ram, but they do better under her.",
+    collie: "Works them in on her own and keeps them grazing steadily. Less of a deterrent to a ram, but they do better under her.",
     fiddle: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a ram off.",
-    crook: "Takes a tap off gathering — and off a big skulk, which costs two.",
+    crook: "Takes a tap off gathering (and off a big skulk, which costs two).",
     oilskin: "You can comb through a haar in this. Rain is still rain.",
     tup: "A dog fox for the vixens. He runs with them through the autumn, and the cubs come in the spring.",
     sword: "Hangs well above the fire. Bonny thing. Not much use for keeping rams off, mind.",

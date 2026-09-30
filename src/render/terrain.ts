@@ -6,7 +6,7 @@
  *
  *  Low Field    Rannoch Moor. Flat wet bog, a burn winding through tussocks
  *               and rushes, and dark hills with the cloud sitting down on
- *               them. Hemmed in — you cannot see out of it.
+ *               them. Hemmed in; you cannot see out of it.
  *  Hill Slope   A glen in heather. Ridge behind ridge going back into haze,
  *               each one paler than the last, purple banks on the slope.
  *  High Corrie  The Quiraing. Tawny gold grass over stepped rock terraces,
@@ -112,7 +112,7 @@ export function drawTerraces(g: Painter, W: number, horizonY: number, groundY: n
       const y = top + wob;
       g.px(x, y, 2, Math.round((groundY - horizonY) / bands) + 4, col);
       // the lip of each terrace catches the light hard and drops a shadow
-      // under it — that edge is the whole reason an escarpment reads as one
+      // under it; that edge is the whole reason an escarpment reads as one
       g.px(x, y, 2, 2, shade(col, 34));
       g.px(x, y + 2, 2, 1, shade(col, -30));
       // grass holds on along the top of each step, bare rock breaks through
@@ -143,7 +143,7 @@ export function drawBurn(g: Painter, W: number, groundY: number, H: number, time
      */
     const wander = Math.sin(t * 5.6) * 0.11 + Math.sin(t * 2.1 + 1.4) * 0.07;
     const cx = W * (0.28 + wander);
-    // it widens hard as it comes towards you — that is what gives it depth
+    // it widens hard as it comes towards you; that is what gives it depth
     const w = Math.max(2, Math.round(1 + Math.pow(t, 1.4) * 11));
     const x0 = Math.round(cx - w / 2);
     g.px(x0 - 1, y, 1, 1, "#3b3324"); // peat-stained banks
@@ -159,7 +159,7 @@ export function drawBurn(g: Painter, W: number, groundY: number, H: number, time
 
 /**
  * Broad patches of lighter and darker ground. Real hillside is never one
- * colour — it is drier here, wetter there, and without this the field reads
+ * colour; it is drier here, wetter there, and without this the field reads
  * as a painted floor no matter how much detail sits on top of it.
  */
 export function drawMottle(g: Painter, W: number, groundY: number, H: number, pal: [string, string, string]) {
@@ -211,7 +211,7 @@ export function drawPools(g: Painter, W: number, groundY: number, H: number) {
   /*
    * Fewer, darker and narrower than they were. As bright slabs sitting on
    * flat grass they read as floating rectangles rather than water lying in
-   * a hollow — the ground has to close over the ends of them.
+   * a hollow: the ground has to close over the ends of them.
    */
   for (let i = 0; i < 5; i++) {
     const x = Math.round(hash(i * 17) * (W - 26));
@@ -228,7 +228,7 @@ export function drawPools(g: Painter, W: number, groundY: number, H: number) {
  * Heather.
  *
  * It used to be flat rectangles with a lit top edge and a dark bottom, which
- * is exactly how the scree in the same file is drawn — so it read as purple
+ * is exactly how the scree in the same file is drawn, so it read as purple
  * rocks lying on the grass. Real heather is a low mat of tiny flowers: no
  * hard edge anywhere, a spread of speckle over a darker base, in banks rather
  * than scattered evenly. This draws the bank first and stipples the bloom
@@ -272,7 +272,7 @@ export function drawHeather(g: Painter, W: number, groundY: number, H: number, d
 /**
  * Bare ground showing through where the grass has been eaten down.
  *
- * Colour alone was not enough to tell a lush pasture from a bare one — worst
+ * Colour alone was not enough to tell a lush pasture from a bare one: worst
  * on the High Corrie, where fed and bare were both tawny. Earth and stone
  * appearing as the grass goes is a signal that reads at a glance whatever
  * the palette is doing.

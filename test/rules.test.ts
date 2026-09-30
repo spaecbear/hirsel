@@ -355,7 +355,7 @@ describe("Tippy is given for watching, and only for the right dog", () => {
   /*
    * Player report: the achievement did not arrive on walking into the room.
    * The check used to live in the world UI's refresh(), which only runs when
-   * the game state changes — and walking through your own front door changes
+   * the game state changes, and walking through your own front door changes
    * nothing, so it sat waiting for whatever the player did next. It runs off
    * the clock now. These pin the conditions themselves.
    */
@@ -404,7 +404,7 @@ describe("sound is on when the game is opened", () => {
   /*
    * Playtest report: a new player could not get any sound at all. The cause
    * was in the audio engine, but these pin the half of it that lives in the
-   * settings — a fresh install has to arrive unmuted and audible, and the
+   * settings: a fresh install has to arrive unmuted and audible, and the
    * player has to be able to turn it off again.
    */
   it("starts unmuted, with every channel up", () => {

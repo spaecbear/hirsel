@@ -1,14 +1,14 @@
 /**
  * Every tuned number in the game, in one place.
  *
- * The spec's §14 open questions are NOT silently resolved — each one is a flag
+ * The spec's §14 open questions are NOT silently resolved; each one is a flag
  * here, set to the prototype's shipped behaviour, with a note saying what the
  * question actually is. Change the flag, don't hunt for a magic number.
  */
 import type { Breed, BreedId, Difficulty, Season, SeasonId, Weather, WeatherId } from "./types";
 
 /**
- * Starting money. The £1000 test purse of §13 is gone — testing is done with
+ * Starting money. The £1000 test purse of §13 is gone: testing is done with
  * the SILLER cheat now, which keeps one code path instead of two.
  * This is open question §14.1: if the crook takes more than ~15 days to
  * reach, raise this rather than handing out taps.
@@ -42,7 +42,7 @@ export const BALANCE = {
    * Work scales with the flock.
    *
    * Measured across 25 seeded runs, only about one tap a day had genuinely
-   * productive work in it — 64% spare on day one with no tools at all, and
+   * productive work in it: 64% spare on day one with no tools at all, and
    * 89% spare once the kit was in. The day is gated by fleece growth, not by
    * taps, so four days in five held nothing but gathering and the spare taps
    * went to the same filler every time.
@@ -55,7 +55,7 @@ export const BALANCE = {
   shearPerTapWithShears: 14,
   /** never so many that a day cannot contain one clip */
   shearMaxTaps: 3,
-  /** past this, a flock needs two taps to gather — unless a dog does the running */
+  /** past this, a flock needs two taps to gather, unless a dog does the running */
   bigFlock: 12,
 
   shearMinFleece: 4,
@@ -73,8 +73,8 @@ export const BALANCE = {
    * A fox takes one sheep a night whatever the size of the flock, so the
    * risk was flat while its cost was not: losing one of six is ruinous and
    * losing one of twenty is a Tuesday. Measured, a six-sheep flock bled
-   * value faster than it earned it — about £180 of losses against £114 of
-   * wool over ninety days — so a run could never climb out of its start,
+   * value faster than it earned it: about £180 of losses against £114 of
+   * wool over ninety days, so a run could never climb out of its start,
    * and every measured run decayed to two or three beasts.
    *
    * Risk now scales with how many there are to watch, pivoting on the size
@@ -86,7 +86,7 @@ export const BALANCE = {
   foxFlockMin: 0.45,
   foxFlockMax: 1.5,
   /*
-   * The two dogs, and the two instruments, are sidegrades at one price —
+   * The two dogs, and the two instruments, are sidegrades at one price:
    * different shapes, not different amounts. The sheltie is the safe pick and
    * the collie the productive one; the pipes settle the flock and the fiddle
    * grows it. Each is a slot: one dog, one instrument, never both, or the
@@ -98,7 +98,7 @@ export const BALANCE = {
    *   sheltie  median £66, 0.73 sheep lost per run
    *   collie   median £71, 0.93 sheep lost per run
    * A sheep is worth £24 and up, so the collie's extra £5 is roughly paid
-   * for by the extra animal she does not save — the choice is flock safety
+   * for by the extra animal she does not save: the choice is flock safety
    * against income, not a better and a worse option. 0.75 left the collie
    * quietly ahead on both counts; 0.9 made her not worth having.
    */
@@ -128,9 +128,9 @@ export const BALANCE = {
    * Wool price, and the feed bill above it, are the two numbers that decide
    * whether a flock compounds or bleeds. They were set so it bled.
    *
-   * Measured across 25 seeded 90-day runs on one competent policy — shear at
+   * Measured across 25 seeded 90-day runs on one competent policy: shear at
    * prime rather than at the legal minimum, work the better ground, buy the
-   * dog first — a six-sheep flock at 80p and £1-per-2 feed took about £180 of
+   * dog first: a six-sheep flock at 80p and £1-per-2 feed took about £180 of
    * fox losses against £114 of wool. Every run decayed towards two or three
    * beasts and 22 of 25 died with an empty purse. A player could not climb
    * out of the flock they started with, so the whole middle of the game was
@@ -148,7 +148,7 @@ export const BALANCE = {
    *
    * 1/3 and 105p is the chosen point: the median run settles at exactly the
    * intended twelve, and £164 by day ninety against £1,510 of croft is a long
-   * way from generous. Feed is the stronger lever of the two — at £1 per 2 no
+   * way from generous. Feed is the stronger lever of the two, at £1 per 2 no
    * wool price rescued the run, because the bill scaled with the flock as
    * fast as the fleece did.
    */
@@ -187,7 +187,7 @@ export const BALANCE = {
    *
    * A year of work in her prime, then she is getting on: still gathering,
    * but her worth against a fox and over the grass is half what it was. At
-   * `dogRetireDays` she retires to the house rather than dying — she lies by
+   * `dogRetireDays` she retires to the house rather than dying; she lies by
    * the fire, a record of the years the hill has been worked, and the slot is
    * free for another dog. Retired, she still lifts her head at anything
    * moving outside at night: a small deterrent, counted for up to two of them.
@@ -209,14 +209,14 @@ export const BALANCE = {
    * of them are in lamb. A hungry winter night can cost a ewe her lamb, so the
    * barn feeds next year's flock as well as this one. The lambs come over the
    * first days of spring. Born in the byre they all live; born out on the hill
-   * on a wet night, some do not — less so if the flock is being tended. They
+   * on a wet night, some do not: less so if the flock is being tended. They
    * are half a mouth (mostly on their mothers), carry half a fleece, are
    * grown by the winter, and sell best at the autumn sales.
    *
    * Measured with tools/balance.ts: at a full ration a lamb cost more to keep
    * to the autumn than it fetched, and lambing made every run slower. At half
    * a ration, one ewe in three twinning and the autumn price here, it pays a
-   * little — median wins 203/226/266 against 206/227/269 without it.
+   * little: median wins 203/226/266 against 206/227/269 without it.
    */
   tupRate: 0.85,
   lambingDays: 10,
@@ -249,7 +249,7 @@ export const BALANCE = {
  * the same three full moons in it and the wolf's calendar is unchanged. A
  * year is ninety-six days; a run to the croft is about two of them.
  *
- * Spring is the game as it always was — the same weather, the same numbers —
+ * Spring is the game as it always was: the same weather, the same numbers,
  * so the opening a new player learns on is untouched. The other three pull
  * on it: summer grows wool and flies, autumn pays for it, and winter is
  * survived on what was put by.
@@ -303,7 +303,7 @@ export const SEASONS: Record<SeasonId, Season> = {
     strike: 0.8,
     price: 1.35,
     weather: ["sun", "overcast", "overcast", "overcast", "rain", "rain", "mist", "mist"],
-    arrives: "Autumn. The bracken turns, and the wool sales are on — it fetches its best price of the year.",
+    arrives: "Autumn. The bracken turns, and the wool sales are on: it fetches its best price of the year.",
   },
   winter: {
     id: "winter",
@@ -326,15 +326,15 @@ export const SEASON_ORDER: SeasonId[] = ["spring", "summer", "autumn", "winter"]
 /**
  * The scale you choose to play on.
  *
- * The mechanics are identical at every setting — the same actions, the same
- * fox, the same croft — so a player who learns the game on Gentle has learned
+ * The mechanics are identical at every setting: the same actions, the same
+ * fox, the same croft, so a player who learns the game on Gentle has learned
  * the game. Only two numbers move: how often a fox comes, and what wool
  * fetches. Those are the two the simulation showed decide whether a flock
  * compounds or bleeds, so they are the honest place to put the dial.
  *
  * Hard is the tuning the balance work landed on: measured at roughly a 64%
  * survival rate over ninety days on a competent policy. That is a fine
- * summit and a poor lobby, which is why it is no longer the only option —
+ * summit and a poor lobby, which is why it is no longer the only option,
  * and why it is the one that pays out.
  */
 export const DIFFICULTY: Record<
@@ -362,7 +362,7 @@ export const DIFFICULTY: Record<
 };
 
 export const OPEN_QUESTIONS = {
-  /** (1) opening difficulty — raise starting money, never taps, if the crook takes >15 days */
+  /** (1) opening difficulty: raise starting money, never taps, if the crook takes >15 days */
   startMoney: START_MONEY,
   /** (3) one ewe after a mauling may be unrecoverable. Set to 2 to soften. */
   survivorsAfterWolf: 1,
@@ -393,7 +393,7 @@ export const WEATHER: Record<WeatherId, Weather> = {
   snow: { id: "snow", name: "Snow", graze: 0.8, shear: false, foxBias: 1.1, sky: "#5b6670", light: "#c9d0d4" },
 };
 
-/** draw weights: sun 2, overcast 2, rain 2, haar 1 — the spring bag; each season has its own */
+/** draw weights: sun 2, overcast 2, rain 2, haar 1: the spring bag; each season has its own */
 export const WEATHER_BAG: WeatherId[] = ["sun", "sun", "overcast", "overcast", "rain", "rain", "mist"];
 
 export const BREEDS: Record<BreedId, Breed> = {
@@ -446,11 +446,11 @@ export const PASTURES = [
 ] as const;
 
 export const TOOLS = [
-  { id: "crook", name: "Shepherd's crook", cost: 18, what: "Takes a tap off gathering — and off a big flock, which costs two." },
+  { id: "crook", name: "Shepherd's crook", cost: 18, what: "Takes a tap off gathering (and off a big flock, which costs two)." },
   { id: "shears", name: "Blade shears", cost: 32, what: "Every fleece comes off a fifth heavier, and you get through more of them in a day." },
   { id: "boots", name: "Stout boots", cost: 26, what: "One more tap every day." },
   { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night, and foxes think twice about her." },
-  { id: "collie", name: "Border collie", cost: 58, what: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a fox, but they do better under her." },
+  { id: "collie", name: "Border collie", cost: 58, what: "Works them in on her own and keeps them grazing steadily. Less of a deterrent to a fox, but they do better under her." },
   { id: "tup", name: "A tup", cost: 48, what: "A ram for the ewes. He runs with them through the autumn, and the lambs come in the spring." },
   { id: "fiddle", name: "A fiddle", cost: 34, what: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a fox off." },
   { id: "cart", name: "Pony and cart", cost: 74, what: "Market costs no tap." },
@@ -461,7 +461,7 @@ export const TOOLS = [
   /*
    * §7: gives nothing away, and now cannot be bought before there is a fire
    * to hang it over. The line about a hearth reads as the smith's patter
-   * rather than a hint — it says why you cannot have it, not what it is for.
+   * rather than a hint; it says why you cannot have it, not what it is for.
    */
   { id: "sword", name: "Highland broadsword", cost: 185, needs: "hearth", what: "Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind." },
   { id: "watch", name: "Brass pocket watch", cost: 165, what: "Set a day's work to it once and it will keep that day for you after." },
@@ -471,7 +471,7 @@ export const TOOLS = [
  * The croft is built, not bought.
  *
  * Paying for it was a pure money sink that cost no part of the day, so the
- * whole road to winning never once competed with the work — and a player who
+ * whole road to winning never once competed with the work, and a player who
  * kept a small flock never met any tap pressure at all. The money buys the
  * materials; `work` is the days of your own labour it then takes, so the
  * thing you are playing for is made of the same scarce stuff as everything

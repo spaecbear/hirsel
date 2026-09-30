@@ -6,7 +6,7 @@
  * sunset, and the three of them sat on the edge of it with their backs to
  * you, looking out at the thing they spent the whole game earning.
  *
- * It is built from a photograph of the real place — the long escarpment
+ * It is built from a photograph of the real place: the long escarpment
  * stepping away to the right, the grass gone gold, the rock breaking out of
  * it in bands, and the ground falling away at your feet. Sunset rather than
  * daylight, because this is an ending, and because the low light is what
@@ -21,7 +21,7 @@ import { KIT, drawDog, drawFox, drawSheep, hash, setSpriteState } from "../sprit
 import type { Sheep } from "../../sim/types";
 
 /* The sunset, top to bottom. Deep above, and everything warming as it falls
- * to the horizon — the sun is only just down behind the ridge. */
+ * to the horizon: the sun is only just down behind the ridge. */
 const SKY = [
   { at: 0.0, c: "#2b2b46" },
   { at: 0.22, c: "#4a3a5c" },
@@ -62,7 +62,7 @@ function mixHex(a: string, b: string, t: number): string {
  *   1. Every plane steps to a clearly different value from its neighbour, and
  *      they alternate light and dark rather than fading gradually down.
  *   2. Every plane gets a bright rim along its top edge, because the sun is
- *      behind the hill and that is what backlight does — and a lit line is
+ *      behind the hill and that is what backlight does, and a lit line is
  *      what separates one dark mass from the next.
  *
  * The figures then sit on the dark foreground with a *lit* band directly
@@ -155,7 +155,7 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
   /*
    * 2. The escarpment. The signature of the Quiraing is a grass top that
    * stops dead at a cliff, so the crest is drawn as a bright lit strip and
-   * the rock starts immediately under it — not as bands floating in a slope.
+   * the rock starts immediately under it, not as bands floating in a slope.
    */
   const crestAt = (x: number) => {
     const t = x / W;
@@ -246,7 +246,7 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
 
   /*
    * The croft, finished, small in the hollow below them. Slated roof, smoke
-   * out of the chimney, and the byre alongside it — the whole of what the
+   * out of the chimney, and the byre alongside it: the whole of what the
    * run was for, seen from above and a long way off.
    */
   {
@@ -302,7 +302,7 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
     const u = Math.max(18, Math.round(H * 0.115));
 
     /*
-     * Both dogs, which no single run can have — one dog to a game, so the
+     * Both dogs, which no single run can have; one dog to a game, so the
      * pair of them is the picture of having done it more than once. KIT
      * decides which coat drawDog paints, so it is flipped between the calls
      * and put back after.
@@ -311,7 +311,7 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
     const beat = creditsBeat(time);
 
     /*
-     * The two of them nose to nose — which no single run can show you, since
+     * The two of them nose to nose, which no single run can show you, since
      * a game only ever has one dog. They face each other by default, and both
      * turn to face the fox when he puts his head over the lip.
      *
@@ -330,8 +330,8 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
     const foxX = Math.round(FOX_X_FRAC * W);
     const foxSide: 1 | -1 = foxX > (sx + cxd) / 2 ? 1 : -1;
     /*
-     * They take turns. Wagging in step the two of them looked mechanical —
-     * one animal drawn twice — so each has its own half of the cycle with a
+     * They take turns. Wagging in step the two of them looked mechanical;
+     * one animal drawn twice, so each has its own half of the cycle with a
      * pause between, which is how two dogs pleased with each other actually
      * do it. Neither wags at a fox.
      */
@@ -348,7 +348,7 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
 
     /*
      * The fox, up over the edge on the far side of them. Only his head and
-     * shoulders clear the lip — the rest of him is below it, which is what
+     * shoulders clear the lip: the rest of him is below it, which is what
      * makes it a fox looking in rather than a fox standing about.
      */
     if (beat.foxIn > 0 || beat.foxOut > 0) {
@@ -416,7 +416,7 @@ function farRidge(
  * His pipe.
  *
  * A long slow cycle: it rests on his knee with the ember breathing, he brings
- * it up, draws on it — the ember goes bright — and takes it down again, and
+ * it up, draws on it, the ember goes bright, and takes it down again, and
  * the smoke comes away in whorls and drifts off on the evening. The draw is
  * the short part of it; a man sitting with a pipe is mostly not smoking it.
  */
@@ -432,7 +432,7 @@ const PIPE_DRAW_FOR = 1300;
  *
  * `raised` used to hit 1 at the mouth and start falling on the very same
  * frame, so the pipe was already on its way back down through the whole
- * draw — he never held it there at all. A man takes a pull and sits with it
+ * draw; he never held it there at all. A man takes a pull and sits with it
  * a second before he lowers it.
  */
 const PIPE_HOLD = 2600;
@@ -460,7 +460,7 @@ function pipeBeat(time: number) {
   return { raised, drawing, puff };
 }
 
-/** a filled disc, for heads — blocks read as masonry, not people */
+/** a filled disc, for heads: blocks read as masonry, not people */
 function disc(g: Painter, cx: number, cy: number, r: number, c: string) {
   for (let dy = -r; dy <= r; dy++) {
     const half = Math.round(Math.sqrt(Math.max(0, r * r - dy * dy)));
@@ -472,8 +472,8 @@ function disc(g: Painter, cx: number, cy: number, r: number, c: string) {
  * Everyone who made it, sitting on the edge with their backs to us.
  *
  * This is the reward for finding *everything*, so everything is in it: the
- * wolf pelt round his shoulders, both dogs — you can only ever keep one in a
- * run, so the pair of them together is the picture of having done it twice —
+ * wolf pelt round his shoulders, both dogs (you can only ever keep one in a
+ * run, so the pair of them together is the picture of having done it twice),
  * a couple of the flock, a fox that no longer has to be chased off, and the
  * croft finished down below.
  *
@@ -481,7 +481,7 @@ function disc(g: Painter, cx: number, cy: number, r: number, c: string) {
  * who was who from the arrangement, so they wear their own colours: his
  * green coat and bunnet, the grey pelt over it, her blouse and skirt from the
  * inn, the sheltie's tan and the collie's black-and-white. The sun is still
- * behind them, so everything takes a warm rim down its right side — lit, but
+ * behind them, so everything takes a warm rim down its right side: lit, but
  * not lit from the front.
  */
 function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: number) {
@@ -529,14 +529,14 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
     const armCol = manX + Math.round(shoulderW * 0.62) - 2;
     /*
      * A sleeve, not a strut. Lit down one edge it read as a pale pole
-     * standing against him — the arm hangs at his side in the same green as
+     * standing against him: the arm hangs at his side in the same green as
      * the coat, and only its outer edge is shaded so it separates.
      */
     g.px(armCol, armTop, 3, Math.round(hh * 0.24), "#4a5540");
     g.px(armCol + 2, armTop, 1, Math.round(hh * 0.24), "#3b4433"); // the shaded outside of it
 
     // the skin across his shoulders, in a grey light enough to tell from the
-    // coat under it — at #3a3d47 it was the same value as the green and the
+    // coat under it, at #3a3d47 it was the same value as the green and the
     // whole nod to the wolf disappeared into his back
     g.px(px0, shoulderY - 1, pw, Math.round(hh * 0.22), "#6a707e");
     g.px(px0, shoulderY - 1, pw, 2, "#8d95a4"); // the sun along the top of it
@@ -547,7 +547,7 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
      * The head of the wolf, pushed back off his own as a hood.
      *
      * It was three flat blocks the same grey as the skin and read as part of
-     * his collar — no ears at all. The ears have to break the outline against
+     * his collar; no ears at all. The ears have to break the outline against
      * the sky to be ears, so they stand proud of the hood with a dark inner
      * fold, and the muzzle lies forward over his shoulder.
      */
@@ -567,7 +567,7 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
      *
      * It used to run from the middle of his knee in to his mouth, which took
      * the stem, the bowl and his whole forearm diagonally over the wolf skin
-     * and the green coat under it — a lit pipe sliding across his back. A man
+     * and the green coat under it: a lit pipe sliding across his back. A man
      * raising a pipe lifts it up the side of his face, so the path is now a
      * single x clear of his shoulder and only the height changes.
      */
@@ -623,7 +623,7 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
      *
      * Hung down at his shoulder it read as a pelt that had slipped off him,
      * which is not the same picture as a man wearing one. It sits on his
-     * crown instead — a skull cap over the top two thirds of his head with
+     * crown instead: a skull cap over the top two thirds of his head with
      * the ears standing clear above it, and his own hair showing at the nape
      * underneath. Seen from behind there is no muzzle to draw: what you get
      * is the back of the skull and the ears, which is all it needs.
@@ -638,7 +638,7 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
     g.px(skullX, skullY, skullW, skullH, "#5e646f");
     g.px(skullX + 1, skullY, skullW - 2, 1, "#9aa2b0"); // the sun over its crown
     g.px(skullX, skullY + skullH - 1, skullW, 1, "#4a505c"); // where it meets his hair
-    // his own hair at the nape, below the skull — otherwise he is all wolf
+    // his own hair at the nape, below the skull, otherwise he is all wolf
     g.px(manX - headR + 1, skullY + skullH, headR * 2 - 2, 2, "#8a6b4c");
     g.px(manX - headR + 1, skullY + skullH + 1, headR * 2 - 2, 1, "#6f5539");
     // the ears, standing clear of his outline
@@ -652,7 +652,7 @@ function drawGroup(g: Painter, cx: number, groundY: number, u: number, time: num
      * The sun down the side of him.
      *
      * A gold line at the head and a second down the torso stacked into one
-     * bright unbroken stripe running from his ears to his hip — which read
+     * bright unbroken stripe running from his ears to his hip, which read
      * as a pole standing against him, not as light. The rim belongs on the
      * outermost edge, which is his sleeve, and it is short and dim: enough
      * to lift him off the hill behind, no more.

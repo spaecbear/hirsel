@@ -25,7 +25,7 @@ const frame = (wag: number) => {
 
 /*
  * The tail read Date.now() itself, which made it the only motion in the
- * renderer not driven by the scene's own clock — it could not be frozen or
+ * renderer not driven by the scene's own clock; it could not be frozen or
  * stepped the way everything else can, and a test like this one could not be
  * written at all.
  */

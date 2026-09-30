@@ -15,7 +15,7 @@ export const PORTRAIT_H = 44;
  * Callum over the burn: a hill shepherd of your father's age. Flat cap, a
  * weathered face gone red at the cheeks, a grey beard kept short, and a tweed
  * jacket that has seen more weather than you have. `since` is how long the
- * card has been up — he talks for the first moments of it and then listens,
+ * card has been up; he talks for the first moments of it and then listens,
  * and blinks now and then throughout.
  */
 export function drawCallum(g: Painter, time: number, since: number) {

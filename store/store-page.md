@@ -1,4 +1,4 @@
-# Store page — drafts
+# Store page: drafts
 
 Drafts for the Steamworks store page, to edit rather than paste as they are. Everything
 below is true of the game as built on the `steam` branch; if a feature changes, check here.
@@ -7,10 +7,10 @@ below is true of the game as built on the `steam` branch; if a feature changes, 
 
 ## Short description
 
-Shown beside the capsule. At most 300 characters — this one is 266.
+Shown beside the capsule. At most 300 characters; this one is 265.
 
 > You gave up the job in the city and took on a Highland hill. Graze the flock, shear and
-> sell the clip, get them through the winter, and build the old croft up into a home — one
+> sell the clip, get them through the winter, and build the old croft up into a home, one
 > short day at a time, with a dog at your heel and a pint at the inn when the work is done.
 
 ---
@@ -21,8 +21,8 @@ Shown beside the capsule. At most 300 characters — this one is 266.
 lives on it.**
 
 You handed in your notice. Now there is a hill in the Highlands, a handful of blackface
-ewes, a tumbledown croft and forty pounds. Every day has a few taps of work in it — gather
-the flock, shear, tend them, muck the pasture, cut hay while the sun shines — and every night
+ewes, a tumbledown croft and forty pounds. Every day has a few taps of work in it: gather
+the flock, shear, tend them, muck the pasture, cut hay while the sun shines, and every night
 the hill decides how you did.
 
 **A year on the hill.** Spring brings the lambs. Summer is for the clip, the hay and the
@@ -44,7 +44,7 @@ buy ends up on the wall or by the fire in a room you can walk into.
 life you left. A dealer at the gate. And an evening at the inn, where someone is always
 behind the bar.
 
-**Made to be put down and picked back up.** No timers, no energy bars — a day is a handful of
+**Made to be put down and picked back up.** No timers, no energy bars: a day is a handful of
 choices and a night's sleep. Three difficulty scales, from Gentle to Hard. Play with a
 mouse, the keyboard or a controller.
 
@@ -92,7 +92,7 @@ achievements and the overlay.
 
 ## System requirements
 
-Minimum and recommended can be the same — it is a 2D pixel game. The install is about
+Minimum and recommended can be the same; it is a 2D pixel game. The install is about
 300 MB, almost all of it the Electron runtime.
 
 **Windows**
@@ -111,16 +111,16 @@ Minimum and recommended can be the same — it is a 2D pixel game. The install i
 
 ## Price
 
-A cozy game of this size sits at $6–10, if a first win takes roughly 4–8 hours — the
+A cozy game of this size sits at $6–10, if a first win takes roughly 4–8 hours: the
 playtest should confirm that before the price is set. $7.99 is a reasonable launch price; a launch discount of 10–20% is usual.
 
 ---
 
 ## The demo
 
-Its own app on Steam, created under the game's. It is the first 30 days of a run — the
-first spring and the start of summer — then a card that sends the player to the store page.
+Its own app on Steam, created under the game's. It is the first 30 days of a run (the
+first spring and the start of summer), then a card that sends the player to the store page.
 Saves are kept apart from the full game's, and don't carry over: thirty days is quickly
 played again.
-The store link in the demo comes from `VITE_STORE_URL` in `.env.demo` — set it once the
+The store link in the demo comes from `VITE_STORE_URL` in `.env.demo`: set it once the
 store page exists, then rebuild the demo.

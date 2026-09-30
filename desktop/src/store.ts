@@ -6,8 +6,8 @@
  * becomes `<key>.json` in the saves folder. That folder is what Steam Auto-Cloud
  * is pointed at, so the files are the whole of the cloud sync.
  *
- * Writes are atomic — written to a temporary file, then renamed over the real
- * one — so a crash or a power cut mid-write leaves the last good save, never
+ * Writes are atomic: written to a temporary file, then renamed over the real
+ * one, so a crash or a power cut mid-write leaves the last good save, never
  * half of one.
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";

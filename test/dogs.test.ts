@@ -83,7 +83,7 @@ describe("retiring to the fire", () => {
     expect(g.log.some((l) => l.t.includes("earned her place by the fire"))).toBe(true);
   });
 
-  it("lets another dog be bought — either kind — once she has retired", () => {
+  it("lets another dog be bought, either kind, once she has retired", () => {
     const { game, g } = harness({ owned: { collie: true }, dogDays: BALANCE.dogRetireDays - 1 });
     game.buyTool("dog");
     expect(g.owned.dog).toBeUndefined(); // one dog on the hill at a time, still

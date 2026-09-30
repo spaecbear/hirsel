@@ -1,9 +1,9 @@
 /**
  * Playing without a pointer: what each intent does, wherever you are.
  *
- * The screen is always in exactly one layer — the credits, Settings, the end
+ * The screen is always in exactly one layer: the credits, Settings, the end
  * of a run, the title, a sheet, a walkthrough card waiting on "Go on", the
- * retro panels, or the hill itself — and the topmost one gets the input.
+ * retro panels, or the hill itself, and the topmost one gets the input.
  * In a DOM layer, a direction moves focus to the nearest button that way; on
  * the hill it moves a cursor between the things you can tap. Choose is a
  * click or a tap; back closes whatever is open.
@@ -65,7 +65,7 @@ const scrolls = (n: HTMLElement) => /(auto|scroll)/.test(getComputedStyle(n).ove
  * What to scroll so an info-only sheet can still be read: the box the focus
  * sits in if it scrolls, else the first box in the layer that does. The sky
  * sheet is all reading and one close button, and the button is in the
- * header — outside the part that scrolls.
+ * header: outside the part that scrolls.
  */
 function scroller(el: HTMLElement | null, root: HTMLElement): HTMLElement | null {
   for (let n = el; n && n !== root.parentElement; n = n.parentElement) if (scrolls(n)) return n;
@@ -90,7 +90,7 @@ export class Nav {
     return this.controls.device;
   }
 
-  /** which layer has the input just now — the topmost one open */
+  /** which layer has the input just now: the topmost one open */
   layer(): Layer {
     if (isOn("credits")) return { kind: "credits", root: byId("credits") };
     if (isOn("settings")) return { kind: "settings", root: byId("settings") };
@@ -209,8 +209,8 @@ export class Nav {
 
   /**
    * A quick key does its thing on the hill, or from over a sheet (which it
-   * closes), or in the retro panels. Anywhere else — Settings, the title, the
-   * end of a run — the letters mean nothing, so a stray key cannot spend a
+   * closes), or in the retro panels. Anywhere else (Settings, the title, the
+   * end of a run) the letters mean nothing, so a stray key cannot spend a
    * tap from behind a menu.
    */
   private quick(q: Quick) {

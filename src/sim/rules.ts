@@ -41,7 +41,7 @@ export interface SeasonAt extends Season {
 }
 
 /**
- * The season is the day, and nothing else — no state, so it cannot drift, a
+ * The season is the day, and nothing else; no state, so it cannot drift, a
  * save cannot disagree with it, and the forecast can ask about a day that has
  * not come yet.
  */
@@ -168,7 +168,7 @@ export function shearCost(g: GameState): number {
 
 /**
  * Gathering a big flock takes two taps on your own. A dog does the running,
- * and the crook takes a tap off whatever it would otherwise cost — so with
+ * and the crook takes a tap off whatever it would otherwise cost, so with
  * both, gathering even a large flock is still free.
  */
 export function gatherCost(g: GameState): number {
@@ -268,7 +268,7 @@ export function wolfSummoned(g: GameState): boolean {
   return g.flock.length > 0;
 }
 
-/** the second warning — one tap still in hand, so escape is possible */
+/** the second warning; one tap still in hand, so escape is possible */
 export function wolfWarningDue(g: GameState): boolean {
   return (
     !owns(g, "pelt") &&

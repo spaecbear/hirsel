@@ -2,7 +2,7 @@ import type { Painter } from "./painter";
 
 /**
  * The moon, drawn at its true phase by masking a disc with the terminator
- * ellipse. Shared by both art packs — the phase is game information, not style.
+ * ellipse. Shared by both art packs: the phase is game information, not style.
  */
 export function drawMoonDisc(g: Painter, mx: number, my: number, r: number, phase: number, alpha: number, lit = "232,236,214") {
   const p = phase / 8;

@@ -52,7 +52,7 @@ describe("the tunes", () => {
     expect(bar(TOD_JIG)).toBeLessThan(bar(HIRSEL_AIR));
   });
 
-  it("moves on the double tonic — D and C, not D and A", () => {
+  it("moves on the double tonic: D and C, not D and A", () => {
     const roots = new Set(Object.values(HIRSEL_AIR.parts).flatMap((p) => p.roots));
     expect([...roots].sort()).toEqual([36, 38]);
     for (const root of roots) expect(HARP_FIGURES[root]).toBeDefined();

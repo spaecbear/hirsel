@@ -60,7 +60,7 @@ export function clearSave() {
  * Fill in anything a save predates.
  *
  * `validate` requires every key a fresh game has, so adding a field to
- * GameState would otherwise silently reject every existing save — the player
+ * GameState would otherwise silently reject every existing save: the player
  * loses their run to a feature they never asked for. Anything missing is
  * taken from a fresh game, top level and inside `stats`.
  */

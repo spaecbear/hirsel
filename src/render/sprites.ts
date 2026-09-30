@@ -3,7 +3,7 @@
  *
  * Shared by both interfaces: the full-screen `glen` scene and the older
  * panelled `retro` one. They lay the world out very differently, but a sheep
- * is a sheep — keeping one copy means a fix to the dog's ears or the pelt
+ * is a sheep: keeping one copy means a fix to the dog's ears or the pelt
  * lands in both places rather than one of them drifting.
  *
  * Sprite state that changes per frame rather than per call (the TOD cheat,
@@ -72,10 +72,10 @@ let NIGHT = 0;
 /**
  * What he owns, refreshed each frame. Every tool that can be seen is drawn:
  * buying something should change the picture, not just a line in a menu.
- * The broadsword is the deliberate exception — it stays out of sight.
+ * The broadsword is the deliberate exception; it stays out of sight.
  */
 export const KIT = {
-  /** which dog she is, if any — they are drawn differently */
+  /** which dog she is, if any; they are drawn differently */
   collie: false,
   crook: false,
   boots: false,
@@ -234,7 +234,7 @@ export interface ShepherdOpts {
   arm?: number;
   walk?: number;
   sit?: boolean;
-  /** seen from behind — for walking away from the camera */
+  /** seen from behind, for walking away from the camera */
   back?: boolean;
   /**
    * An idle gesture, if he is in the middle of one. `t` runs 0 → 1.
@@ -248,7 +248,7 @@ export interface ShepherdOpts {
    * Which way he is turned: 1 right, -1 left, 0 square to the camera.
    *
    * He used to be square-on always, two eyes to the viewer, which read as
-   * "facing you" whatever he was doing — squaring up to a wolf coming down
+   * "facing you" whatever he was doing: squaring up to a wolf coming down
    * the hill at him, or striding across the field away from it. In profile
    * he shows one eye and the bunnet's peak leads the way he is going.
    */
@@ -264,7 +264,7 @@ export const DOG_FEET = 11;
 
 /*
  * And a sheep's. Her body height varies with how much fleece is on her, so
- * this is the middle of the range — near enough for sorting, and it keeps the
+ * this is the middle of the range: near enough for sorting, and it keeps the
  * comparison a plain number rather than a re-derivation of the sprite.
  */
 export const SHEEP_FEET = 14;
@@ -312,7 +312,7 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
   }
   px(1, 15, 10, 8, "#4b4632"); // breeks
 
-  // coat — the waxed oilskin is longer, darker and has a sheen on it
+  // coat: the waxed oilskin is longer, darker and has a sheen on it
   if (KIT.oilskin) {
     px(0, 6, 12, 15, "#2f3a35");
     px(0, 6, 12, 2, "#43524a");
@@ -363,7 +363,7 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
        * A head of hair, not a fringe.
        *
        * With the bunnet off he had a two-pixel strip of brown over an
-       * otherwise all-skin head, which read as a bald man holding a hat —
+       * otherwise all-skin head, which read as a bald man holding a hat,
        * and it disagreed with every other view of him, since from behind
        * his whole head is hair. It sits down to just above his eyes now,
        * with the temples filled in and a lighter crown, and it is still
@@ -432,8 +432,8 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
  * breed is actually recognised by.
  *
  * `spin` (0→1) turns her right round on the spot, the way a collie does when
- * she is pleased with herself. Four orientations — side, rear, the other
- * side, front — because two would read as a flicker rather than a turn. Her
+ * she is pleased with herself. Four orientations: side, rear, the other
+ * side, front, because two would read as a flicker rather than a turn. Her
  * body foreshortens to nothing when she is end-on, which is what sells it.
  */
 /**
@@ -447,7 +447,7 @@ const DOG_COATS = {
 };
 
 /**
- * Curled up asleep, seen from the side — for the collie at the hearth.
+ * Curled up asleep, seen from the side, for the collie at the hearth.
  *
  * A dog in front of a fire is not standing at it. She was drawn with the
  * walking sprite, which read as a dog waiting to be let out rather than one
@@ -492,7 +492,7 @@ export function drawDogCurled(g: Painter, x: number, y: number, time: number, fa
 }
 
 /**
- * `wag` is the clock while her tail is going, and 0 while it is not — the
+ * `wag` is the clock while her tail is going, and 0 while it is not: the
  * same shape as `run` and `spin` above it. It read Date.now() itself before,
  * which made it the only motion in the renderer not driven by the scene's
  * own time, so it could not be frozen or stepped for testing the way
@@ -503,7 +503,7 @@ export function drawDog(g: Painter, x: number, y: number, run: number, spin = 0,
   /*
    * The tail is told when to wag rather than deciding for itself. It used to
    * go whenever she was on the move, so she wagged all the way round a
-   * herding circuit — and a working dog does not.
+   * herding circuit, and a working dog does not.
    *
    * Quick and short when it does go. At /190 a full sweep took about one and
    * a fifth seconds, which is a metronome; a dog pleased with itself is
@@ -628,7 +628,7 @@ export function drawFox(g: Painter, x: number, y: number, run: number, facing: 1
 
 /**
  * The wolf, facing LEFT. He comes down off the skyline towards the shepherd,
- * so his head has to be on the leading edge — drawn facing right he walked
+ * so his head has to be on the leading edge: drawn facing right he walked
  * backwards down the hill.
  *
  * Local coordinates run from the nose at 0 to the tail tip at 49, and `x` is
@@ -710,7 +710,7 @@ export function drawDyke(g: Painter, x0: number, y: number, len: number) {
   }
 }
 
-/** wool sacks, stacked by the cart — how much is waiting to go to market */
+/** wool sacks, stacked by the cart: how much is waiting to go to market */
 export function drawWoolSacks(g: Painter, x: number, y: number, stone: number) {
   const n = Math.min(4, Math.ceil(stone / 12));
   for (let i = 0; i < n; i++) {

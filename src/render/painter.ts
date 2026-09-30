@@ -24,7 +24,7 @@ export class Painter {
     this.cx.globalAlpha = 1;
   }
 
-  /** 2×2 bayer dither between two colours — the pixel-art way to get a gradient */
+  /** 2×2 bayer dither between two colours: the pixel-art way to get a gradient */
   dither(x: number, y: number, w: number, h: number, a: string, b: string, mix: number) {
     for (let yy = 0; yy < h; yy++) {
       for (let xx = 0; xx < w; xx += 1) {

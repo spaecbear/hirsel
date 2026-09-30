@@ -20,7 +20,7 @@ export interface Scene {
   reduced: boolean;
   /** TOD cheat: the flock is foxes and the raider is a ram */
   inverse: boolean;
-  /** for animations about something not yet in the state — the bought ewe */
+  /** for animations about something not yet in the state: the bought ewe */
   payload?: { breed?: string; croft?: string };
   /** what the pointer is over, so it can be picked out of the scene */
   hover?: HotspotId | null;
@@ -51,7 +51,7 @@ export interface ArtPack {
   name: string;
   /**
    * Fluid packs take their logical size from the viewport rather than a fixed
-   * one — the full-screen glen has no single resolution, so nothing in it can
+   * one: the full-screen glen has no single resolution, so nothing in it can
    * be drawn at hardcoded coordinates.
    */
   fluid?: boolean;

@@ -93,7 +93,7 @@ export function buildSettings(api: SettingsApi) {
      *
      * On "System" the game follows the operating system's own reduce-motion
      * setting, which means a player can have every animation collapsed to a
-     * single frame without ever having chosen that here — and with nothing on
+     * single frame without ever having chosen that here, and with nothing on
      * screen to explain it, the game simply looks broken. Reported as exactly
      * that: "I'm not seeing any animations any more."
      */
@@ -116,7 +116,7 @@ export function buildSettings(api: SettingsApi) {
      * The scale is fixed into a run when it starts, so this sets what the
      * next one will be played on. It lives here as well as on the title
      * because the title is skipped once a run is under way, and both "Start
-     * again" and "New run" used to go straight onto a fresh hill — so after
+     * again" and "New run" used to go straight onto a fresh hill, so after
      * finishing a game there was no way to pick a different one.
      */
     const scale = group("The scale");
@@ -138,7 +138,7 @@ export function buildSettings(api: SettingsApi) {
         { class: "note" },
         running === s.difficulty
           ? `The run on the hill just now is on ${DIFFICULTY[running].name}. A run keeps the scale it was started on.`
-          : `This takes effect on the next run — the one on the hill just now stays on ${DIFFICULTY[running].name}.`,
+          : `This takes effect on the next run. The one on the hill just now stays on ${DIFFICULTY[running].name}.`,
       ),
     );
     scale.appendChild(
@@ -165,13 +165,13 @@ export function buildSettings(api: SettingsApi) {
     btns.appendChild(mkBtn("Replay the first day", () => api.replayTutorial(), false, true));
     game.appendChild(btns);
     game.appendChild(
-      el("div", { class: "note" }, "Autosave writes one slot at the end of every night — never mid-day, so a reload can't land inside a half-resolved night."),
+      el("div", { class: "note" }, "Autosave writes one slot at the end of every night, never mid-day, so a reload can't land inside a half-resolved night."),
     );
     game.appendChild(
       el(
         "div",
         { class: "note" },
-        "Replaying the first day starts a fresh run with the walkthrough — the taps are free that day and the flock starts one short.",
+        "Replaying the first day starts a fresh run with the walkthrough: the taps are free that day and the flock starts one short.",
       ),
     );
     box.appendChild(game);
@@ -193,7 +193,7 @@ export function buildSettings(api: SettingsApi) {
         const btns = el("div", { class: "set-btns" });
         btns.appendChild(mkBtn("Quit to desktop", () => platform.quit?.(), false, true));
         win.appendChild(btns);
-        win.appendChild(el("div", { class: "note" }, "With autosave on, the run is kept at the end of every night — quitting mid-day loses only today."));
+        win.appendChild(el("div", { class: "note" }, "With autosave on, the run is kept at the end of every night, so quitting mid-day loses only today."));
       }
       box.appendChild(win);
     }
@@ -205,7 +205,7 @@ export function buildSettings(api: SettingsApi) {
     keys.tabIndex = 0;
     const keyGrid = el("div", { class: "gloss keys" });
     const keyRow = (k: string, what: string) => keyGrid.appendChild(el("div", {}, `<b><kbd>${k}</kbd></b><span>${what}</span>`));
-    keyRow("Arrows / WASD", "Move the selection — on the hill, between the things you can tap");
+    keyRow("Arrows / WASD", "Move the selection: on the hill, between the things you can tap");
     keyRow("Enter / Space", "Choose it");
     keyRow("Esc", "Back out; on the hill, these settings");
     keyRow("F", "The sky: forecast, the season, the barn");
@@ -243,7 +243,7 @@ export function buildSettings(api: SettingsApi) {
       el(
         "div",
         { class: "note" },
-        `It is ${now.name.toLowerCase()} just now — day ${now.day} of ${SEASON_DAYS}, year ${now.year}. ` +
+        `It is ${now.name.toLowerCase()} just now: day ${now.day} of ${SEASON_DAYS}, year ${now.year}. ` +
           `The season is always in the sky: tap it for the days left and what is in the barn.`,
       ),
     );
@@ -308,7 +308,7 @@ export function buildSettings(api: SettingsApi) {
     }
     cheats.appendChild(list);
     cheats.appendChild(
-      el("div", { class: "note" }, "Codes stay found between runs — work them from here rather than typing them again."),
+      el("div", { class: "note" }, "Codes stay found between runs. Work them from here rather than typing them again."),
     );
     if (s.inverse) cheats.appendChild(el("div", { class: "note" }, "TOD is on. Enter it again to put the glen back the right way round."));
     box.appendChild(cheats);

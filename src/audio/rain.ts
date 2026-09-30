@@ -2,12 +2,12 @@
  * Rain, synthesized: a steady filtered-noise hush for rain on the ground and
  * the roof, with individual drip ticks layered over it. No audio files.
  *
- * The drips are short and high-frequency — which is exactly the shape that
+ * The drips are short and high-frequency, which is exactly the shape that
  * read as a watermark the last time this project had that bug (see the note
  * in score.ts). The difference here is the schedule: each drip's timing is
  * drawn from a randomised interval, never a fixed subdivision, so a listener
  * hears weather rather than a clock. Do not change `scheduleDrips` to a fixed
- * interval to "make it more even" — irregularity is the point.
+ * interval to "make it more even": irregularity is the point.
  */
 import type { AudioEngine } from "./engine";
 

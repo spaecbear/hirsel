@@ -1,12 +1,12 @@
 /**
  * The tunes, written out as notes rather than generated.
  *
- * "The Hirsel" is a slow air in D Dorian — the mode most Highland and Hebridean
+ * "The Hirsel" is a slow air in D Dorian: the mode most Highland and Hebridean
  * airs sit in, and the reason the C is natural rather than sharp. The harmony
  * moves between D and C rather than D and A: the double tonic, which is the
  * single most Scottish thing you can do to a tune.
  *
- * Pitches are MIDI numbers, durations are beats. Every part fills whole bars —
+ * Pitches are MIDI numbers, durations are beats. Every part fills whole bars:
  * `tunes.test.ts` checks that, so a typo in a melody fails the suite instead of
  * quietly knocking the tune out of time.
  */
@@ -20,7 +20,7 @@ export interface Note {
 
 export interface Part {
   bars: Note[][];
-  /** the drone root under each bar — the double tonic lives here */
+  /** the drone root under each bar: the double tonic lives here */
   roots: number[];
 }
 
@@ -52,7 +52,7 @@ const D_ = 38;
 const C_ = 36;
 
 /**
- * A — the statement. Falls from A down to E, then climbs back through the
+ * A: the statement. Falls from A down to E, then climbs back through the
  * octave. Bar 4 leaves a beat of air; the tune should breathe.
  */
 const A_PART: Part = {
@@ -65,7 +65,7 @@ const A_PART: Part = {
   ],
 };
 
-/** A2 — the same shape, answered, and closed on the tonic */
+/** A2: the same shape, answered, and closed on the tonic */
 const A2_PART: Part = {
   roots: [D_, D_, C_, D_],
   bars: [
@@ -76,7 +76,7 @@ const A2_PART: Part = {
   ],
 };
 
-/** B — the turn. Sits an octave up and leans on the C, which is where the
+/** B: the turn. Sits an octave up and leans on the C, which is where the
  *  mode shows itself. Traditional B parts go high; this one does too. */
 const B_PART: Part = {
   roots: [C_, C_, D_, D_],
@@ -109,11 +109,11 @@ export const HIRSEL_AIR: Tune = {
 };
 
 /* ------------------------------------------------------------------ *
- * "The Tod" — what plays when the glen is turned over (the TOD code).
+ * "The Tod": what plays when the glen is turned over (the TOD code).
  *
  * Written in the idiom of the old folk song about the fox that goes out on a
  * chilly night: a 6/8 lilt, brisk and loping, in mixolydian with the flat
- * seventh doing the work. It is an original tune rather than that one — the
+ * seventh doing the work. It is an original tune rather than that one: the
  * traditional melody is public domain, but every recorded arrangement of it
  * is somebody's, and this way the tune is ours.
  *
@@ -126,11 +126,11 @@ export const HIRSEL_AIR: Tune = {
 export const MIXOLYDIAN_D = [62, 64, 66, 67, 69, 71, 72];
 
 const TOD_HARP: Record<number, number[]> = {
-  [D_]: [50, 57, 62, 66], // D3 A3 D4 F#4 — major third, and it should sound it
-  [C_]: [48, 55, 60, 64], // C3 G3 C4 E4 — the flat seventh chord, I to bVII
+  [D_]: [50, 57, 62, 66], // D3 A3 D4 F#4: major third, and it should sound it
+  [C_]: [48, 55, 60, 64], // C3 G3 C4 E4: the flat seventh chord, I to bVII
 };
 
-/** A — out on a chilly night, at a trot */
+/** A: out on a chilly night, at a trot */
 const TOD_A: Part = {
   roots: [D_, D_, C_, D_],
   bars: [
@@ -141,7 +141,7 @@ const TOD_A: Part = {
   ],
 };
 
-/** A2 — the same road, answered and closed */
+/** A2: the same road, answered and closed */
 const TOD_A2: Part = {
   roots: [D_, D_, C_, D_],
   bars: [
@@ -152,7 +152,7 @@ const TOD_A2: Part = {
   ],
 };
 
-/** B — the refrain, up an octave, where the tag lines would fall */
+/** B: the refrain, up an octave, where the tag lines would fall */
 const TOD_B: Part = {
   roots: [C_, C_, D_, D_],
   bars: [
@@ -165,7 +165,7 @@ const TOD_B: Part = {
 
 export const TOD_JIG: Tune = {
   name: "The Tod",
-  bpm: 300, // eighths — about 100 dotted-quarters a minute, a good trotting pace
+  bpm: 300, // eighths: about 100 dotted-quarters a minute, a good trotting pace
   beatsPerBar: 6,
   parts: { A: TOD_A, A2: TOD_A2, B: TOD_B },
   form: ["A", "A2", "B", "A2"],
@@ -203,12 +203,12 @@ export function sequence(tune: Tune): { events: Event[]; roots: number[]; beats:
 }
 
 /* ------------------------------------------------------------------ *
- * "The Long Road Home" — the credits, for a player who found everything.
+ * "The Long Road Home": the credits, for a player who found everything.
  *
  * The Hirsel is an air that falls and then climbs back; this is the one that
  * arrives. It stays in D Dorian so it is plainly the same glen, but it is a
- * slow waltz rather than a four — three beats is the time signature of every
- * Scottish farewell tune worth the name — and where the air ends on a breath,
+ * slow waltz rather than a four: three beats is the time signature of every
+ * Scottish farewell tune worth the name, and where the air ends on a breath,
  * this ends on the tonic, held, with nothing after it.
  *
  * The shape is deliberate: A states it, A2 answers a step higher, B lifts to
@@ -220,7 +220,7 @@ const E5 = 76;
 const F5 = 77;
 const B4 = 71;
 
-/** A — the statement, opening on the fifth the way the air does */
+/** A: the statement, opening on the fifth the way the air does */
 const HOME_A: Part = {
   roots: [D_, D_, C_, D_],
   bars: [
@@ -231,7 +231,7 @@ const HOME_A: Part = {
   ],
 };
 
-/** A2 — the same answered a step higher, and left open */
+/** A2: the same answered a step higher, and left open */
 const HOME_A2: Part = {
   roots: [D_, D_, C_, D_],
   bars: [
@@ -242,7 +242,7 @@ const HOME_A2: Part = {
   ],
 };
 
-/** B — the lift, up to the top of the range, and letting go of it */
+/** B: the lift, up to the top of the range, and letting go of it */
 const HOME_B: Part = {
   roots: [C_, C_, D_, D_],
   bars: [
@@ -253,7 +253,7 @@ const HOME_B: Part = {
   ],
 };
 
-/** C — the walk down, and home. The held D is the end of the game. */
+/** C: the walk down, and home. The held D is the end of the game. */
 const HOME_C: Part = {
   roots: [D_, C_, D_, D_],
   bars: [

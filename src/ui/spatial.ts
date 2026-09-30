@@ -1,5 +1,5 @@
 /**
- * Picking the next thing in a direction — the whole of spatial navigation.
+ * Picking the next thing in a direction: the whole of spatial navigation.
  *
  * Used for both kinds of target: buttons on a DOM sheet or menu, and the
  * things on the hill you can tap. It only sees boxes, so it is the same

@@ -45,7 +45,7 @@ describe("the events", () => {
     }
   });
 
-  it("never come in the first week — only Callum, to say who he is", () => {
+  it("never come in the first week, only Callum, to say who he is", () => {
     const { game, g } = harness();
     delete g.eventDays["callum-intro"];
     for (let d = 2; d < E.firstDay; d++) {

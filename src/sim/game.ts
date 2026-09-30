@@ -170,17 +170,17 @@ export class Game {
   onAchievement: (a: Achievement) => void = () => {};
   /** true while an animation-driven sequence owns the buttons */
   busy = false;
-  /** what things are called this run — TOD swaps the words, never the numbers */
+  /** what things are called this run: TOD swaps the words, never the numbers */
   lex: Lexicon = NORMAL;
   /**
    * ZEN: the day stops running out. Actions still resolve exactly as they
-   * do normally — this only stops the tap being deducted, so nothing about
+   * do normally; this only stops the tap being deducted, so nothing about
    * the night, the wolf's five-action count or any buff changes shape.
    */
   zen = false;
   /**
    * The tutorial day. Same as zen, but scoped to the first day and cleared
-   * the moment it ends — a new player should be able to try everything the
+   * the moment it ends: a new player should be able to try everything the
    * hill offers without spending a day they do not yet understand.
    */
   freeTaps = false;
@@ -230,7 +230,7 @@ export class Game {
       this.say(`The ${this.lex.flock} will not settle. Something is watching from above the corrie.`, "bad");
     }
     // the wolf is not called here: he comes at night, when you lie down on his
-    // ground. Spending the fifth action only sets the conditions — walking back
+    // ground. Spending the fifth action only sets the conditions: walking back
     // off the corrie before you sleep still gets you out of it.
     this.award();
     this.changed();
@@ -248,7 +248,7 @@ export class Game {
     /*
      * What is being worked on, taken before the work is done. run() finishes
      * the milestone on its last day and clears g.building, so an animation
-     * that read the state afterwards showed the wrong piece — the final day
+     * that read the state afterwards showed the wrong piece: the final day
      * of every roof, hearth and byre played as the walk to Inverness.
      */
     const croft = g.building?.id;
@@ -281,7 +281,7 @@ export class Game {
   /**
    * One dog and one instrument, ever.
    *
-   * A hirsel is the ground one shepherd and one dog can work — the game is
+   * A hirsel is the ground one shepherd and one dog can work: the game is
    * named after the constraint. Letting a player own both dogs would stack
    * the deterrents to ×0.45 and quietly delete the fox, and owning both
    * instruments would turn a choice of playing style into a shopping list.
@@ -307,7 +307,7 @@ export class Game {
     this.changed();
   }
 
-  /** a tool is yours, however it came — the cart or the dealer. The money is the caller's business */
+  /** a tool is yours, however it came: the cart or the dealer. The money is the caller's business */
   grantTool(id: ToolId) {
     const g = this.state;
     g.owned[id] = true;
@@ -398,7 +398,7 @@ export class Game {
   }
 
   /**
-   * Pay for a croft milestone. This buys the materials and starts the work —
+   * Pay for a croft milestone. This buys the materials and starts the work:
    * the days of labour come out of the same taps as everything else, so the
    * road to winning competes with the day instead of running alongside it.
    */
@@ -411,7 +411,7 @@ export class Game {
     g.building = { id, done: 0 };
     this.say(
       id === "ring"
-        ? `Paid £${m.cost}. It is being made up for you in Inverness — it is a walk to fetch it.`
+        ? `Paid £${m.cost}. It is being made up for you in Inverness, and it is a walk to fetch it.`
         : `Paid £${m.cost} for the materials. Now it wants building.`,
       "gold",
     );
@@ -424,7 +424,7 @@ export class Game {
   markTippy() {
     const g = this.state;
     // she cannot have settled at a fire that is not built, or been a collie
-    // that was never bought — the UI gates this too, but the rule lives here.
+    // that was never bought: the UI gates this too, but the rule lives here.
     // A collie retired to the house counts: the fire is where she went.
     if (!collieAtFire(g)) return;
     if (this.state.stats.sawTippy) return;
@@ -432,7 +432,7 @@ export class Game {
     this.award();
   }
 
-  /** two turns in quick succession — Arrow's whole trick */
+  /** two turns in quick succession: Arrow's whole trick */
   markSpun() {
     if (this.state.stats.spunTwice) return;
     this.state.stats.spunTwice = true;
@@ -464,7 +464,7 @@ export class Game {
     const b = BREEDS[breed];
     if (g.money < b.cost) return;
     g.money -= b.cost;
-    // she is not in the flock until she has walked into the field — otherwise
+    // she is not in the flock until she has walked into the field, otherwise
     // the counter goes up and the animation then walks a second one in
     this.onAnim(
       "buysheep",
@@ -483,7 +483,7 @@ export class Game {
   /**
    * Sell a beast at the cart. Costs no tap, like every other trade.
    *
-   * You take a loss on her — `sellbackRate` — so this is a way out of a bad
+   * You take a loss on her (`sellbackRate`), so this is a way out of a bad
    * week rather than a way to farm money by churning stock. Selling the
    * flock down to nothing is allowed and ends the run the same as losing
    * them: a shepherd with no sheep is a shepherd with no sheep.
@@ -521,7 +521,7 @@ export class Game {
   }
 
   /**
-   * A lot of hay from the cart. Money, not a tap, like every other trade —
+   * A lot of hay from the cart. Money, not a tap, like every other trade:
    * the tap-costing way is cutting it yourself in summer. Dearer once the
    * winter is on you and everyone else wants it too.
    */
@@ -542,7 +542,7 @@ export class Game {
 
   /**
    * The cheat path: he comes whether the ground, the moon and the day's work
-   * agree or not. What happens when he arrives is unchanged — that is still
+   * agree or not. What happens when he arrives is unchanged; that is still
    * decided by whether the broadsword is on the wall.
    */
   forceWolf(): "pelt" | "mauled" | "none" {
@@ -573,7 +573,7 @@ export class Game {
     if (owns(g, "sword")) {
       this.say("Something is standing on the skyline that is not a fox.", "bad");
       this.say("The last wolf in Scotland. You draw the broadsword.", "gold");
-      // the pelt is not yours until you have watched him lose it — the same
+      // the pelt is not yours until you have watched him lose it: the same
       // rule the fox and the bought ewe follow
       this.onAnim("wolf", () => {
         g.owned.pelt = true;
@@ -611,7 +611,7 @@ export class Game {
 
     /*
      * The night is two beats with whatever happens in the dark between them.
-     * It used to be one: dusk, dark, sunrise — and then the fox raid played
+     * It used to be one: dusk, dark, sunrise, and then the fox raid played
      * *after* the sun was up, which read as a raid the following morning.
      */
     this.onAnim("sleep", () => this.changed());
@@ -627,7 +627,7 @@ export class Game {
     const wolfCame = wolfSummoned(g);
     if (wolfCame) this.wolf();
 
-    // 1. grazing and fleece growth — and in winter, the barn
+    // 1. grazing and fleece growth, and in winter, the barn
     const { eaten, hayUsed, fed, growth } = grazing(g);
     p.grass -= eaten;
     if (hayUsed) {
@@ -652,7 +652,7 @@ export class Game {
 
     /*
      * 1b. snow. With the byre they are brought in out of it. Without, a hungry
-     * night out in the snow can cost a beast — which is what the hay is for,
+     * night out in the snow can cost a beast, which is what the hay is for,
      * and what the byre was always for.
      */
     if (housed(g) && g.flock.length) {
@@ -677,7 +677,7 @@ export class Game {
       );
     }
 
-    // 3. fox check — resolved after the raid animation, never before
+    // 3. fox check: resolved after the raid animation, never before
     const risk = foxRisk(g);
     /*
      * The night she earned her keep. A dog's whole worth is the raids that
@@ -691,7 +691,7 @@ export class Game {
       this.onAnim("bark");
     }
     if (!wolfCame && roll < risk && g.flock.length > 0) {
-      // any sheep, picked when the raid actually lands — not whichever was
+      // any sheep, picked when the raid actually lands, not whichever was
       // pushed on last. flock.pop() took the most recently bought ewe every
       // time, since buyEwe always appends: a real bug, reported by a player
       // who kept replacing a lost sheep only to see the new one taken next.
@@ -722,7 +722,7 @@ export class Game {
       this.say(`${what}: £${feed}.`);
     }
 
-    // 6. regrowth — nothing at all in winter
+    // 6. regrowth; nothing at all in winter
     const seasonRegen = season(g).regen;
     for (const x of g.pastures) {
       let r = x.regen * seasonRegen;
@@ -735,13 +735,13 @@ export class Game {
      * The sky comes back up last, and the new day comes up with it.
      *
      * All of this used to run the moment you pressed sleep, while the dusk
-     * animation was still playing — so the weather turned over before
+     * animation was still playing, so the weather turned over before
      * nightfall and you watched tomorrow's sky darken instead of today's.
      * It belongs to the dawn: today's weather holds through the dusk and the
      * dark, and the glen is a different place when the sun comes up.
      *
-     * Everything the night itself decided — grazing, the fox, flystrike,
-     * feed, regrowth — has already happened above, off the weather that
+     * Everything the night itself decided (grazing, the fox, flystrike,
+     * feed, regrowth) has already happened above, off the weather that
      * actually was. Only the turn of the day waits.
      */
     this.onAnim("dawn", () => {
@@ -767,7 +767,7 @@ export class Game {
       if (s.day === 1) this.say(s.arrives, "gold");
       if (g.married !== null && g.day === g.married + 1) this.say("The first morning with two in the house. The kettle was on before you were up.", "cozy");
       if (s.id === "winter" && s.day === 1) this.tupping();
-      this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
+      this.say(`Day ${g.day}. ${weatherOn(g).name} over the glen.`, "gold");
       if (s.id === "autumn" && s.left === BALANCE.winterWarnDays) {
         const nights = hayNights(g);
         this.say(
@@ -832,7 +832,7 @@ export class Game {
    * spread over them so the last night takes whoever is left. Born in the
    * byre, a lamb lives. Born out on a wet or snowy night it may not, and a
    * flock being tended loses half as many. A hungry winter night can make a
-   * ewe slip her lamb — the barn is feeding next year's flock as well.
+   * ewe slip her lamb: the barn is feeding next year's flock as well.
    */
   private lambingNight(fed: number, weather: WeatherId) {
     const g = this.state;
@@ -1036,7 +1036,7 @@ export const ACTIONS: ActionDef[] = [
       if (g.gatheredToday) return "Already gathered today.";
       const big = g.flock.length > BALANCE.bigFlock && !hasDog(g);
       return big
-        ? `Bring them in close. Cuts tonight's ${lex.raider} risk hard — though ${g.flock.length} of them is a long walk on your own.`
+        ? `Bring them in close. Cuts tonight's ${lex.raider} risk hard, though ${g.flock.length} of them is a long walk on your own.`
         : `Bring them in close. Cuts tonight's ${lex.raider} risk hard.`;
     },
     can: (g) => !g.gatheredToday,

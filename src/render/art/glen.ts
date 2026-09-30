@@ -66,7 +66,7 @@ const wxOf = (st: GameState) => st.forecast[0];
 
 /**
  * Flat bands with a dithered seam at each join. Shared by the glen and the
- * intro — the intro had its own copy of the old row-by-row dither, so the
+ * intro: the intro had its own copy of the old row-by-row dither, so the
  * sky the game opens on did not match the sky it then plays in.
  */
 function paintSkyBands(g: Painter, W: number, height: number, top: string, low: string, bands = 6) {
@@ -94,7 +94,7 @@ function drawSky(g: Painter, L: WorldLayout, st: GameState, night: number, time:
   /*
    * Solid bands with a dithered seam between them, rather than dithering the
    * whole sky. Mixing every row produced a field of horizontal dashes that
-   * read as scan lines across the entire top of the screen — the noise was
+   * read as scan lines across the entire top of the screen: the noise was
    * louder than the picture, and it made the sky messages unreadable. Ordered
    * dither belongs at the joins, where it blends two flat colours; everywhere
    * else the colour should just be flat.
@@ -220,7 +220,7 @@ function drawGround(g: Painter, L: WorldLayout, st: GameState, time: number) {
   g.px(0, L.groundY - 1, L.W, 1, shade(pal[0], -20));
 
   drawMottle(g, L.W, L.groundY, L.H, pal);
-  // the ground shows its bones as it is eaten down — the clearest signal
+  // the ground shows its bones as it is eaten down: the clearest signal
   // there is that a pasture needs mucking or leaving alone
   drawBareGround(g, L.W, L.groundY, L.H, lush);
 
@@ -419,7 +419,7 @@ function drawHighlight(g: Painter, L: { hotspots: WorldLayout["hotspots"] }, id:
 
 /** one thing to paint, and how far down the screen its feet are */
 interface Actor {
-  /** the screen y of whatever it stands on — bigger is nearer the camera */
+  /** the screen y of whatever it stands on: bigger is nearer the camera */
   feet: number;
   paint: () => void;
 }
@@ -442,7 +442,7 @@ function flockActors(g: Painter, L: WorldLayout, s: Scene): Actor[] {
     if (!home) return;
     /*
      * A standing flock read as furniture. Each beast wanders round its own
-     * mark, and drifts a little towards him when he is near — they know who
+     * mark, and drifts a little towards him when he is near; they know who
      * brings the feed. It is presentation only: the sim never sees it.
      */
     const drift = driftFor(sh.id + 1, s.time, {
@@ -496,8 +496,8 @@ function flockActors(g: Painter, L: WorldLayout, s: Scene): Actor[] {
 
   /*
    * The tup, if there is one: he keeps to the edge of the flock on his own
-   * mark and wanders like the rest. Not a member of the flock — the sim keeps
-   * him as kit, so no fox takes him and no shears touch him — but he is on
+   * mark and wanders like the rest. Not a member of the flock: the sim keeps
+   * him as kit, so no fox takes him and no shears touch him, but he is on
    * the hill, and should be seen there. In TOD he is a dog fox among the skulk.
    */
   if (owns(st, "tup") && k !== "move" && k !== "gather") {
@@ -539,7 +539,7 @@ function paintShepherdIdle(g: Painter, L: WorldLayout, s: Scene) {
 }
 
 /**
- * Her, at home — the same woman the inn and the proposal draw, a little
+ * Her, at home: the same woman the inn and the proposal draw, a little
  * shorter than him, standing on the ground rather than behind a bar. `cx` is
  * her centre, `footY` where her feet are.
  */
@@ -586,7 +586,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
     drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging ? s.time : 0);
 
   /*
-   * On a quiet hill the whole cast is painted in depth order — sheep, dog and
+   * On a quiet hill the whole cast is painted in depth order: sheep, dog and
    * man together, nearest the camera last. Sorting the dog against the man
    * alone still left her crossing over the top of every sheep in the field,
    * including the ones standing closer to us than she was.
@@ -645,7 +645,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
        * him either way she walked through his legs on the near pass, so she
        * is depth-sorted against him: whoever's feet are lower on the screen
        * is nearer the camera and goes last. It has to be worked out rather
-       * than fixed, because he does not stay put — you can send him anywhere
+       * than fixed, because he does not stay put; you can send him anywhere
        * on the ground.
        */
       const dogFeet = L.dogAt.y + DOG_FEET;
@@ -740,7 +740,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
        * A day's work on the croft, and it is a different day's work for each
        * piece of it. One generic hammering shot covered all four, so slating
        * a roof, building a hearth, raising a byre and walking to Inverness
-       * for a ring all looked identical — and the thing you are working
+       * for a ring all looked identical, and the thing you are working
        * towards is the whole point of the run.
        */
       // from the payload, not the state: the last day of a piece clears
@@ -1054,7 +1054,7 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
  * The pub leaves the glen entirely, which is what makes an £8 pint feel like
  * an event rather than a line item. It is also the only room in the game with
  * other people in it: the landlord behind the bar, and the lass carrying a
- * tray — the one the croft is quietly being built for. She is drawn to be
+ * tray: the one the croft is quietly being built for. She is drawn to be
  * recognised, since by the sixth pint the writing assumes you know exactly
  * who is being talked about.
  *
@@ -1065,8 +1065,8 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
 /**
  * A fire in a grate.
  *
- * The croft and the inn had drawn their fires differently — the house a set
- * of nested blocks, the inn five separate tongues — so the same fire looked
+ * The croft and the inn had drawn their fires differently: the house a set
+ * of nested blocks, the inn five separate tongues, so the same fire looked
  * like two different fires depending on which room you were standing in.
  * One function, both hearths.
  */
@@ -1148,7 +1148,7 @@ function drawBackFigure(
      * A skirt cannot take a walk cycle, so it takes the sway instead: it
      * flares from the waist to the hem and the hem swings furthest, with the
      * shaded fold running down whichever side it is swinging away from. She
-     * floated across the room before this — a flat panel with nothing in it
+     * floated across the room before this: a flat panel with nothing in it
      * moving.
      */
     const skirtTop = headTop + headH + bodyH;
@@ -1230,7 +1230,7 @@ function drawLassHead(
  * The proposal.
  *
  * The one moment the whole run is for, and it used to reuse the ordinary
- * evening at the inn — the same scene as buying a pint, with the ending
+ * evening at the inn: the same scene as buying a pint, with the ending
  * quietly bolted on after it. It gets its own.
  *
  * Three beats by the fire, wordless bar the captions: he takes the ring out
@@ -1281,7 +1281,7 @@ function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
   /*
    * Close enough to reach her. At 0.52 against her 0.72 the gap was a fifth
    * of the room, so offering the ring meant an arm stretched most of the way
-   * across it — a man proposing from the far side of the floor. Standing in
+   * across it: a man proposing from the far side of the floor. Standing in
    * to about a seventh puts the ring within a hand's reach of her, which is
    * where it should be asked from, while leaving enough air between them
    * that he is not kneeling on her skirt.
@@ -1306,7 +1306,7 @@ function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
   }
 
   /*
-   * Him. He stands, then goes down on one knee — the knee is the whole
+   * Him. He stands, then goes down on one knee: the knee is the whole
    * picture, so it is a real change of height rather than a pose swap.
    */
   const kneel = p < 0.34 ? 0 : p < 0.5 ? ease((p - 0.34) / 0.16) : p < 0.82 ? 1 : 1 - ease(clamp01((p - 0.82) / 0.18));
@@ -1400,7 +1400,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding =
 
   /*
    * The floor and the people come first, and the counter is derived from
-   * them — a bar is about chest height on a standing man. Fixing the counter
+   * them: a bar is about chest height on a standing man. Fixing the counter
    * at a fraction of the screen made it exactly as tall as the figures, so
    * the landlord behind it had to be drawn floating at head height to be
    * seen at all, and looked like he was standing on the bar.
@@ -1459,7 +1459,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding =
   /* ---- the landlord, behind the bar, cut off at the counter ---- */
   /*
    * The near figures and the landlord had their heads at exactly the same
-   * height — he was shorter but stood higher up the floor by the same amount,
+   * height; he was shorter but stood higher up the floor by the same amount,
    * so the two cancelled out. A smaller man whose head is level with yours
    * does not read as further away, it reads as a small man, which is what he
    * looked like. He is shorter *and* his head sits lower now, which is what
@@ -1480,7 +1480,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding =
   g.px(lm.headX, lTop + 1, lm.headW, lm.headH - 1, "#c9a583");
   g.px(lm.headX, lTop, lm.headW, 2, "#4a4038"); // hair
   // eyes only. A mouth line at this size reads as a scowl, and the shepherd
-  // has never had one — two different faces in the same game
+  // has never had one: two different faces in the same game
   // eyes scaled off the head. Single pixels vanished at this size, and the
   // shepherd's own eyes are a far bigger share of his face than that.
   const le = Math.max(1, Math.round(lm.headH * 0.22));
@@ -1507,8 +1507,8 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding =
   g.px(mm.bodyX + mm.bodyW, barY - 5, 4, 3, "#c9a583"); // a hand up on the counter
 
   /*
-   * One glass size for the room. His pint was 14 tall against a 46-tall man
-   * — nearly a third of him — while the ones on her tray were 4, so the same
+   * One glass size for the room. His pint was 14 tall against a 46-tall man,
+   * nearly a third of him, while the ones on her tray were 4, so the same
    * drink came in two sizes depending on who was holding it.
    */
   const glassH = Math.max(6, Math.round(figH * 0.2));
@@ -1532,7 +1532,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding =
   const gTop = floorY - 1 - lassH;
   /*
    * The skirt swings while she is crossing the room and settles once she has
-   * arrived — one last small sway rather than stopping dead.
+   * arrived; one last small sway rather than stopping dead.
    */
   const swaying = walk > 0 && walk < 1;
   const settle = walk >= 1 ? Math.max(0, 1 - (p - 0.5) * 3) : 1;
@@ -1585,7 +1585,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding =
  *
  * Three beats: the desk you are leaving, the door, and the hill you are
  * walking up. It is the only time the game shows you anywhere but the glen,
- * which is the point — everything after this is the hill.
+ * which is the point; everything after this is the hill.
  */
 function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
   const beat = p < 0.42 ? 0 : p < 0.62 ? 1 : 2;
@@ -1608,7 +1608,7 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
     drawShepherd(g, Math.round(L.W * 0.34), deskY - 26 - rise * 4, {});
     // the lamp overhead, and the window that is not his yet
     g.a(Math.round(L.W * 0.34) - 10, deskY - 46, 32, 26, 240, 214, 150, 0.08);
-    return; // the line itself is DOM text — see updateCaption in main.ts
+    return; // the line itself is DOM text: see updateCaption in main.ts
   }
 
   if (beat === 1) {
@@ -1738,7 +1738,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
    * built, she is simply there.
    */
   /*
-   * Right in front of the fire, not beside it — she lies on the hearthstone
+   * Right in front of the fire, not beside it; she lies on the hearthstone
    * with her back to the flames, which is the whole point of her. Squarely in
    * the opening, a little forward of the wall so she is on the floor rather
    * than in the grate.
@@ -1779,7 +1779,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
     } else {
       /*
        * The turn happens here, where she can be asked for it. It was wired
-       * into the hill scene instead — the one place she has no tap target —
+       * into the hill scene instead: the one place she has no tap target,
        * and hard-coded to 0 in the room, so she spun where nobody could ask
        * and stood still where they did. Only the sheltie turns.
        */
@@ -1943,7 +1943,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   const tx = I.table.x;
   const ty = I.table.y;
   // nearest the camera, so it is drawn a little larger than the things at the
-  // wall — the depth does not read from position alone at this scale
+  // wall: the depth does not read from position alone at this scale
   g.a(tx - 4, ty + 20, 46, 3, 0, 0, 0, 0.22); // it sits on the boards
   g.px(tx, ty, 40, 5, "#6b5433"); // the top
   g.px(tx, ty, 40, 1, "#8a6d47"); // light along the near edge
@@ -1993,8 +1993,8 @@ export const GLEN_ART: ArtPack = {
     const L = layoutWorld(g.W, g.H, st, { shepherdAt: s.shepherdAt, time: s.time });
     /*
      * The night is two beats: `sleep` takes the light down and leaves it
-     * down, `dawn` brings it back. Anything that happens in the dark — the
-     * wolf, a fox raid — is queued between them, so a raid is no longer
+     * down, `dawn` brings it back. Anything that happens in the dark (the
+     * wolf, a fox raid) is queued between them, so a raid is no longer
      * played after the sun has already come up.
      */
     const night =
@@ -2004,7 +2004,7 @@ export const GLEN_ART: ArtPack = {
       inverse: s.inverse,
       night,
       kit: {
-        // he is not wearing it during the fight — the set piece hands it over
+        // he is not wearing it during the fight: the set piece hands it over
         pelt: owns(st, "pelt") && k !== "wolf",
         crook: owns(st, "crook"),
         boots: owns(st, "boots"),
@@ -2038,7 +2038,7 @@ export const GLEN_ART: ArtPack = {
     drawSeasonLand(g, L.W, L.horizonY, L.H, st);
     drawCroft(g, L, st, night, s.time);
     /*
-     * Not while it is away at market — that animation draws the cart rolling
+     * Not while it is away at market; that animation draws the cart rolling
      * off down the road, and the parked one stayed sitting on its mark
      * beside it, so selling wool showed you two carts and left one behind.
      * The retro build has always guarded this; the glen build never did.
@@ -2050,8 +2050,8 @@ export const GLEN_ART: ArtPack = {
 
     /*
      * The evening at the inn. The pint plays up to the moment she has set it
-     * down and the room has settled — PUB_SETTLED of the way through the
-     * scene — and then holds there, fire going and her swaying, for as long
+     * down and the room has settled: PUB_SETTLED of the way through the
+     * scene, and then holds there, fire going and her swaying, for as long
      * as the player sits on. It is a respite: cutting straight back to the
      * hill read as "get back to work". Leaving plays the last of the scene,
      * the room fading out, and the hill comes back up.

@@ -18,7 +18,7 @@ export interface Sheep {
   id: number;
   fleece: number;
   breed: BreedId;
-  /** days in the flock — surfaced on hover, and the hook for a future ageing system */
+  /** days in the flock: surfaced on hover, and the hook for a future ageing system */
   age: number;
   /** born on the hill this spring, and not yet grown */
   lamb?: boolean;
@@ -41,7 +41,7 @@ export interface Season {
   foxBias: number;
   /** flystrike wants warmth: none in winter, worst in summer */
   strike: number;
-  /** what wool fetches — the autumn sales pay, summer is a glut */
+  /** what wool fetches: the autumn sales pay, summer is a glut */
   price: number;
   /** the weather drawn for a day in this season */
   weather: WeatherId[];
@@ -199,7 +199,7 @@ export interface GameState {
   building: { id: CroftId; done: number } | null;
   actsToday: number;
   pubs: number;
-  /** the inn is once a night — you cannot drink the day away */
+  /** the inn is once a night; you cannot drink the day away */
   pubToday: boolean;
   /** win / loss bookkeeping */
   over: null | { kind: "win" | "lose"; title: string; body: string };
@@ -218,9 +218,9 @@ export interface GameState {
     shears: number;
     daysHungry: number;
     wolfMaulings: number;
-    /** the sheltie was tapped into two turns hard on each other — Arrow */
+    /** the sheltie was tapped into two turns hard on each other: Arrow */
     spunTwice: boolean;
-    /** you have stood in the room and seen the collie settle at the fire — Tippy */
+    /** you have stood in the room and seen the collie settle at the fire: Tippy */
     sawTippy: boolean;
     /** beasts lost in the snow, hungry and out on the hill */
     snowLosses: number;
@@ -236,13 +236,13 @@ export interface GameState {
     neighbourGifts: number;
   };
   achievements: string[];
-  /** bales in the barn, for the winter — cut in summer or bought at the cart */
+  /** bales in the barn, for the winter: cut in summer or bought at the cart */
   hay: number;
   /** nights the working dog has worked. Reset when a new one is taken on */
   dogDays: number;
   /** the dogs that have retired to the house, oldest first. They lie by the fire */
   retiredDogs: DogKind[];
-  /** something that happened at dawn and is waiting on an answer — see sim/events.ts */
+  /** something that happened at dawn and is waiting on an answer: see sim/events.ts */
   event: PendingEvent | null;
   /** the last day each event came, for the ones that should not come again too soon or at all */
   eventDays: Partial<Record<EventId, number>>;

@@ -3,7 +3,7 @@
  *
  * Read straight from the game's own list, so the two cannot drift: the API
  * name, the display name, the description, and whether Steam should hide it
- * until earned. Hidden ones take their `hint` as the description — Steam only
+ * until earned. Hidden ones take their `hint` as the description: Steam only
  * shows it once the achievement is unlocked, exactly as the game does.
  */
 import { readFileSync } from "node:fs";

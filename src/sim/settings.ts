@@ -1,4 +1,4 @@
-/** Player preferences. Separate from the save file — they outlive any one run. */
+/** Player preferences. Separate from the save file; they outlive any one run. */
 import type { Difficulty } from "./types";
 import { platform } from "../platform";
 
@@ -7,7 +7,7 @@ import { platform } from "../platform";
  *
  * `glen`   the full-screen scene: you work the hill by tapping the things in
  *          it, and the narration surfaces in the sky
- * `retro`  the original panelled build — HUD, a small scene, and tabs. Kept
+ * `retro`  the original panelled build: HUD, a small scene, and tabs. Kept
  *          intact rather than deleted, since it is the version that was
  *          balanced and playtested.
  *
@@ -25,15 +25,15 @@ export interface Settings {
   ui: UiMode;
   motion: MotionPref;
   autosave: boolean;
-  /** "TOD" — you keep foxes, and the sheep come for them */
+  /** "TOD"; you keep foxes, and the sheep come for them */
   inverse: boolean;
-  /** "ZEN" — the day never runs out of taps. Nothing else changes. */
+  /** "ZEN": the day never runs out of taps. Nothing else changes. */
   zen: boolean;
   /** "SKELP": everything plays at double pace */
   swift: boolean;
   /** codes the player has ever entered, so the cheat list can show what's known */
   cheatsFound: string[];
-  /** the scale the title screen offers first — the last one chosen */
+  /** the scale the title screen offers first: the last one chosen */
   difficulty: Difficulty;
   /** hard has been beaten, which is what unlocks the cheat codes */
   beatHard: boolean;
@@ -47,7 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   /*
    * Sound on, and audible, out of the box.
    *
-   * The music sat at 0.3, which is a long way under the effects — a player
+   * The music sat at 0.3, which is a long way under the effects: a player
    * who loads the game and listens before touching anything could easily
    * decide there was no sound at all. It is still a background air, just one
    * you can actually hear.
