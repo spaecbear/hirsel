@@ -45,6 +45,7 @@ export const SKY: Record<WeatherId, [string, string]> = {
   overcast: ["#3a4046", "#5c6167"],
   rain: ["#252c33", "#3c464e"],
   mist: ["#454b4a", "#697070"],
+  snow: ["#56616b", "#9aa6ad"],
 };
 
 /* ---------- helpers ---------- */
@@ -79,7 +80,6 @@ export const KIT = {
   crook: false,
   boots: false,
   shears: false,
-  lamp: false,
   cart: false,
   watch: false,
   oilskin: false,
@@ -155,6 +155,7 @@ export interface SheepOpts {
 
 export function drawSheep(g: Painter, x: number, y: number, s: Sheep, o: SheepOpts = {}) {
   if (INV) return drawFoxBeast(g, x, y, s, o);
+  if (s.lamb) return drawLamb(g, x, y, s, o);
   const gr = grade(o.shorn ? 0 : s.fleece);
   const b = br(s);
   const bulk = Math.round(Math.min(6, gr.v * 0.55));
@@ -180,6 +181,35 @@ export function drawSheep(g: Painter, x: number, y: number, s: Sheep, o: SheepOp
   g.px(hx + (dir > 0 ? 1 : 3), hy + 1, 1, 1, "#0d0d0b");
   g.px(hx + (dir > 0 ? 0 : 4), hy - 2, 2, 2, b.face); // ear
   g.px(dir > 0 ? x - 2 : x + w, y + 2, 2, 3, wool); // tail
+}
+
+/**
+ * A lamb: small, pale, mostly leg, with a head too big for it. Drawn on the
+ * same origin as a grown ewe so its hooves land on the same line.
+ */
+function drawLamb(g: Painter, x: number, y: number, s: Sheep, o: SheepOpts) {
+  const b = br(s);
+  const dir = o.flip ? -1 : 1;
+  const wool = shade(b.wool, 14);
+  const w = 8;
+  const h = 5;
+  const ox = x + 2;
+  const oy = y + 3;
+  const legPhase = o.run ? (Math.sin(o.run * Math.PI * 14) > 0 ? 1 : -1) : 0;
+  g.a(ox, oy + h + 5, w, 2, 0, 0, 0, 0.2);
+  g.px(ox + 1, oy + h, 1, 5 - Math.abs(legPhase), "#3a352c");
+  g.px(ox + w - 2, oy + h, 1, 5 - Math.abs(legPhase), "#3a352c");
+  g.px(ox + 3, oy + h, 1, 5 + legPhase, "#2e2a22");
+  g.px(ox + w - 4, oy + h, 1, 5 - legPhase, "#2e2a22");
+  g.px(ox, oy + 1, w, h - 1, wool);
+  g.px(ox + 1, oy, w - 2, 1, shade(wool, 10));
+  g.px(ox, oy + h - 1, w, 1, shade(wool, -20));
+  const hx = dir > 0 ? ox + w - 1 : ox - 3;
+  const hy = o.graze ? oy + h - 2 : oy - 2;
+  g.px(hx, hy, 4, 4, shade(b.face, 20));
+  g.px(hx + (dir > 0 ? 2 : 1), hy + 1, 1, 1, "#0d0d0b");
+  g.px(hx + (dir > 0 ? 0 : 2), hy - 1, 2, 1, shade(b.face, 20)); // ear
+  g.px(dir > 0 ? ox - 1 : ox + w, oy + 1, 1, 2, wool); // tail
 }
 
 /* ---------- the shepherd ---------- */
@@ -267,8 +297,6 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
    */
   const px = (dx: number, dy: number, w: number, h: number, c: string) =>
     g.px(flip ? x + SHEPHERD_SPAN - dx - w : x + dx, y + dy, w, h, c);
-  const al = (dx: number, dy: number, w: number, h: number, r: number, gr: number, b: number, a: number) =>
-    g.a(flip ? x + SHEPHERD_SPAN - dx - w : x + dx, y + dy, w, h, r, gr, b, a);
 
   g.a(x - 1, y + 26, 14, 2, 0, 0, 0, 0.25);
 
@@ -391,27 +419,6 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
     }
   }
 
-  if (KIT.lamp) {
-    // storm lantern in the free hand, burning brighter the darker it gets
-    const lx = -7;
-    const ly = 12;
-    /*
-     * It has to read as the thing you paid £44 for. The window of a built-up
-     * hearth throws real light across the croft at night and this was a faint
-     * smudge beside it — so the pool it casts now grows with the dark, in
-     * three falling-off steps rather than one flat wash.
-     */
-    const glow = 0.45 + NIGHT * 0.55;
-    al(lx - 13, ly - 12, 30, 30, 240, 186, 88, 0.04 + NIGHT * 0.2);
-    al(lx - 8, ly - 7, 20, 21, 244, 196, 100, 0.07 + NIGHT * 0.3);
-    al(lx - 4, ly - 3, 12, 13, 250, 208, 118, 0.1 + NIGHT * 0.4);
-    // and it throws a pool on the ground he is standing on
-    al(lx - 10, ly + 12, 26, 3, 240, 190, 90, 0.05 + NIGHT * 0.3);
-    px(lx + 1, ly - 4, 2, 3, "#6d7263"); // bail
-    px(lx, ly - 1, 5, 6, "#8a8f88"); // body
-    al(lx + 1, ly, 3, 4, 255, 214, 120, glow); // the flame
-    px(lx, ly + 5, 5, 1, "#5a5f58");
-  }
   if (o.crook && KIT.crook) {
     for (let i = 0; i < 11; i++) px(13, 1 + i * 2, 2, 2, "#6b5433");
     px(11, -1, 4, 2, "#6b5433");

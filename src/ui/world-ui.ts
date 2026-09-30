@@ -12,13 +12,37 @@
  * the words about the world are text.
  */
 import { $, button, el } from "./dom";
-import { ACTIONS, type Game } from "../sim/game";
-import { BREEDS, CROFT, TOOLS, WEATHER } from "../sim/config";
-import { actionName, toolWhat } from "../sim/lexicon";
+import { ACTIONS, collieAtFire, type Game } from "../sim/game";
+import { BALANCE, BREEDS, CROFT, SEASON_DAYS, TOOLS, WEATHER } from "../sim/config";
+import { actionName, toolName, toolWhat } from "../sim/lexicon";
 import { startSpin } from "../render/dog-spin";
 import { tippyWalking } from "../render/tippy";
-import { canShear, here, isFullMoon, moonName, owns, woolPrice, readyToShear, tapsPerDay } from "../sim/rules";
-import { hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
+import {
+  canShear,
+  dogDaysLeft,
+  dogIsOld,
+  hayLotCost,
+  hayNeeded,
+  hayNights,
+  here,
+  inLambCount,
+  lambPrice,
+  lambingOn,
+  lambsOf,
+  isFullMoon,
+  isWinter,
+  moonName,
+  nextSeason,
+  owns,
+  season,
+  seasonOf,
+  woolPrice,
+  readyToShear,
+  tapsPerDay,
+} from "../sim/rules";
+import { boundsOf, hitTest, layoutInterior, layoutWorld, type HotspotId } from "../render/layout";
+import { nearestInDirection, type Box } from "./spatial";
+import { keyFor, type Dir, type Quick } from "./controls";
 import { Walk } from "./walk";
 import type { Screen } from "../render/screen";
 import type { Animator } from "../render/animator";
@@ -40,8 +64,29 @@ interface Row {
    * off down the road — on a phone the sheet covered both of them.
    */
   closes?: boolean;
+  /**
+   * Never where a controller's selection lands when the sheet opens. Selling
+   * a beast is one press away from a second press; it has to be gone to on
+   * purpose, not arrived at.
+   */
+  noLanding?: boolean;
   onPick: () => void;
 }
+
+/** which target on the hill an action belongs to — what the walkthrough's lock is asked about */
+const ACTION_HOME: Partial<Record<ActionId, HotspotId>> = {
+  gather: "flock",
+  shear: "flock",
+  tend: "flock",
+  muck: "ground",
+  hay: "ground",
+  market: "cart",
+  build: "croft",
+  pipe: "shepherd",
+  music: "shepherd",
+  pub: "shepherd",
+  ask: "shepherd",
+};
 
 export class WorldUi {
   /** what the pointer is over, for the hint line */
@@ -60,6 +105,22 @@ export class WorldUi {
   onBark: () => void = () => {};
   /** true once the player has stepped inside the croft */
   interior = false;
+  /** sitting on at the inn after the pint. The hill waits until the player heads back */
+  atInn = false;
+
+  /** the pint is down: stay a while */
+  enterInn() {
+    this.close();
+    this.atInn = true;
+  }
+
+  /** back up the hill, when they are ready */
+  leaveInn() {
+    if (!this.atInn) return;
+    this.atInn = false;
+    this.anim.play("leaveinn");
+    this.onChange();
+  }
   /** hold a finger on the pasture and he walks over */
   readonly walk = new Walk();
   private holdTimer = 0;
@@ -121,15 +182,14 @@ export class WorldUi {
       if (e.target === cv) return; // the canvas handler decides for itself
       this.close();
     });
-    addEventListener("keydown", (e) => {
-      if (e.key === "Escape") this.close();
-    });
+    // Escape is ui/nav.ts's: it knows whether a sheet, Settings or nothing is open
   }
 
   setGame(game: Game) {
     this.game = game;
     this.walk.reset();
     this.interior = false;
+    this.atInn = false;
     this.close();
   }
 
@@ -165,7 +225,7 @@ export class WorldUi {
 
   /** walk him to a point of open ground; false if that spot isn't walkable */
   private sendHim(clientX: number, clientY: number): boolean {
-    if (this.game.state.over || this.busy) return false;
+    if (this.game.state.over || this.busy || this.atInn) return false;
     // wandering teaches nothing and only muddles the walkthrough
     if (!this.canInteract("ground")) return false;
     const spot = this.spotAt(clientX, clientY);
@@ -185,7 +245,16 @@ export class WorldUi {
 
   private tap(clientX: number, clientY: number, at = performance.now()) {
     if (this.game.state.over) return;
-    const spot = this.spotAt(clientX, clientY, at);
+    this.activate(this.spotAt(clientX, clientY, at));
+  }
+
+  /**
+   * Act on a target, however it was chosen — a tap on it, or a controller's
+   * cursor resting on it and A pressed. Everything the tap used to decide
+   * lives here, so the two can never disagree about what a target does.
+   */
+  private activate(spot: { id: HotspotId } | null) {
+    if (this.game.state.over || this.atInn) return;
     if (!spot) {
       this.close();
       return;
@@ -284,8 +353,9 @@ export class WorldUi {
   tick(now: number) {
     const g = this.game.state;
     if (!this.interior || g.stats.sawTippy) return;
-    if (!owns(g, "collie") || !owns(g, "hearth")) return;
-    if (tippyWalking(now)) return; // let her get there first
+    if (!collieAtFire(g)) return;
+    // let the working collie get there first; a retired one is already lying there
+    if (owns(g, "collie") && tippyWalking(now)) return;
     this.game.markTippy();
   }
 
@@ -308,15 +378,26 @@ export class WorldUi {
         : `TAPS <span class="taps">${g.taps}/${tapsPerDay(g)}</span>`;
     $("hud-left").innerHTML = `DAY ${g.day} &nbsp; ${taps}`;
     // the weather is falling on the hill in front of you; the moon is not
+    // the season is the other thing the day is played by: it says what the next weeks are for
+    const s = season(g).name.toLowerCase();
     $("hud-mid").innerHTML = isFullMoon(g.day)
-      ? "FULL MOON"
-      : `<span class="moon">${moonName(g.day).toLowerCase()}</span>`;
+      ? `<span class="season">${s}</span> · FULL MOON`
+      : `<span class="season">${s}</span> · <span class="moon">${moonName(g.day).toLowerCase()}</span>`;
     $("hud-right").textContent = `£${g.money}  ·  ${g.wool} st`;
   }
 
   open(id: HotspotId) {
     const rows = this.rowsFor(id);
     if (!rows.length) return;
+    if (id === "sky") this.onNote("did-sky");
+    /*
+     * A trade rebuilds the sheet in place, which throws away whatever had
+     * focus. With a controller that is the whole selection gone after every
+     * purchase, so remember which button it was and put it back.
+     */
+    const buttons = () => [...this.sheet.querySelectorAll<HTMLButtonElement>(".sheet-body button")];
+    const had = this.sheet.contains(document.activeElement) ? buttons().indexOf(document.activeElement as HTMLButtonElement) : -1;
+    const sameSheet = this.active === id;
     this.active = id;
     this.sheet.innerHTML = "";
 
@@ -335,7 +416,7 @@ export class WorldUi {
         );
         continue;
       }
-      body.appendChild(
+      const b = body.appendChild(
         button(
           `act${r.tone ? ` ${r.tone}` : ""}${r.done ? " done" : ""}`,
           `<span class="n">${r.label}</span><span class="d">${r.detail}</span>`,
@@ -353,9 +434,185 @@ export class WorldUi {
           r.disabled || this.busy,
         ),
       );
+      if (r.noLanding) b.dataset.noLanding = "1";
     }
     this.sheet.appendChild(body);
     this.sheet.classList.add("on");
+
+    if (this.focusSheets) {
+      const all = buttons();
+      const live = all.filter((b) => !b.disabled && !b.dataset.noLanding);
+      const again = sameSheet && had >= 0 ? all[Math.min(had, all.length - 1)] : null;
+      const target = again && !again.disabled ? again : live[0] ?? (this.sheet.querySelector(".sheet-x") as HTMLButtonElement | null);
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  /* ---------- a cursor on the hill, for keys and a controller ---------- */
+
+  /** the target the controller's cursor rests on */
+  focusId: HotspotId | null = null;
+  /** a sheet opened by keys or a pad takes focus, so the selection lands in it */
+  focusSheets = false;
+  /** print each row's quick key beside it — only while the keyboard is what is in use */
+  showKeys = false;
+
+  /** a key's badge for a sheet row, or nothing */
+  private kbd(test: (q: Quick) => boolean): string {
+    if (!this.showKeys) return "";
+    const k = keyFor(test);
+    return k ? ` <kbd>${k}</kbd>` : "";
+  }
+
+  /**
+   * A quick key. Everything a tap on the row would check is checked here too
+   * — the walkthrough's lock on the thing it is teaching, a day's taps, the
+   * weather — and anything refused says why rather than nothing happening.
+   * Returns that reason, for the caller to show, or null.
+   */
+  quick(q: Quick): string | null {
+    const g = this.game.state;
+    if (g.over) return null;
+    if (this.busy) return "Not while that is playing out.";
+    const lex = this.game.lex;
+
+    if ("act" in q) {
+      const a = ACTIONS.find((x) => x.id === q.act);
+      if (!a) return null;
+      const home = ACTION_HOME[q.act] ?? "shepherd";
+      if (!this.canInteract(home)) {
+        this.onBlocked();
+        return null;
+      }
+      const name = actionName(lex, a.id, owns(g, "fiddle")) || a.name;
+      const cost = this.game.costOf(a);
+      if (!a.can(g)) return `${name}: ${a.desc(g, lex)}`;
+      if (g.taps < cost) return `${name}: no taps left in the day for it.`;
+      this.close();
+      if (q.act === "build") this.interior = false; // the work is outside, where it can be watched
+      this.game.doAction(a.id);
+      if (a.id === "muck") this.onNote("did-muck");
+      if (a.cozy) this.onNote("did-comfort");
+      this.onChange();
+      return null;
+    }
+
+    if ("move" in q) {
+      const p = g.pastures[q.move];
+      if (!p) return null;
+      if (!this.canInteract("hills")) {
+        this.onBlocked();
+        return null;
+      }
+      if (q.move === g.at) return `They are already on the ${p.name}.`;
+      if (g.taps <= 0) return "No taps left in the day to move them.";
+      this.close();
+      this.walk.reset();
+      this.game.moveTo(q.move);
+      this.onChange();
+      return null;
+    }
+
+    switch (q.go) {
+      case "sleep":
+        if (!this.canInteract("bed")) {
+          this.onBlocked();
+          return null;
+        }
+        this.close();
+        this.interior = false;
+        this.game.sleep();
+        return null;
+      case "house":
+        this.activate({ id: this.interior ? "door" : "croft" });
+        return null;
+      case "cart":
+        if (this.interior) this.activate({ id: "door" });
+        this.activate({ id: "cart" });
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Where each target on screen is, as a box to navigate between.
+   *
+   * Most are their own tap rectangle. Three are not, because their rectangle
+   * is not where the eye puts them: the flock is many small targets (one box
+   * round all of them), and the ground and the hills are bands the width of
+   * the screen — navigating by their centres put the ground's anchor in the
+   * middle of the flock. The ground's box is the open grass near the bottom,
+   * the hills' is the middle of their band.
+   */
+  targets(now = performance.now()): { id: HotspotId; box: Box }[] {
+    const { W, H } = this.screen;
+    if (this.interior) {
+      const I = layoutInterior(W, H, this.game.state);
+      return I.hotspots.map((h) => ({ id: h.id, box: boundsOf(h) }));
+    }
+    const L = layoutWorld(W, H, this.game.state, { shepherdAt: this.walk.position, time: now });
+    const out: { id: HotspotId; box: Box }[] = [];
+    for (const h of L.hotspots) {
+      if (h.id === "flock" && !h.rects.length) continue;
+      if (h.id === "ground") out.push({ id: h.id, box: { x: W * 0.5 - 20, y: H - 26, w: 40, h: 20 } });
+      else if (h.id === "hills") out.push({ id: h.id, box: { x: W * 0.35, y: L.horizonY, w: W * 0.3, h: Math.max(8, L.groundY - L.horizonY) } });
+      else if (h.id === "sky") out.push({ id: h.id, box: { x: W * 0.3, y: 4, w: W * 0.4, h: Math.max(8, L.horizonY * 0.5) } });
+      else out.push({ id: h.id, box: boundsOf(h) });
+    }
+    return out;
+  }
+
+  /** put the cursor somewhere sensible: where it was, else the walkthrough's target, else him */
+  ensureFocus(prefer: HotspotId | null = null) {
+    const ids = this.targets().map((t) => t.id);
+    if (prefer && ids.includes(prefer)) this.focusId = prefer;
+    else if (!this.focusId || !ids.includes(this.focusId)) {
+      this.focusId = this.interior ? (ids.includes("bed") ? "bed" : ids[0]) : "shepherd";
+    }
+    this.hover = this.focusId;
+  }
+
+  moveFocus(dir: Dir) {
+    this.ensureFocus();
+    const all = this.targets();
+    const from = all.find((t) => t.id === this.focusId);
+    if (!from) return;
+    const next = nearestInDirection(from.box, all, dir);
+    if (next) this.focusId = next.id;
+    this.hover = this.focusId;
+  }
+
+  /** A on the hill: the same as tapping whatever the cursor is on */
+  confirmFocus() {
+    this.ensureFocus();
+    if (this.focusId) this.activate({ id: this.focusId });
+  }
+
+  /** B inside the house: back out of the door */
+  leaveHouse(): boolean {
+    if (!this.interior) return false;
+    this.activate({ id: "door" });
+    return true;
+  }
+
+  /**
+   * The right stick walks him — the same walk a held finger sets off, a
+   * stride at a time in the direction pushed. Only out on the open ground,
+   * and not while the walkthrough is teaching something else.
+   */
+  private nextStride = 0;
+  stride(dx: number, dy: number, now: number) {
+    if (this.interior || this.game.state.over || this.busy || now < this.nextStride) return;
+    if (!this.canInteract("ground")) return;
+    const L = layoutWorld(this.screen.W, this.screen.H, this.game.state, { shepherdAt: this.walk.position, time: now });
+    const len = Math.hypot(dx, dy) || 1;
+    const step = 18;
+    const tx = Math.max(4, Math.min(this.screen.W - 18, L.shepherd.x + (dx / len) * step));
+    const ty = Math.max(L.groundY + 4, Math.min(this.screen.H - 30, L.shepherd.y + (dy / len) * step));
+    this.walk.go(L.shepherd.x, L.shepherd.y, tx, ty, now);
+    this.nextStride = now + 160;
   }
 
   private titleFor(id: HotspotId): string {
@@ -366,7 +623,7 @@ export class WorldUi {
       case "cart":
         return `The cart · ${this.game.lex.wool} ${woolPrice(g)}p a stone`;
       case "flock":
-        return `${this.game.lex.flockCap} · ${g.flock.length} on the hill`;
+        return `${this.game.lex.flockCap} · ${g.flock.length} on the hill${this.flockNote()}`;
       case "shepherd":
         return "Yourself";
       case "ground":
@@ -375,6 +632,8 @@ export class WorldUi {
         return "Where to graze them";
       case "sky":
         return "Word of the glen";
+      case "hay":
+        return `The ${this.game.lex.hay} · ${this.game.state.hay} bales`;
       case "hearth":
         return "The croft";
       case "kit":
@@ -384,6 +643,18 @@ export class WorldUi {
     }
   }
 
+  /** the lambs among them, and the ewes carrying — said wherever the flock is counted */
+  private flockNote(): string {
+    const g = this.game.state;
+    const lex = this.game.lex;
+    const lambs = lambsOf(g).length;
+    const due = inLambCount(g);
+    return (
+      (lambs ? ` · ${lambs} ${lambs === 1 ? lex.lamb : lex.lambs}` : "") +
+      (due ? ` · ${due} ${lex.inLamb}` : "")
+    );
+  }
+
   /* ---------- what can be done where ---------- */
 
   private rowsFor(id: HotspotId): Row[] {
@@ -391,9 +662,13 @@ export class WorldUi {
       case "flock":
         return this.actionRows(["gather", "shear", "tend"]);
       case "ground":
-        return this.actionRows(["muck"]);
+        return this.actionRows(["muck", "hay"]);
       case "shepherd":
-        return [...this.actionRows(["pipe", "music", "pub", "ask"]), ...this.watchRows()];
+        // asked once and answered: the ask goes once she has said aye
+        return [
+          ...this.actionRows(this.game.state.married === null ? ["pipe", "music", "pub", "ask"] : ["pipe", "music", "pub"]),
+          ...this.watchRows(),
+        ];
       case "hills":
         return this.pastureRows();
       case "croft":
@@ -402,6 +677,8 @@ export class WorldUi {
         return this.cartRows();
       case "sky":
         return this.skyRows();
+      case "hay":
+        return this.hayRows();
       case "hearth":
         return this.croftRows();
       case "kit":
@@ -417,22 +694,70 @@ export class WorldUi {
    * plannable rather than reactive and must not be hidden — in a UI with no
    * panels, the sky is where it belongs.
    */
+  /** the stack itself: what is in it, how far it goes, and where more comes from */
+  private hayRows(): Row[] {
+    const g = this.game.state;
+    const lex = this.game.lex;
+    const want = hayNeeded(g);
+    const short = Math.max(0, want - g.hay);
+    const info = (label: string, detail: string): Row => ({ label, detail, info: true, onPick: () => {} });
+    return [
+      info("In the barn", `${g.hay} bales, about ${hayNights(g)} nights for the ${lex.flock} as it is now`),
+      info(
+        isWinter(g) ? "The rest of the winter" : "A winter",
+        short > 0 ? `wants about ${want} — ${short} short` : `wants about ${want} — enough put by`,
+      ),
+      info("More", "cut on the open ground on a dry summer day, or bought at the cart any time but spring"),
+    ];
+  }
+
   private skyRows(): Row[] {
     const g = this.game.state;
-    const rows: Row[] = g.forecast.map((w, i) => {
+    const s = season(g);
+    const barn =
+      g.hay > 0
+        ? `${g.hay} bales in the barn, about ${hayNights(g)} nights for the ${this.game.lex.flock}`
+        : "the barn is empty";
+    const due = inLambCount(g);
+    const lex = this.game.lex;
+    const lambing =
+      due && lambingOn(g)
+        ? ` · lambing: ${due} still to come${owns(g, "byre") ? ", in the byre" : ""}`
+        : due
+          ? ` · ${due} ${lex.inLamb}, due in the spring`
+          : owns(g, "tup") && (s.id === "autumn" || s.id === "summer")
+            ? ` · the ${lex.tup} goes in with them for the winter`
+            : "";
+    const rows: Row[] = [
+      {
+        label: `${s.name} · day ${s.day} of ${SEASON_DAYS}`,
+        detail:
+          s.left === 0
+            ? `${nextSeason(g.day).name} tomorrow · ${barn}${lambing}`
+            : `${nextSeason(g.day).name} in ${s.left + 1} days · ${barn}${lambing}`,
+        info: true,
+        onPick: () => {},
+      },
+    ];
+    const forecast: Row[] = g.forecast.map((w, i) => {
       const day = g.day + i;
       const wx = WEATHER[w];
       const when = i === 0 ? "Today" : i === 1 ? "Tomorrow" : "The day after";
-      const notes: string[] = [`grazing ×${wx.graze}`];
+      const notes: string[] = [];
+      if (w === "snow") notes.push(owns(g, "byre") ? "grass under snow · in the byre" : "grass under snow");
+      else notes.push(`grazing ×${wx.graze}`);
       notes.push(wx.shear ? "shearing fine" : "no shearing");
       if (isFullMoon(day)) notes.push("full moon");
+      // the forecast can see over the turn of a season, and says so
+      const turns = seasonOf(day).day === 1 && i > 0 ? `${seasonOf(day).name} · ` : "";
       return {
         label: `${when} · ${wx.name}`,
-        detail: `${moonName(day).toLowerCase()} · ${notes.join(" · ")}`,
+        detail: `${turns}${moonName(day).toLowerCase()} · ${notes.join(" · ")}`,
         info: true,
         onPick: () => {},
       };
     });
+    rows.push(...forecast);
 
     const buffs = Object.entries(g.buffs).map(([k, v]) => `${k} (${v}d)`);
     rows.push({
@@ -482,7 +807,7 @@ export class WorldUi {
       return {
         // a cost above one has to be on the button: the whole decision is
         // whether a day with three taps in it can afford this
-        label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : cost > 1 ? ` · ${cost} taps` : ""}`,
+        label: `${done ? "✓ " : ""}${name}${cost === 0 ? " · free" : cost > 1 ? ` · ${cost} taps` : ""}${this.kbd((q) => "act" in q && q.act === a.id)}`,
         done,
         detail: a.desc(g, lex),
         disabled: g.taps < cost || !a.can(g),
@@ -531,7 +856,7 @@ export class WorldUi {
   private pastureRows(): Row[] {
     const g = this.game.state;
     return g.pastures.map((p, i) => ({
-      label: `${p.name}${i === g.at ? " · they are here" : ""}`,
+      label: `${p.name}${i === g.at ? " · they are here" : ""}${this.kbd((q) => "move" in q && q.move === i)}`,
       detail: `grass ${Math.round(p.grass)}% · feed ×${p.quality} · fox risk ${Math.round(p.risk * 100)}%`,
       disabled: i === g.at || g.taps <= 0,
       onPick: () => {
@@ -551,7 +876,7 @@ export class WorldUi {
       const build = ACTIONS.find((a) => a.id === "build")!;
       const left = m.work - g.building.done;
       rows.push({
-        label: `${m.id === "ring" ? "Walk down for the ring" : `Work on it · ${g.building.done}/${m.work}`}`,
+        label: `${m.id === "ring" ? "Walk down for the ring" : `Work on it · ${g.building.done}/${m.work}`}${this.kbd((q) => "act" in q && q.act === "build")}`,
         detail: build.desc(g, this.lexicon),
         disabled: g.taps < this.game.costOf(build),
         tone: "gold",
@@ -606,8 +931,32 @@ export class WorldUi {
     const rows: Row[] = [];
     for (const t of TOOLS) {
       if (!owns(g, t.id)) continue;
+      // the dog is not kit on a wall: say how she is keeping
+      if (t.id === "dog" || t.id === "collie") {
+        const left = dogDaysLeft(g);
+        rows.push({
+          label: `${t.name} · ${dogIsOld(g) ? "getting on" : "in her prime"}`,
+          detail: `${g.dogDays} days on the hill. ${
+            dogIsOld(g)
+              ? `Slower than she was, and worth half what she was against a ${this.game.lex.raider}. About ${left} days' work left in her.`
+              : toolWhat(this.lexicon, t.id, t.what)
+          }`,
+          info: true,
+          onPick: () => {},
+        });
+        continue;
+      }
       // the broadsword is never explained, here least of all
-      rows.push({ label: t.name, detail: t.id === "sword" ? "Hangs well above the fire." : toolWhat(this.lexicon, t.id, t.what), info: true, onPick: () => {} });
+      rows.push({ label: toolName(this.lexicon, t.id, t.name), detail: t.id === "sword" ? "Hangs well above the fire." : toolWhat(this.lexicon, t.id, t.what), info: true, onPick: () => {} });
+    }
+    if (g.retiredDogs.length) {
+      const names = g.retiredDogs.map((k) => (k === "collie" ? "a collie" : "a sheltie"));
+      rows.push({
+        label: g.retiredDogs.length === 1 ? "By the fire, retired" : `By the fire, ${g.retiredDogs.length} of them retired`,
+        detail: `${names.join(", ")}. They have earned it — and they still lift their heads at anything moving outside at night.`,
+        info: true,
+        onPick: () => {},
+      });
     }
     if (owns(g, "pelt")) {
       rows.push({ label: "The last wolf's pelt", detail: "No fox comes near this ground.", info: true, onPick: () => {} });
@@ -627,7 +976,7 @@ export class WorldUi {
     const market = ACTIONS.find((a) => a.id === "market")!;
     const cost = this.game.costOf(market);
     rows.push({
-      label: `Sell the ${lex.wool}${cost === 0 ? " · free" : ""}`,
+      label: `Sell the ${lex.wool}${cost === 0 ? " · free" : ""}${this.kbd((q) => "act" in q && q.act === "market")}`,
       detail: market.desc(g, this.lexicon),
       disabled: g.taps < cost || !market.can(g),
       tone: "gold",
@@ -635,16 +984,55 @@ export class WorldUi {
       onPick: () => this.game.doAction("market"),
     });
 
+    /*
+     * Hay for the winter: money instead of the summer's taps. Not in spring —
+     * nobody sells hay with the grass coming, and the first day's walkthrough
+     * is rigged to pay for exactly one ewe, which a hay row at the top of the
+     * cart could quietly spend first.
+     */
+    const lot = hayLotCost(g);
+    const short = Math.max(0, hayNeeded(g) - g.hay);
+    if (season(g).id !== "spring") rows.push({
+      label: `Buy ${BALANCE.hayLot} bales of ${lex.hay} · £${lot}`,
+      detail:
+        `${g.hay ? `${g.hay} in the barn, about ${hayNights(g)} nights for the ${lex.flock}` : "The barn is empty"}` +
+        (short > 0
+          ? ` · ${isWinter(g) ? "the rest of the winter" : "a winter"} wants about ${hayNeeded(g)}`
+          : " · enough put by for a winter") +
+        (isWinter(g) ? " · winter price" : ""),
+      disabled: g.money < lot,
+      onPick: () => this.game.buyHay(),
+    });
+
     // sell a beast — no tap, and a loss on her
     for (const breed of Object.keys(BREEDS) as BreedId[]) {
-      const held = g.flock.filter((s) => s.breed === breed);
+      const held = g.flock.filter((s) => s.breed === breed && !s.lamb);
       if (!held.length) continue;
       const worst = held.reduce((a, b) => (a.fleece <= b.fleece ? a : b));
       const price = this.game.sellPrice(worst.id);
       rows.push({
         label: `Sell a ${lex.breeds[breed]} · £${price}`,
         detail: `${held.length} in the ${lex.flock}. The cart pays under what she cost.`,
+        noLanding: true,
         onPick: () => this.game.sellEwe(worst.id),
+      });
+    }
+
+    // sell a lamb — at their best at the autumn sales
+    for (const breed of Object.keys(BREEDS) as BreedId[]) {
+      const lambs = g.flock.filter((s) => s.breed === breed && s.lamb);
+      if (!lambs.length) continue;
+      const one = lambs[0];
+      const price = lambPrice(g, one);
+      rows.push({
+        label: `Sell a ${lex.breeds[breed]} ${lex.lamb} · £${price}`,
+        detail:
+          `${lambs.length} ${lambs.length === 1 ? lex.lamb : lex.lambs} on the hill. ` +
+          (season(g).id === "autumn"
+            ? "The autumn sales are on: the best price of the year."
+            : `Kept, ${lambs.length === 1 ? "she grows" : "they grow"} into the ${lex.flock} by the winter. The autumn sales pay best.`),
+        noLanding: true,
+        onPick: () => this.game.sellEwe(one.id),
       });
     }
 
@@ -683,11 +1071,12 @@ export class WorldUi {
        */
       const needs = "needs" in t ? (t.needs as string | undefined) : undefined;
       const wanting = needs && !owns(g, needs);
+      const again = (t.id === "dog" || t.id === "collie") && g.retiredDogs.length > 0;
       rows.push({
-        label: `${t.name} · £${t.cost}`,
+        label: `${toolName(this.lexicon, t.id, t.name)} · £${t.cost}`,
         detail: wanting
           ? toolWhat(this.lexicon, `${t.id}Locked`, "Not yet.")
-          : toolWhat(this.lexicon, t.id, t.what),
+          : `${again ? "A young dog for the hill, now the old one has the fire. " : ""}${toolWhat(this.lexicon, t.id, t.what)}`,
         disabled: !!wanting || g.money < t.cost,
         onPick: () => this.game.buyTool(t.id as ToolId),
       });
@@ -723,7 +1112,7 @@ export class WorldUi {
       case "cart":
         return `The cart — ${this.lexicon.wool} ${woolPrice(g)}p a stone`;
       case "flock":
-        return `${this.lexicon.flockCap} — ${g.flock.length} on the hill`;
+        return `${this.lexicon.flockCap} — ${g.flock.length} on the hill${this.flockNote()}`;
       case "shepherd":
         return "Yourself";
       case "ground":
@@ -732,9 +1121,17 @@ export class WorldUi {
         return "The hills — move them";
       case "sky":
         return "Word of the glen";
+      case "hay":
+        return `The ${this.lexicon.hay} — ${this.barnLine()}`;
       default:
         return "";
     }
+  }
+
+  /** what is in the barn, and how far it goes: said on the stack, in the sky and at the cart */
+  private barnLine(): string {
+    const g = this.game.state;
+    return g.hay > 0 ? `${g.hay} bales, about ${hayNights(g)} nights for the ${this.game.lex.flock}` : "the barn is empty";
   }
 
   /** the hint line under the scene, for players who haven't found a target yet */

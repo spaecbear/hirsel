@@ -1,11 +1,14 @@
 import { $, el, toast } from "./dom";
 import { ACHIEVEMENTS, clearEarned, loadEarned } from "../sim/achievements";
-import { CHEATS, findCheat, type CheatContext } from "../sim/cheats";
-import { buffGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
+import { CHEATS, findCheat, runCheat, type CheatContext } from "../sim/cheats";
+import { buffGlossary, seasonGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
 import { prefersReducedMotion } from "../sim/settings";
 import type { Settings } from "../sim/settings";
-import { DIFFICULTY } from "../sim/config";
+import { DIFFICULTY, SEASON_DAYS } from "../sim/config";
+import { seasonOf } from "../sim/rules";
 import type { Difficulty } from "../sim/types";
+import { platform } from "../platform";
+import { QUICK_KEYS } from "./controls";
 
 export interface SettingsApi {
   settings: Settings;
@@ -20,6 +23,8 @@ export interface SettingsApi {
   replayTutorial: () => void;
   /** the scale the run on the hill just now is being played on */
   runDifficulty: () => Difficulty;
+  /** the day the run on the hill is on, for where it is in the year */
+  today: () => number;
   cheatContext: () => CheatContext;
 }
 
@@ -45,11 +50,20 @@ export function buildSettings(api: SettingsApi) {
     const look = group("Look");
     // the interface switch is a real preference now, not a hidden extra:
     // "retro" is the whole panelled build, which some players will prefer
-    look.appendChild(
-      seg("Interface", [["Glen", s.ui === "glen"], ["Retro", s.ui === "retro"]], (i) =>
-        api.apply({ ui: i === 0 ? "glen" : "retro" }),
-      ),
-    );
+    /*
+     * Not on Steam. Retro is the panelled build the balance was first done
+     * in, kept whole for the web; on a Deck it is a second interface to hold
+     * to the controller standard for very little gain. The RETRO code still
+     * works there, for anyone who goes looking.
+     */
+    const steam = platform.kind === "steam";
+    if (!steam) {
+      look.appendChild(
+        seg("Interface", [["Glen", s.ui === "glen"], ["Retro", s.ui === "retro"]], (i) =>
+          api.apply({ ui: i === 0 ? "glen" : "retro" }),
+        ),
+      );
+    }
     look.appendChild(
       seg(
         "Motion",
@@ -68,8 +82,10 @@ export function buildSettings(api: SettingsApi) {
       el(
         "div",
         { class: "note" },
-        "Glen is the full-screen hill: tap the things in it to work them. Retro is the older " +
-          "panelled build, kept as it was. Reduced motion collapses every animation to instant.",
+        (steam
+          ? ""
+          : "Glen is the full-screen hill: tap the things in it to work them. Retro is the older panelled build, kept as it was. ") +
+          "Reduced motion collapses every animation to instant.",
       ),
     );
     /*
@@ -160,6 +176,50 @@ export function buildSettings(api: SettingsApi) {
     );
     box.appendChild(game);
 
+    /* ---- the window: desktop builds only ---- */
+    if (platform.setFullscreen || platform.quit) {
+      const win = group("The window");
+      if (platform.setFullscreen) {
+        const full = platform.isFullscreen?.() ?? false;
+        win.appendChild(
+          seg("Display", [["Fullscreen", full], ["Windowed", !full]], (i) => {
+            platform.setFullscreen?.(i === 0);
+            draw();
+          }),
+        );
+        win.appendChild(el("div", { class: "note" }, "F11 switches between the two at any time."));
+      }
+      if (platform.quit) {
+        const btns = el("div", { class: "set-btns" });
+        btns.appendChild(mkBtn("Quit to desktop", () => platform.quit?.(), false, true));
+        win.appendChild(btns);
+        win.appendChild(el("div", { class: "note" }, "With autosave on, the run is kept at the end of every night — quitting mid-day loses only today."));
+      }
+      box.appendChild(win);
+    }
+
+    /* ---- the keys: moving, choosing, and the quick ones ---- */
+    const keys = group("Keys");
+    keys.id = "set-keys";
+    // focusable, so "?" can land the selection on the list itself rather than the top of Settings
+    keys.tabIndex = 0;
+    const keyGrid = el("div", { class: "gloss keys" });
+    const keyRow = (k: string, what: string) => keyGrid.appendChild(el("div", {}, `<b><kbd>${k}</kbd></b><span>${what}</span>`));
+    keyRow("Arrows / WASD", "Move the selection — on the hill, between the things you can tap");
+    keyRow("Enter / Space", "Choose it");
+    keyRow("Esc", "Back out; on the hill, these settings");
+    keyRow("F", "The sky: forecast, the season, the barn");
+    for (const q of QUICK_KEYS) keyRow(q.key, q.what);
+    keys.appendChild(keyGrid);
+    keys.appendChild(
+      el(
+        "div",
+        { class: "note" },
+        "The quick keys do the thing outright, and only out on the hill. Anything they cannot do today, they say why. A controller: A chooses, B backs out, Start is this menu, View the sky, the right stick walks.",
+      ),
+    );
+    box.appendChild(keys);
+
     /* ---- buffs & status: what the HUD's terse "tended (3d)" actually means ---- */
     const gloss = group("Buffs & status");
     const glossGrid = el("div", { class: "gloss" });
@@ -167,9 +227,38 @@ export function buildSettings(api: SettingsApi) {
       el("div", { class: e.secret && e.name === "?????" ? "locked" : "" }, `<b>${e.name}</b><i>${e.meta}</i><span>${e.effect}</span>`);
     for (const e of buffGlossary()) glossGrid.appendChild(glossEntry(e));
     for (const e of statusGlossary()) glossGrid.appendChild(glossEntry(e));
-    for (const e of workGlossary()) glossGrid.appendChild(glossEntry(e));
+    // the year's own work lives with the year, below
+    for (const e of workGlossary()) if (e.id !== "hay" && e.id !== "lambing") glossGrid.appendChild(glossEntry(e));
     gloss.appendChild(glossGrid);
     box.appendChild(gloss);
+
+    /*
+     * ---- the year: the four seasons, where the run is in them, and the ----
+     * work that belongs to them. Its own section rather than four more cards
+     * among the buffs: it is the thing a player plans a run around.
+     */
+    const year = group("The year");
+    const now = seasonOf(api.today());
+    year.appendChild(
+      el(
+        "div",
+        { class: "note" },
+        `It is ${now.name.toLowerCase()} just now — day ${now.day} of ${SEASON_DAYS}, year ${now.year}. ` +
+          `The season is always in the sky: tap it for the days left and what is in the barn.`,
+      ),
+    );
+    const yearGrid = el("div", { class: "gloss" });
+    for (const e of seasonGlossary()) {
+      const card = glossEntry(e);
+      if (e.id === now.id) {
+        card.classList.add("now");
+        card.querySelector("b")!.insertAdjacentHTML("beforeend", " <em>now</em>");
+      }
+      yearGrid.appendChild(card);
+    }
+    for (const e of workGlossary()) if (e.id === "hay" || e.id === "lambing") yearGrid.appendChild(glossEntry(e));
+    year.appendChild(yearGrid);
+    box.appendChild(year);
 
     /* ---- cheats ---- */
     const cheats = group("Cheat codes");
@@ -181,7 +270,7 @@ export function buildSettings(api: SettingsApi) {
         toast("Nothing happens.");
         return;
       }
-      const msg = c.apply(api.cheatContext());
+      const msg = runCheat(c, api.cheatContext());
       const found = new Set([...api.settings.cheatsFound, c.code]);
       api.apply({ cheatsFound: [...found] });
       input.value = "";
@@ -212,7 +301,7 @@ export function buildSettings(api: SettingsApi) {
         `<b class="k">${c.code}${mark}</b><span>${c.blurb}</span>`,
       ) as HTMLButtonElement;
       b.addEventListener("click", () => {
-        toast(c.apply(api.cheatContext()));
+        toast(runCheat(c, api.cheatContext()));
         draw();
       });
       list.appendChild(b);

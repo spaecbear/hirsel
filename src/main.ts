@@ -6,7 +6,9 @@ import { loadSettings, prefersReducedMotion, saveSettings, type Settings } from 
 import { clearSave, exportFile, hasSave, importFile, readSave, saveGame } from "./sim/save";
 import { lexicon } from "./sim/lexicon";
 import { CHEATS, revealNextCheat } from "./sim/cheats";
-import { ACHIEVEMENTS, loadEarned } from "./sim/achievements";
+import { ACHIEVEMENTS, loadEarned, syncAchievements } from "./sim/achievements";
+import { platform } from "./platform";
+import { Nav } from "./ui/nav";
 import { tutorialSetup } from "./sim/tutorial";
 import type { Difficulty, GameState } from "./sim/types";
 import { DIFFICULTY } from "./sim/config";
@@ -29,13 +31,19 @@ import { WorldUi } from "./ui/world-ui";
 import { SkyFeed } from "./ui/sky-feed";
 import { TutorialUi } from "./ui/tutorial-ui";
 import { buildSettings } from "./ui/settings-panel";
-import { $, el, toast } from "./ui/dom";
+import { $, button, el, toast } from "./ui/dom";
+import { eventDef } from "./sim/events";
+import { Painter } from "./render/painter";
+import { drawCallum, PORTRAIT_H, PORTRAIT_W } from "./render/portrait";
+import { DEMO_DAYS, IS_DEMO, STORE_URL, demoOver } from "./demo";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
 const packs: Record<string, ArtPack> = { glen: GLEN_ART, retro: HIRSEL_ART };
 
 let game = new Game();
+// anything earned while the storefront was not listening is handed over now
+syncAchievements();
 const animator = new Animator();
 const canvas = $<HTMLCanvasElement>("scene");
 const screen = new Screen(canvas, packs[settings.ui] ?? GLEN_ART);
@@ -112,7 +120,95 @@ function render() {
    * mauling that is still playing out.
    */
   if (game.state.over && !animator.busy) showEnd();
+  if (demoOver(game.state.day) && !game.state.over && !animator.busy) showDemoEnd();
   tutorial.refresh();
+  updateEvent();
+}
+
+/**
+ * The demo's last card. Comes up once the fortnight has been slept through,
+ * and again on continuing a demo save that is past it — the demo does not go
+ * on, it points at the game that does.
+ */
+function showDemoEnd() {
+  const box = $("demo-end");
+  if (box.classList.contains("on") || $("title").classList.contains("on")) return;
+  world.close();
+  const g = game.state;
+  $("demo-body").textContent =
+    `${DEMO_DAYS} days on the hill, ${g.flock.length} beasts on it and £${g.money} in the purse. ` +
+    "The full game goes on from here: the seasons and the winter, lambing, the dogs growing old, the dealer and the show " +
+    "and your neighbour over the burn — and the croft, and her.";
+  box.classList.add("on");
+}
+$("demo-wishlist").addEventListener("click", () => {
+  // the web opens a tab; the desktop build sends any https link to the browser
+  window.open(STORE_URL, "_blank", "noopener");
+});
+$("demo-again").addEventListener("click", () => {
+  $("demo-end").classList.remove("on");
+  clearSave(); // a finished demo is not something to go back to
+  showTitle();
+});
+if (IS_DEMO) {
+  $("tagline").textContent = `a hill, a flock, and a life to build on it — the demo`;
+  const sub = document.querySelector(".title-sub");
+  if (sub) sub.textContent = `a hill, a flock, and a life to build on it — the first ${DEMO_DAYS} days`;
+}
+
+/**
+ * Something at the door. Shown once the night has played out — never over
+ * the dark or the dawn — and built afresh only when the event or what can be
+ * afforded changes, so a controller's selection is not thrown away every
+ * render.
+ */
+const eventEl = $("event");
+let eventKey = "";
+const portraitEl = $<HTMLCanvasElement>("event-portrait");
+const portraitPainter = new Painter(portraitEl.getContext("2d")!, PORTRAIT_W, PORTRAIT_H);
+let portraitSpeaker: string | null = null;
+let portraitSince = 0;
+/** once a frame while a card with someone on it is up */
+function drawPortrait(now: number) {
+  if (!portraitSpeaker || !eventEl.classList.contains("on")) return;
+  if (portraitSpeaker === "callum") drawCallum(portraitPainter, now, now - portraitSince);
+}
+function updateEvent() {
+  const g = game.state;
+  // nothing comes to the door of a finished demo
+  const show = !!g.event && !g.over && !animator.busy && !rolling && !demoOver(g.day);
+  const choices = show ? game.eventChoices() : [];
+  const key = show ? `${g.event!.id}:${g.event!.day}:${choices.map((c) => (c.ok ? 1 : 0)).join("")}:${settings.inverse}` : "";
+  if (key === eventKey) return;
+  eventKey = key;
+  if (!show) {
+    eventEl.classList.remove("on");
+    return;
+  }
+  world.close(); // the card is the thing to look at
+  const ev = eventDef(g.event!.id);
+  // his face, if it is him; it pops in with the card (the CSS restarts on unhiding)
+  portraitSpeaker = ev.speaker ?? null;
+  portraitSince = performance.now();
+  portraitEl.hidden = !portraitSpeaker;
+  const lex = game.lex;
+  $("event-title").textContent = ev.title(g, g.event!.data, lex);
+  $("event-body").textContent = ev.body(g, g.event!.data, lex);
+  const box = $("event-choices");
+  box.innerHTML = "";
+  for (const { choice: c, ok } of choices) {
+    const costs = [c.taps ? `${c.taps} tap${c.taps > 1 ? "s" : ""}` : "", c.money ? `£${c.money}` : ""].filter(Boolean).join(" · ");
+    const why = !ok && (c.money ?? 0) > g.money ? " — you have not the money" : !ok && c.taps ? " — no taps left today" : "";
+    box.appendChild(
+      button(
+        "act",
+        `<span class="n">${c.label}${costs ? ` · ${costs}` : ""}</span>${c.detail || why ? `<span class="d">${c.detail ?? ""}${why}</span>` : ""}`,
+        () => game.answerEvent(c.id),
+        !ok,
+      ),
+    );
+  }
+  eventEl.classList.add("on");
 }
 
 function startGame(state?: GameState, opts: { intro?: boolean } = {}) {
@@ -226,6 +322,7 @@ const settingsUi = buildSettings({
   },
   hasSave,
   runDifficulty: () => game.state.difficulty,
+  today: () => game.state.day,
   replayTutorial: () => {
     // clearing the flag is what makes startGame teach it again
     applySettings({ tutorialSeen: false });
@@ -272,9 +369,7 @@ $("over-again").addEventListener("click", () => {
   $("over").classList.remove("on");
   showTitle();
 });
-addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeSettings();
-});
+// Escape, and every other key and button, is ui/nav.ts's
 
 /* ---------- the credits ---------- */
 
@@ -284,7 +379,8 @@ addEventListener("keydown", (e) => {
  */
 function everythingFound(): boolean {
   const earned = new Set(loadEarned());
-  const allAchievements = ACHIEVEMENTS.every((a) => earned.has(a.id));
+  // the long game's achievements come after a win, so they cannot be asked of one
+  const allAchievements = ACHIEVEMENTS.every((a) => a.longGame || earned.has(a.id));
   const found = new Set(settings.cheatsFound);
   const allCheats = CHEATS.every((c) => found.has(c.code));
   return allAchievements && allCheats;
@@ -379,6 +475,17 @@ function closeCredits() {
   quote.classList.remove("on", "out");
   $("credits-scroll").style.opacity = "";
   document.body.classList.remove("rolling");
+  /*
+   * A won run comes back to its end card rather than the menu, so staying on
+   * the hill is still on offer after the credits — they are for having found
+   * everything, not a door shut on the run.
+   */
+  if (game.state.over?.kind === "win") {
+    $("over-again").style.display = "";
+    $("over-stay").style.display = "";
+    $("over").classList.add("on");
+    return;
+  }
   $("over").classList.remove("on");
   showTitle();
 }
@@ -436,6 +543,11 @@ $("title-continue").addEventListener("click", () => {
     game.say(`— Picked up where you left off, day ${f.state.day}. —`, "cozy");
   } else startGame(undefined, { intro: true });
 });
+if (platform.quit) {
+  const quit = $<HTMLButtonElement>("title-quit");
+  quit.hidden = false;
+  quit.addEventListener("click", () => platform.quit?.());
+}
 $("title-settings").addEventListener("click", () => {
   firstGesture();
   openSettings();
@@ -469,6 +581,18 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) audio.resume();
 });
 
+/*
+ * On the desktop the sound goes when the window does. A browser tab is left
+ * playing because that is what tabs do; a game alt-tabbed away from is
+ * expected to go quiet, and a Deck suspended mid-air to stop. There is
+ * nothing else to pause — the day only moves when the player moves it, and
+ * an animation left running behind the window just finishes.
+ */
+if (platform.kind === "steam") {
+  addEventListener("blur", () => audio.setLevels({ muted: true }));
+  addEventListener("focus", () => audio.setLevels({ muted: settings.muted }));
+}
+
 /* ---------- night bookkeeping the UI owns ---------- */
 let lastDay = 1;
 animator.onStart = (anim) => {
@@ -479,6 +603,15 @@ animator.onStart = (anim) => {
   if (anim === "wolf" || anim === "wolflost") score.cue("wolf");
   else if (anim === "fox") score.cue("fox");
 };
+/*
+ * The pint is down and the room has settled: sit on. Not when the watch is
+ * running a recorded day (it chains straight on to the next thing), and only
+ * in the glen — the retro panels keep their own short evening.
+ */
+animator.onFinish = (anim) => {
+  if (anim === "pub" && settings.ui === "glen" && !game.busy && !game.state.over) world.enterInn();
+};
+$("inn-leave-btn").addEventListener("click", () => world.leaveInn());
 animator.onIdle = () => {
   tutorial.suspend(false);
   render();
@@ -510,6 +643,7 @@ function showEnd() {
   endShown = true;
   $("over-title").textContent = o.title;
   $("over-body").textContent = o.body;
+  $("over-note").hidden = !game.state.cheated;
 
   const box = $("over-reward");
   box.innerHTML = "";
@@ -559,7 +693,10 @@ function showEnd() {
    */
   const rolling = wonHard && everythingFound();
   const again = $("over-again");
+  const stay = $("over-stay");
   again.style.display = rolling ? "none" : "";
+  // a win is not the end unless the player wants it to be
+  stay.style.display = o.kind === "win" && !rolling ? "" : "none";
   $("over").classList.add("on");
 
   if (rolling) {
@@ -574,6 +711,21 @@ function showEnd() {
     }, 3800);
   }
 }
+
+/**
+ * Stay on the hill: the won run goes on, with her at the croft. Saved at once
+ * — the night's autosave is a day away, and a player who stays and then
+ * quits should not come back to the evening before the wedding.
+ */
+function stayOnTheHill() {
+  $("over").classList.remove("on");
+  game.stayOn();
+  endShown = false; // the next ending, if there is one, is a new one
+  if (settings.autosave) saveGame(game.state);
+  toast("The two of you, and the hill.");
+  render();
+}
+$("over-stay").addEventListener("click", stayOnTheHill);
 
 /**
  * The cutscene lines, as DOM text rather than canvas pixels.
@@ -624,7 +776,7 @@ function updateSkyLog(now: number) {
 const hintEl = $("hint");
 let hintText = "";
 function updateHint() {
-  const want = settings.ui === "glen" && !animator.busy ? world.hintText() : "";
+  const want = settings.ui === "glen" && !animator.busy && !world.atInn ? world.hintText() : "";
   if (want === hintText) return;
   hintText = want;
   hintEl.textContent = want;
@@ -645,9 +797,89 @@ function updateCaption(anim: string | null, p: number) {
   captionEl.classList.toggle("on", want !== "");
 }
 
+/* ---------- keys and a controller ---------- */
+const nav = new Nav({
+  world,
+  isRetro: () => settings.ui === "retro",
+  openSettings: () => {
+    firstGesture();
+    openSettings();
+  },
+  closeSettings,
+  closeCredits,
+  showKeys: () => {
+    firstGesture();
+    const already = $("settings").classList.contains("on");
+    openSettings();
+    const keys = document.getElementById("set-keys");
+    if (!keys) return;
+    if (already) {
+      keys.focus({ preventScroll: true });
+      keys.scrollIntoView({ block: "start" });
+    } else keys.dataset.land = "1"; // nav lands the selection on it as Settings opens
+  },
+  spotlight: () => (tutorial.pointingAtBed ? "bed" : tutorial.spotlight),
+  // the Deck has no keyboard: a text field chosen with the pad asks Steam for its on-screen one
+  textInput: platform.textInput
+    ? (field) => {
+        void platform.textInput!(field.getAttribute("aria-label") ?? "", 24, field.value).then((text) => {
+          // no Steam keyboard to be had (a pad on a desktop): the field takes a real keyboard
+          if (text === null) return field.focus();
+          field.value = text;
+          field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+        });
+      }
+    : undefined,
+});
+nav.controls.onIntent = ((inner) => (i, native) => {
+  firstGesture(); // a pad press is a gesture too, as far as the sound is concerned
+  inner(i, native);
+})(nav.controls.onIntent);
+
+/**
+ * What the buttons do, along the bottom — only while keys or a pad are in
+ * use, and only the ones that do something where you are.
+ */
+const promptsEl = $("prompts");
+let promptsKey = "";
+function updatePrompts() {
+  const d = nav.device;
+  const L = nav.layer().kind;
+  const key = `${d}:${L}:${world.interior}`;
+  if (key === promptsKey) return;
+  promptsKey = key;
+  if (d === "pointer") {
+    promptsEl.innerHTML = "";
+    promptsEl.classList.remove("on");
+    return;
+  }
+  const pad = d === "pad";
+  const b = (padLabel: string, keyLabel: string, what: string) =>
+    `<span><kbd>${pad ? padLabel : keyLabel}</kbd>${what}</span>`;
+  const parts: string[] = [];
+  const move = pad ? "✥" : "arrows";
+  if (L === "hill") {
+    parts.push(b(move, "arrows", "look"), b("A", "Enter", "choose"));
+    parts.push(world.interior ? b("B", "Esc", "outside") : b("B", "Esc", "menu"));
+    if (!world.interior) parts.push(b("View", "F", "the sky"), pad ? b("R", "", "walk") : "");
+    if (!pad) parts.push(b("", "?", "quick keys"));
+  } else {
+    parts.push(b(move, "arrows", "move"), b("A", "Enter", "choose"));
+    if (L === "sheet" || L === "settings" || L === "credits") parts.push(b("B", "Esc", "back"));
+    if (L !== "settings" && L !== "credits") parts.push(b("Start", "Esc", "settings"));
+  }
+  promptsEl.innerHTML = parts.filter(Boolean).join("");
+  promptsEl.classList.add("on");
+}
+
 /* ---------- the frame loop ---------- */
+const innLeave = $("inn-leave");
 function frame(now: number) {
   animator.tick(now);
+  drawPortrait(now);
+  innLeave.classList.toggle("on", world.atInn && !animator.busy);
+  nav.tick(now);
+  updatePrompts();
   updateCaption(animator.current, animator.p);
   const g = game.state;
   const isRaining = g.forecast[0] === "rain";
@@ -690,6 +922,8 @@ function frame(now: number) {
     interior: settings.ui === "glen" && world.interior,
     spotlight: settings.ui === "glen" && !world.interior ? tutorial.spotlight : null,
     spotlightBed: settings.ui === "glen" && world.interior && tutorial.pointingAtBed,
+    focus: settings.ui === "glen" && nav.device !== "pointer" && !world.active && !world.atInn ? world.focusId : null,
+    atInn: settings.ui === "glen" && world.atInn,
   });
   screen.painter.cx.restore();
   requestAnimationFrame(frame);
@@ -739,7 +973,8 @@ if (import.meta.env.DEV) {
 }
 
 /* ---------- PWA ---------- */
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+// web only: a desktop build loads from disk, where a cache only gets in the way
+if ("serviceWorker" in navigator && import.meta.env.PROD && platform.kind === "web") {
   addEventListener("load", () => {
     void navigator.serviceWorker.register("./sw.js").catch(() => {
       /* offline play is a bonus, not a requirement */

@@ -29,6 +29,8 @@ export class Animator {
   /** SKELP: 2 runs everything at double pace */
   speed = 1;
   onStart: (anim: AnimId) => void = () => {};
+  /** one has played to its end — before the next in the queue begins */
+  onFinish: (anim: AnimId) => void = () => {};
   onIdle: () => void = () => {};
 
   get busy() {
@@ -60,10 +62,12 @@ export class Animator {
     if (this.p < 1) return;
     this.p = 1;
     const done = this.after;
+    const finished = this.current;
     this.current = null;
     this.payload = undefined;
     this.after = undefined;
     done?.();
+    this.onFinish(finished);
     const next = this.queue.shift();
     if (next) this.begin(next);
     else this.onIdle();

@@ -16,6 +16,8 @@ import { boundsOf, layoutInterior, layoutWorld, type InteriorLayout, type WorldL
 import { driftFor, idleTick } from "../wander";
 import { spinNow } from "../dog-spin";
 import { tippyFrame } from "../tippy";
+import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
+import { drawLampLight, drawLampPost } from "../lamppost";
 import {
   TERRAIN,
   mix,
@@ -48,6 +50,7 @@ import {
   drawWoolSacks,
   hash,
   isInverse,
+  KIT,
   setSpriteState,
   shade,
 } from "../sprites";
@@ -365,6 +368,7 @@ function drawWeather(g: Painter, L: WorldLayout, st: GameState, time: number) {
       g.a(0, y, L.W, 12 + b * 3, 206, 210, 205, 0.12 + b * 0.03);
     }
   }
+  if (w === "snow") drawSnowfall(g, L.W, L.H, time);
   if (w === "overcast") g.a(0, 0, L.W, L.H, 90, 96, 104, 0.07);
   if (w === "sun") g.a(0, 0, L.W, L.H, 240, 214, 150, 0.045);
 }
@@ -394,7 +398,7 @@ function drawNight(g: Painter, L: WorldLayout, st: GameState, amount: number, ti
  * ================================================================== */
 
 /** outline the thing you are about to act on */
-function drawHighlight(g: Painter, L: WorldLayout, id: string, pulse: number) {
+function drawHighlight(g: Painter, L: { hotspots: WorldLayout["hotspots"] }, id: string, pulse: number) {
   const spot = L.hotspots.find((h) => h.id === id);
   if (!spot) return;
   const { x, y, w, h } = boundsOf(spot);
@@ -489,6 +493,26 @@ function flockActors(g: Painter, L: WorldLayout, s: Scene): Actor[] {
     // SHEEP_FEET below the draw origin is where her hooves land
     out.push({ feet: y + SHEEP_FEET, paint: () => drawSheep(g, x, y, sh, { shorn, graze, run, flip }) });
   });
+
+  /*
+   * The tup, if there is one: he keeps to the edge of the flock on his own
+   * mark and wanders like the rest. Not a member of the flock — the sim keeps
+   * him as kit, so no fox takes him and no shears touch him — but he is on
+   * the hill, and should be seen there. In TOD he is a dog fox among the skulk.
+   */
+  if (owns(st, "tup") && k !== "move" && k !== "gather") {
+    const hx = L.flockBox.x + L.flockBox.w * 0.85;
+    const hy = L.flockBox.y + L.flockBox.h * 0.35;
+    const drift = driftFor(99991, s.time, { dx: L.shepherd.x - hx, dy: L.shepherd.y - hy });
+    const x = Math.round(hx + drift.dx);
+    const y = Math.round(hy + drift.dy);
+    const facing: 1 | -1 = drift.flip ? -1 : 1;
+    const run = drift.moving ? s.time / 320 : 0;
+    out.push({
+      feet: y + 13,
+      paint: () => (isInverse() ? drawFox(g, x, y + 2, run, facing) : drawRam(g, x, y, run, facing)),
+    });
+  }
   return out;
 }
 
@@ -514,6 +538,24 @@ function paintShepherdIdle(g: Painter, L: WorldLayout, s: Scene) {
   });
 }
 
+/**
+ * Her, at home — the same woman the inn and the proposal draw, a little
+ * shorter than him, standing on the ground rather than behind a bar. `cx` is
+ * her centre, `footY` where her feet are.
+ */
+function drawHerAtHome(g: Painter, cx: number, footY: number, time: number) {
+  const figH = SHEPHERD_H - 1;
+  const top = footY - figH;
+  const m = drawBackFigure(g, cx, top, footY, {
+    coat: "#e8e3d2",
+    coatLit: "#f2eee0",
+    hair: "#7a3a24",
+    skirt: "#3d5a4a",
+    sway: Math.sin(time / 900) * 0.25,
+  });
+  drawLassHead(g, m, top);
+}
+
 function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   const st = s.state;
   const k = s.anim;
@@ -524,6 +566,20 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   if (owns(st, "saltlick")) drawSaltLick(g, L.saltlick.x, L.saltlick.y);
 
   const sheep = flockActors(g, L, s);
+  /*
+   * The barn's stock, stacked past the byre where it can be seen from the
+   * hill. One of the cast rather than the scenery: painted with the ground it
+   * sat under everyone, so a sheep or the man walking behind it came out in
+   * front. Sorted by its foot like the rest, anyone further up the field
+   * than its base now goes behind it.
+   */
+  const stackX = L.haystack.x;
+  const stackFoot = L.haystack.y;
+  const stack: Actor | null = st.hay > 0 ? { feet: stackFoot, paint: () => drawHaystack(g, stackX, stackFoot, st.hay) } : null;
+  // the storm lantern's post: standing in the field like the stack, so it is sorted the same way
+  const post: Actor | null = owns(st, "lamp")
+    ? { feet: L.lampPost.y, paint: () => drawLampPost(g, L.lampPost.x, L.lampPost.y) }
+    : null;
 
   /** her idle lap, hoisted so it can be sorted in among everything else */
   const paintDog = () =>
@@ -540,13 +596,30 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
    */
   if (k === null) {
     const cast: Actor[] = [...sheep];
+    if (stack) cast.push(stack);
+    if (post) cast.push(post);
     if (hasDog(st)) cast.push({ feet: L.dogAt.y + DOG_FEET, paint: paintDog });
+    /*
+     * She lives here now: out by the croft door, wandering a little way
+     * from it and back the way the flock does round their marks.
+     */
+    if (st.married !== null) {
+      const hx = L.croft.x + Math.round(L.croft.w * 0.5) + 14;
+      const hy = L.croft.y + L.croft.h + 8;
+      const d = driftFor(77711, s.time, { dx: L.shepherd.x - hx, dy: L.shepherd.y - hy });
+      const x = Math.round(hx + d.dx * 0.6);
+      const feet = Math.round(hy + d.dy * 0.4);
+      cast.push({ feet, paint: () => drawHerAtHome(g, x, feet, s.time) });
+    }
     cast.push({ feet: sy + SHEPHERD_H, paint: () => paintShepherdIdle(g, L, s) });
     cast.sort((a, b) => a.feet - b.feet);
     for (const a of cast) a.paint();
     return;
   }
 
+  // in a set piece the choreography decides the order: the stack is scenery at the back
+  stack?.paint();
+  post?.paint();
   for (const a of sheep) a.paint();
   let dogAfter = false;
 
@@ -791,6 +864,34 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       for (let i = 0; i < 16; i++) {
         const t = (p * 2 + i / 16) % 1;
         g.px(x - t * 40 + i * 3, sy + 12 - Math.sin(t * Math.PI) * 14, 3, 3, t < 0.5 ? "#4a3a24" : "#6d8a4b");
+      }
+      break;
+    }
+    case "hay": {
+      /*
+       * The in-bye, cut: he walks the field with the scythe going, the
+       * swathes lying down gold behind him, and a stack going up at the end.
+       */
+      const reach = ease(p);
+      const x0 = Math.round(L.W * 0.08);
+      const span = Math.round(L.W * 0.6);
+      const row = sy + 24;
+      for (let r = 0; r < 3; r++) {
+        const len = Math.round(span * clamp01(reach * 1.2 - r * 0.15));
+        for (let x = 0; x < len; x += 4) g.px(x0 + x, row + r * 5, 3, 2, x % 8 ? "#c9a95a" : "#b08f45");
+      }
+      const hx = x0 + Math.round(span * reach);
+      drawShepherd(g, hx, sy, { walk: p * 3, facing: 1 });
+      // the scythe: a long snath and a blade that sweeps
+      const sweep = Math.sin(p * Math.PI * 10);
+      g.px(hx + 10, sy + 8, 2, 14, "#6a5238");
+      g.px(hx + 4 + Math.round(sweep * 5), sy + 21, 12, 2, "#b9bec2");
+      // the stack, rising as the day goes
+      const stack = Math.floor(clamp01((p - 0.3) / 0.7) * 5);
+      const stx = x0 + span + 14;
+      for (let i = 0; i < stack; i++) {
+        const w = 18 - i * 3;
+        g.px(stx - w / 2, row + 8 - i * 4, w, 4, i % 2 ? "#c9a95a" : "#b89448");
       }
       break;
     }
@@ -1275,7 +1376,11 @@ function proposeScene(g: Painter, L: WorldLayout, p: number, time: number) {
   if (inRoom < 1) g.a(0, 0, W, H, 20, 23, 15, 1 - inRoom);
 }
 
-function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
+/** how far through the inn scene the room has settled: the pint down, her arrived */
+const PUB_SETTLED = 0.72;
+
+/** `holding`: sitting on after the pint, so what moves is driven by the clock rather than the scene */
+function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding = false) {
   const inRoom = clamp01(p < 0.12 ? p / 0.12 : p > 0.88 ? (1 - p) / 0.12 : 1);
   g.a(0, 0, L.W, L.H, 20, 23, 15, inRoom);
   if (inRoom < 0.92) return;
@@ -1431,7 +1536,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
    */
   const swaying = walk > 0 && walk < 1;
   const settle = walk >= 1 ? Math.max(0, 1 - (p - 0.5) * 3) : 1;
-  const sway = swaying || settle > 0 ? Math.sin(p * Math.PI * 14) * settle : 0;
+  const sway = holding ? Math.sin(time / 900) * 0.3 : swaying || settle > 0 ? Math.sin(p * Math.PI * 14) * settle : 0;
   const gm = drawBackFigure(g, gxs, gTop, floorY - 1, {
     coat: "#e8e3d2", // her blouse
     coatLit: "#f2eee0",
@@ -1470,7 +1575,7 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number) {
 
   g.a(0, 0, W, H, 240, 170, 80, 0.05);
   for (let i = 0; i < 4; i++) {
-    const t = (p * 1.1 + i / 4) % 1;
+    const t = ((holding ? time / 3000 : p * 1.1) + i / 4) % 1;
     g.a(W * 0.9 + i * 4, floorY - 22 - t * 24, 3, 3, 224, 163, 60, 0.35 * (1 - t));
   }
 }
@@ -1642,6 +1747,20 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   // be tapped are the same fact rather than two copies of it
   const fireSpot = { x: hx + Math.round(I.hearth.w / 2) - 6, y: I.floorY + 3 };
   const dogHome = { x: Math.round(I.W * 0.3), y: I.midY - 11 };
+
+  /*
+   * The old dogs, retired to the house: curled on the hearthstone, each in
+   * her own coat whatever the working dog is, breathing at her own pace.
+   */
+  if (I.retiredSpots.length) {
+    const wasCollie = KIT.collie;
+    I.retiredSpots.forEach((d, i) => {
+      setSpriteState({ kit: { collie: d.kind === "collie" } });
+      drawDogCurled(g, d.x, d.y, time + i * 700, i % 2 ? -1 : 1);
+    });
+    setSpriteState({ kit: { collie: wasCollie } });
+  }
+
   if (hasDog(st)) {
     const collieAtFire = owns(st, "collie") && hearthBuilt;
     const tip = tippyFrame(time, true, collieAtFire);
@@ -1725,17 +1844,7 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
       }
     });
   }
-  if (owns(st, "lamp")) {
-    put(() => {
-      g.px(kx + 3, sh.y + 2, 2, 3, "#6d7263"); // the bail
-      g.px(kx + 1, sh.y + 4, 7, 2, "#8a8f88"); // the cap
-      g.px(kx + 1, sh.y + 6, 1, 8, "#8a8f88"); // the frame
-      g.px(kx + 7, sh.y + 6, 1, 8, "#8a8f88");
-      g.px(kx + 2, sh.y + 6, 5, 8, "#3a3f3c"); // the glass
-      g.a(kx + 2, sh.y + 8, 5, 5, 255, 214, 120, 0.55); // the wick, turned low
-      g.px(kx + 1, sh.y + 14, 7, 2, "#6d7263"); // the oil font
-    });
-  }
+  // the storm lantern is not on the shelf: it hangs on its post out in the field
   if (owns(st, "oilskin")) {
     put(() => {
       g.px(kx + 4, sh.y + 2, 3, 2, "#5a5f58"); // the peg
@@ -1818,6 +1927,10 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
    * comes after everything at the wall and before the table, which is nearer
    * the camera than he is.
    */
+  // her, between him and the fire, on the same boards he stands on
+  if (st.married !== null) {
+    drawHerAtHome(g, Math.round((I.hearth.x + I.hearth.w + I.man.x) / 2) + 8, I.man.y, time);
+  }
   drawShepherd(g, I.man.x, I.man.y - SHEPHERD_H, {
     facing: -1, // looking across at the hearth
     tick: idleTick(time) ?? undefined,
@@ -1896,7 +2009,6 @@ export const GLEN_ART: ArtPack = {
         crook: owns(st, "crook"),
         boots: owns(st, "boots"),
         shears: owns(st, "shears"),
-        lamp: owns(st, "lamp"),
         cart: owns(st, "cart"),
         collie: owns(st, "collie"),
         watch: owns(st, "watch"),
@@ -1909,6 +2021,7 @@ export const GLEN_ART: ArtPack = {
     if (s.interior) {
       const I = layoutInterior(g.W, g.H, st);
       drawInterior(g, I, st, s.time, k === "sleep", !!s.spotlightBed);
+      if (s.focus && !k) drawHighlight(g, I, s.focus, s.time);
         return;
     }
 
@@ -1922,6 +2035,7 @@ export const GLEN_ART: ArtPack = {
     drawBen(g, L, st, s.time);
     drawHills(g, L, st);
     drawGround(g, L, st, s.time);
+    drawSeasonLand(g, L.W, L.horizonY, L.H, st);
     drawCroft(g, L, st, night, s.time);
     /*
      * Not while it is away at market — that animation draws the cart rolling
@@ -1934,9 +2048,25 @@ export const GLEN_ART: ArtPack = {
      */
     if (k !== "market") drawCart(g, L, st, s.time);
 
+    /*
+     * The evening at the inn. The pint plays up to the moment she has set it
+     * down and the room has settled — PUB_SETTLED of the way through the
+     * scene — and then holds there, fire going and her swaying, for as long
+     * as the player sits on. It is a respite: cutting straight back to the
+     * hill read as "get back to work". Leaving plays the last of the scene,
+     * the room fading out, and the hill comes back up.
+     */
     if (k === "pub") {
-      pubScene(g, L, p, s.time);
-          return;
+      pubScene(g, L, p * PUB_SETTLED, s.time);
+      return;
+    }
+    if (k === "leaveinn") {
+      pubScene(g, L, PUB_SETTLED + p * (1 - PUB_SETTLED), s.time, true);
+      return;
+    }
+    if (s.atInn && !k) {
+      pubScene(g, L, PUB_SETTLED, s.time, true);
+      return;
     }
     if (k === "fox") {
       foxRaid(g, L, s);
@@ -1946,8 +2076,11 @@ export const GLEN_ART: ArtPack = {
     drawActors(g, L, s);
     drawWeather(g, L, st, s.time);
     if (night > 0) drawNight(g, L, st, night, s.time);
+    // the lantern lights with the dark, and on top of it
+    if (owns(st, "lamp")) drawLampLight(g, L.lampPost.x, L.lampPost.y, night, s.time);
 
     if (s.active) drawHighlight(g, L, s.active, s.time);
+    else if (s.focus && !k) drawHighlight(g, L, s.focus, s.time);
     if (s.spotlight) drawHighlight(g, L, s.spotlight, s.time * 2.2);
   },
 };

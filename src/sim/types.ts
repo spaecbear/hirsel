@@ -20,9 +20,34 @@ export interface Sheep {
   breed: BreedId;
   /** days in the flock — surfaced on hover, and the hook for a future ageing system */
   age: number;
+  /** born on the hill this spring, and not yet grown */
+  lamb?: boolean;
+  /** tupped in the autumn; lambs in the spring */
+  inLamb?: boolean;
 }
 
-export type WeatherId = "sun" | "overcast" | "rain" | "mist";
+export type WeatherId = "sun" | "overcast" | "rain" | "mist" | "snow";
+
+export type SeasonId = "spring" | "summer" | "autumn" | "winter";
+
+export interface Season {
+  id: SeasonId;
+  name: string;
+  /** how fast the pastures come back */
+  regen: number;
+  /** how fast fleece comes on */
+  growth: number;
+  /** foxes are bolder when they are hungry */
+  foxBias: number;
+  /** flystrike wants warmth: none in winter, worst in summer */
+  strike: number;
+  /** what wool fetches — the autumn sales pay, summer is a glut */
+  price: number;
+  /** the weather drawn for a day in this season */
+  weather: WeatherId[];
+  /** said at dawn on the first day of it */
+  arrives: string;
+}
 
 export interface Weather {
   id: WeatherId;
@@ -55,9 +80,37 @@ export type ToolId =
   | "watch"
   | "sword"
   | "saltlick"
-  | "oilskin";
+  | "oilskin"
+  | "tup";
 
 export type CroftId = "roof" | "hearth" | "byre" | "ring";
+
+export type EventId =
+  | "callum-intro"
+  | "letter-boss"
+  | "letter-mother"
+  | "letter-friend"
+  | "letter-sister"
+  | "dealer"
+  | "neighbour"
+  | "neighbour-gift"
+  | "stray"
+  | "show"
+  | "visit"
+  | "ceilidh"
+  | "anniversary"
+  | "garden"
+  | "her-mother";
+
+export interface PendingEvent {
+  id: EventId;
+  day: number;
+  /** what this one is about, fixed when it came: the dealer's offer, the gift */
+  data: Record<string, string | number>;
+}
+
+/** the two working dogs: the Shetland sheepdog and the border collie */
+export type DogKind = "dog" | "collie";
 
 /** everything ownable, including the pelt, which is won rather than bought */
 export type OwnedId = ToolId | CroftId | "pelt";
@@ -72,7 +125,8 @@ export type ActionId =
   | "pipe"
   | "music"
   | "pub"
-  | "ask";
+  | "ask"
+  | "hay";
 
 export type BuffId = "tended" | "steady hands" | "settled flock" | "hale" | "fiddled";
 
@@ -92,10 +146,13 @@ export type AnimId =
   | "market"
   | "tend"
   | "muck"
+  | "hay"
   | "build"
   | "pipe"
   | "music"
   | "pub"
+  /** out of the inn door and back up the road, when the player chooses to go */
+  | "leaveinn"
   | "move"
   | "sleep"
   /** the sky coming back up, played after anything that happens in the dark */
@@ -165,8 +222,42 @@ export interface GameState {
     spunTwice: boolean;
     /** you have stood in the room and seen the collie settle at the fire — Tippy */
     sawTippy: boolean;
+    /** beasts lost in the snow, hungry and out on the hill */
+    snowLosses: number;
+    /** hay has been cut on a day of sun */
+    hayInSun: boolean;
+    /** lambs born alive, lost at birth or in the womb, and sold */
+    lambsBorn: number;
+    lambsLost: number;
+    lambsSold: number;
+    /** prizes at the Highland show and the trial */
+    rosettes: number;
+    /** Callum has paid back a kindness */
+    neighbourGifts: number;
   };
   achievements: string[];
+  /** bales in the barn, for the winter — cut in summer or bought at the cart */
+  hay: number;
+  /** nights the working dog has worked. Reset when a new one is taken on */
+  dogDays: number;
+  /** the dogs that have retired to the house, oldest first. They lie by the fire */
+  retiredDogs: DogKind[];
+  /** something that happened at dawn and is waiting on an answer — see sim/events.ts */
+  event: PendingEvent | null;
+  /** the last day each event came, for the ones that should not come again too soon or at all */
+  eventDays: Partial<Record<EventId, number>>;
+  /** what Callum over the burn thinks of you: a hand given is a hand owed */
+  goodwill: number;
+  /** the day she said aye and you stayed on the hill together; null until then */
+  married: number | null;
+  /** her kale patch by the door: the feed bill is lighter for it */
+  garden: boolean;
+  /**
+   * A code that changes the game has been used this run (money, beasts, taps,
+   * weather, the wolf on demand, zen). Such a run earns no achievements, and
+   * says so at the end. Never cleared within a run.
+   */
+  cheated: boolean;
   seed: number;
 }
 

@@ -1,5 +1,6 @@
 /** Player preferences. Separate from the save file — they outlive any one run. */
 import type { Difficulty } from "./types";
+import { platform } from "../platform";
 
 /**
  * Which whole interface you play in.
@@ -72,7 +73,7 @@ const KEY = "hirsel.settings.v1";
 
 export function loadSettings(): Settings {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = platform.read(KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const saved = JSON.parse(raw) as Partial<Settings> & { art?: string };
     const s = { ...DEFAULT_SETTINGS, ...saved };
@@ -88,7 +89,7 @@ export function loadSettings(): Settings {
 
 export function saveSettings(s: Settings) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    platform.write(KEY, JSON.stringify(s));
   } catch {
     /* ignore */
   }

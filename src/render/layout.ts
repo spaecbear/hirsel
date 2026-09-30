@@ -10,8 +10,9 @@
  * One layout function, two consumers: the art pack draws from it and the world
  * UI hit-tests against it. They cannot disagree about where the house is.
  */
-import type { GameState } from "../sim/types";
+import type { DogKind, GameState } from "../sim/types";
 import { herdCircuit } from "./wander";
+import { haystackTiers } from "./season";
 
 export interface Rect {
   x: number;
@@ -28,6 +29,8 @@ export type HotspotId =
   | "ground"
   | "hills"
   | "sky"
+  /** the haystack past the byre, while there is any hay */
+  | "hay"
   /* inside the house */
   | "bed"
   | "hearth"
@@ -66,6 +69,10 @@ export interface WorldLayout {
   /** where she is on her circuit this frame, and which way she is looking */
   dogAt: { x: number; y: number; facing: 1 | -1; running: boolean; wagging: boolean };
   saltlick: { x: number; y: number };
+  /** the storm lantern's post, once bought: `y` is where it meets the ground */
+  lampPost: { x: number; y: number };
+  /** the middle of the haystack's base, past the byre */
+  haystack: { x: number; y: number };
   flock: { x: number; y: number }[];
   flockBox: Rect;
   hotspots: Hotspot[];
@@ -144,6 +151,22 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     : homeShepherd;
   const dog = { x: shepherd.x - 26, y: shepherd.y + 16 };
   const saltlick = { x: Math.round(W * 0.18), y: Math.round(groundY + field * 0.45) };
+  /*
+   * The lantern's post: out in front of the croft, where the yard meets the
+   * field, so its light falls on the ground between the door and the flock.
+   */
+  /*
+   * Past the byre's gable in landscape. A portrait screen is too narrow for
+   * that — the cart is parked there, and the stack came out drawn on top of
+   * it — so there it stands just in front of the byre instead.
+   */
+  const haystack = portrait
+    ? { x: Math.round(byre.x + byre.w / 2), y: byre.y + byre.h + 12 }
+    : { x: croft.x + 106, y: croft.y + croft.h };
+  const lampPost = {
+    x: Math.round(croft.x + croft.w * 0.5 + (portrait ? 4 : 10)),
+    y: Math.round(Math.min(H - 8, croft.y + croft.h + field * (portrait ? 0.12 : 0.2))),
+  };
 
   // the flock grazes across the middle of the field, in rows so they overlap
   // the way animals on a slope do rather than sitting on one line
@@ -225,6 +248,14 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "croft", rects: [pad(croft, 4)], label: "The croft" },
     { id: "cart", rects: [pad(cart, 6)], label: "The cart" },
     { id: "shepherd", rects: [{ x: shepherd.x - 10, y: shepherd.y - 8, w: 34, h: 40 }], label: "Yourself" },
+    // the stack, sized to what is in it; gone with the last bale
+    ...(st.hay > 0
+      ? [{
+          id: "hay" as const,
+          rects: [{ x: haystack.x - 11, y: haystack.y - haystackTiers(st.hay) * 4 - 4, w: 22, h: haystackTiers(st.hay) * 4 + 6 }],
+          label: "The hay",
+        }]
+      : []),
     /*
      * She has no tap target out here, on purpose.
      *
@@ -243,7 +274,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
     { id: "sky", rects: [{ x: 0, y: 0, w: W, h: Math.max(10, horizonY - 8) }], label: "The sky" },
   ];
 
-  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, dogAt, saltlick, flock, flockBox, hotspots };
+  return { W, H, portrait, horizonY, groundY, croft, byre, cart, shepherd, dog, dogAt, saltlick, lampPost, haystack, flock, flockBox, hotspots };
 }
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
@@ -288,6 +319,8 @@ export interface InteriorLayout {
   table: Rect;
   /** where the dog is in the room: at the fire, or on her own mark */
   dogSpot: { x: number; y: number };
+  /** the retired dogs, curled along the hearthstone — the working collie keeps the middle of it */
+  retiredSpots: { x: number; y: number; kind: DogKind }[];
   /** where the man stands, top-left of his sprite */
   man: { x: number; y: number };
   hearth: Rect;
@@ -353,12 +386,25 @@ export function layoutInterior(W: number, H: number, st?: GameState): InteriorLa
     ? { x: hearth.x + Math.round(hearth.w / 2) - 6, y: floorY + 3 }
     : { x: Math.round(W * 0.3), y: midY - 11 };
 
+  /*
+   * The old dogs lie along the front of the hearth, the first one in the
+   * middle of it unless the working collie already has that. Three at most
+   * are drawn; a hearth has only so much stone in front of it.
+   */
+  const fireX = hearth.x + Math.round(hearth.w / 2) - 6;
+  const firstFree = atFire ? 1 : 0;
+  const retiredSpots = (st?.retiredDogs ?? []).slice(-3).map((kind, i) => {
+    const slot = firstFree + i;
+    return { x: fireX + slot * 25, y: floorY + 3 + (slot % 2) * 6, kind };
+  });
+
   return {
     W,
     H,
     floorY,
     midY,
     dogSpot,
+    retiredSpots,
     frontY,
     hearth,
     bed,

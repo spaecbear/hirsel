@@ -5,7 +5,7 @@
  * here, set to the prototype's shipped behaviour, with a note saying what the
  * question actually is. Change the flag, don't hunt for a magic number.
  */
-import type { Breed, BreedId, Difficulty, Weather, WeatherId } from "./types";
+import type { Breed, BreedId, Difficulty, Season, SeasonId, Weather, WeatherId } from "./types";
 
 /**
  * Starting money. The £1000 test purse of §13 is gone — testing is done with
@@ -157,7 +157,168 @@ export const BALANCE = {
 
   wolfActionsNeeded: 5,
   wolfWarnOnAction: 4,
+
+  /*
+   * Hay, for the winter.
+   *
+   * In winter the pastures stop growing, and on a day of snow the grass is
+   * under it altogether. What the ground cannot give, the barn does: each
+   * bale stands in for `hayGrass` of grass, fed out at night only in winter.
+   * It comes two ways, the same two everything in the game comes: taps (cut
+   * in summer, on a dry day) or money (bought at the cart, dearer once the
+   * winter is on you).
+   */
+  hayGrass: 10,
+  hayCutBales: 12,
+  hayLot: 10,
+  hayLotCost: 5,
+  hayLotCostWinter: 9,
+  /**
+   * A hungry night in the snow, out on the hill, can cost a beast. The byre
+   * is what the croft's third milestone was always for: with it they are
+   * brought in on a night of snow, out of the weather and out of a fox's reach.
+   */
+  snowLossChance: 0.25,
+  /** the autumn warning comes this many days before the winter does */
+  winterWarnDays: 6,
+
+  /*
+   * The dog grows old (spec §14.7).
+   *
+   * A year of work in her prime, then she is getting on: still gathering,
+   * but her worth against a fox and over the grass is half what it was. At
+   * `dogRetireDays` she retires to the house rather than dying — she lies by
+   * the fire, a record of the years the hill has been worked, and the slot is
+   * free for another dog. Retired, she still lifts her head at anything
+   * moving outside at night: a small deterrent, counted for up to two of them.
+   *
+   * A run to the croft is about two and a half years (see SEASON_DAYS), so a
+   * dog bought early retires in the run and a second one is a real purchase.
+   */
+  dogOldDays: 96,
+  dogRetireDays: 120,
+  dogRetireWarnDays: 8,
+  oldDogStrength: 0.5,
+  retiredFoxBias: 0.95,
+  retiredCounted: 2,
+
+  /*
+   * Lambing.
+   *
+   * The tup runs with the ewes through the autumn; as winter comes in, most
+   * of them are in lamb. A hungry winter night can cost a ewe her lamb, so the
+   * barn feeds next year's flock as well as this one. The lambs come over the
+   * first days of spring. Born in the byre they all live; born out on the hill
+   * on a wet night, some do not — less so if the flock is being tended. They
+   * are half a mouth (mostly on their mothers), carry half a fleece, are
+   * grown by the winter, and sell best at the autumn sales.
+   *
+   * Measured with tools/balance.ts: at a full ration a lamb cost more to keep
+   * to the autumn than it fetched, and lambing made every run slower. At half
+   * a ration, one ewe in three twinning and the autumn price here, it pays a
+   * little — median wins 203/226/266 against 206/227/269 without it.
+   */
+  tupRate: 0.85,
+  lambingDays: 10,
+  twinChance: 0.3,
+  lambLossBadNight: 0.4,
+  lambLossTended: 0.5,
+  slipChance: 0.15,
+  lambGrowth: 0.5,
+  lambGrowDays: 72,
+  /** a lamb is mostly on its mother: half a mouth at the grass, the barn and the feed bill */
+  lambEats: 0.5,
+  /** a lamb fetches this much of a grown ewe's cost, and more at the autumn sales */
+  lambPrice: 0.4,
+  lambPriceAutumn: 2.4,
+
+  /*
+   * Staying on the hill together, after she says aye. The run no longer ends
+   * at the ring: two pairs of hands make the day go a tap further (still
+   * inside maxTaps), and her kale patch, once dug, takes a pound a night off
+   * the feed bill.
+   */
+  marriedTaps: 1,
+  gardenFeed: 1,
 } as const;
+
+/**
+ * The year.
+ *
+ * Twenty-four days a season is three turns of the moon, so every season has
+ * the same three full moons in it and the wolf's calendar is unchanged. A
+ * year is ninety-six days; a run to the croft is about two of them.
+ *
+ * Spring is the game as it always was — the same weather, the same numbers —
+ * so the opening a new player learns on is untouched. The other three pull
+ * on it: summer grows wool and flies, autumn pays for it, and winter is
+ * survived on what was put by.
+ *
+ * Measured with `tools/balance.ts` (40 seeded runs a scale, one fixed policy
+ * that keeps a winter reserve and lays in hay):
+ *
+ *               median win day        busted by day 400
+ *               before   seasons      before   seasons
+ *   gentle        183      201           0         0
+ *   steady        210      222           2         3
+ *   hard          245      262           4         0
+ *
+ * A run is now about two and a half years. The winter costs time, not lives:
+ * three or four hungry nights a run, and a beast lost to the snow in about
+ * one run in five. The first cut (winter fox ×1.25, growth ×0.6, autumn
+ * price ×1.25) halved the wins on Hard by day 300; no single lever fixed
+ * that, and the autumn price and the winter growth together did.
+ */
+export const SEASON_DAYS = 24;
+
+export const SEASONS: Record<SeasonId, Season> = {
+  spring: {
+    id: "spring",
+    name: "Spring",
+    regen: 1.3,
+    growth: 1,
+    foxBias: 1,
+    strike: 0.6,
+    price: 1,
+    weather: ["sun", "sun", "overcast", "overcast", "rain", "rain", "mist"],
+    arrives: "Spring. The burn is loud with snowmelt and the grass is coming.",
+  },
+  summer: {
+    id: "summer",
+    name: "Summer",
+    regen: 1,
+    growth: 1.1,
+    foxBias: 0.9,
+    strike: 1.5,
+    price: 0.9,
+    weather: ["sun", "sun", "sun", "sun", "overcast", "overcast", "rain", "mist"],
+    arrives: "Summer. Long light, the fleece coming on, and the flies with it. Make hay while it lasts.",
+  },
+  autumn: {
+    id: "autumn",
+    name: "Autumn",
+    regen: 0.6,
+    growth: 0.9,
+    foxBias: 1.1,
+    strike: 0.8,
+    price: 1.35,
+    weather: ["sun", "overcast", "overcast", "overcast", "rain", "rain", "mist", "mist"],
+    arrives: "Autumn. The bracken turns, and the wool sales are on — it fetches its best price of the year.",
+  },
+  winter: {
+    id: "winter",
+    name: "Winter",
+    regen: 0,
+    growth: 0.85,
+    foxBias: 1.1,
+    strike: 0,
+    price: 1.05,
+    weather: ["sun", "overcast", "overcast", "rain", "mist", "snow", "snow", "snow"],
+    arrives: "Winter. Nothing grows now until spring. They live on the hill as it stands, and on what is in the barn.",
+  },
+};
+
+export const SEASON_ORDER: SeasonId[] = ["spring", "summer", "autumn", "winter"];
 
 /**
  * §14 open questions. All left at prototype behaviour. Flip and playtest.
@@ -228,9 +389,11 @@ export const WEATHER: Record<WeatherId, Weather> = {
   overcast: { id: "overcast", name: "Overcast", graze: 1.0, shear: true, foxBias: 1.45, sky: "#3a4046", light: "#8f9088" },
   rain: { id: "rain", name: "Rain", graze: 0.7, shear: false, foxBias: 1.0, sky: "#2b3239", light: "#6f7a80" },
   mist: { id: "mist", name: "Haar", graze: 0.9, shear: false, foxBias: 1.7, sky: "#454b4a", light: "#8a8f88" },
+  /* winter only. The grass is under it: they eat hay or nothing */
+  snow: { id: "snow", name: "Snow", graze: 0.8, shear: false, foxBias: 1.1, sky: "#5b6670", light: "#c9d0d4" },
 };
 
-/** draw weights: sun 2, overcast 2, rain 2, haar 1 */
+/** draw weights: sun 2, overcast 2, rain 2, haar 1 — the spring bag; each season has its own */
 export const WEATHER_BAG: WeatherId[] = ["sun", "sun", "overcast", "overcast", "rain", "rain", "mist"];
 
 export const BREEDS: Record<BreedId, Breed> = {
@@ -288,6 +451,7 @@ export const TOOLS = [
   { id: "boots", name: "Stout boots", cost: 26, what: "One more tap every day." },
   { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night, and foxes think twice about her." },
   { id: "collie", name: "Border collie", cost: 58, what: "Works them in on her own and keeps them grazing steadily — less of a deterrent to a fox, but they do better under her." },
+  { id: "tup", name: "A tup", cost: 48, what: "A ram for the ewes. He runs with them through the autumn, and the lambs come in the spring." },
   { id: "fiddle", name: "A fiddle", cost: 34, what: "Play it instead of the pipes. It puts more growth on them and holds a day longer, but it will not keep a fox off." },
   { id: "cart", name: "Pony and cart", cost: 74, what: "Market costs no tap." },
   { id: "saltlick", name: "Salt lick", cost: 28, what: "Set it on the hill and they take a quarter less grass for the same growth." },
@@ -332,12 +496,14 @@ export const ANIM_MS: Record<string, number> = {
   // the pub and the night are the two set pieces worth sitting in: an £8
   // pint should feel like an evening, and the dark is where the game's
   // tension lives. SKELP halves all of this for anyone in a hurry.
-  pub: 4200,
+  pub: 3400, // the walk in: the evening then lasts as long as the player likes
+  leaveinn: 1000,
   move: 1200,
   sleep: 2600, // dusk down into the dark
   dawn: 2000, // and back up out of it
   tend: 1700,
   muck: 1600,
+  hay: 1900,
   build: 1700,
   buysheep: 1200,
   fox: 2800,

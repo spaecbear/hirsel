@@ -19,6 +19,8 @@ npm run dev
 | `npm run preview` | serve the built output |
 | `npm test` | Vitest over the simulation |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run build:demo` | the demo: the first 14 days, then a wishlist card, to `dist-demo/` (see `src/demo.ts`) |
+| `npx vite-node tools/balance.ts [runs] [days]` | seeded headless runs on one policy, per scale — measure before and after a balance change |
 | `node scripts/make-icons.mjs` | regenerate the PWA PNG icons from the pixel design |
 
 ### Why port 5313 and not 5173
@@ -31,6 +33,12 @@ moving to 5174 and showing you somebody else's app.
 
 Consequence worth knowing: saves live in `localStorage`, so a run started on a different port
 won't appear on this one. Settings → Export file moves a run between origins.
+
+## The Steam build
+
+`desktop/` wraps the web build in Electron with Steamworks — achievements, the overlay and
+cloud saves. It has its own `package.json`, so the web build and Vercel never install
+Electron. See `desktop/README.md`, and `prototype/steam-plan.md` for the whole plan.
 
 ## Deploying to Vercel
 
@@ -63,6 +71,9 @@ src/
     art/glen.ts    the full-screen scene you play in
     art/hirsel.ts  the older panelled scene (the retro interface)
   audio/      Web Audio: written tunes, rain, one effect per animation
+  platform/   what the game asks of the machine: storage, achievements, quit.
+              The web build uses localStorage; a desktop build supplies its own
+  fonts/      DejaVu Sans Mono, subset to woff2 and shipped with the game
 test/         Vitest over sim/
 ```
 
@@ -242,6 +253,29 @@ every key a fresh game has, so **any new field silently rejected every existing 
 player losing their run to a feature they never asked for. It now checks only the shape the
 game cannot run without, and back-fills the rest from a fresh game.
 
+### Staying on the hill
+
+A win no longer has to end the run. When she says aye the end card offers **Stay on the
+hill** first and **Start again** second; if the credits roll, the card comes back when they
+end instead of the menu dropping you at the title. Staying (`Game.stayOn`) lifts the ending,
+records the day in `state.married`, and saves at once — the night's autosave is a day away, and
+a player who stays and quits should not come back to the evening before the wedding. The win
+is still won: its achievement, and any code it revealed, stand.
+
+Married life is a victory lap with a little more in it:
+
+- **Two pairs of hands**: a tap more a day, still inside the cap of six
+- **She lives at the croft**: out by the door on the hill, wandering a little as the flock
+  does, and between you and the fire indoors — the same woman the inn and the proposal draw
+- The ask is gone from your sheet; at the inn she is covering the bar and will not take your
+  money; the first morning has its own line
+- Three events of its own: **the anniversary** a year on (a day off together, hale for three),
+  **her kale patch** (two taps to dig it, and the feed bill is £1 a night lighter for good),
+  and **her mother** coming up on the post bus. Every one can be declined for nothing
+- The courting events — her afternoon off, the ceilidh — are for before, and stop
+- Two achievements for the long game, **A year wed** and **Fifty lambs**, marked `longGame`
+  and left out of what the credits ask for, since the credits roll at the moment of a win
+
 ### Finishing a run
 
 Finishing a run with **nothing left to find** — every achievement earned and every code known
@@ -278,6 +312,14 @@ identical turned either way. Verified by rendering the sprite offscreen and read
 pixel's x, not by eye.
 
 ### The inn
+
+**The evening lasts as long as the player likes.** The pint plays up to the moment she has
+set it down and the room has settled, and then holds there — the fire going, her swaying —
+with a **Head back up the hill** button, until the player chooses to go (`WorldUi.atInn`).
+Leaving plays the last of the scene, the room fading out. Cutting straight back to the hill
+read as "get back to work!", which is the opposite of what a pint is for. Nothing on the hill
+answers while you sit on; keys and a pad reach the button, and B leaves. Not while the pocket
+watch is running a recorded day, and not in the retro panels.
 
 The one room in the game with other people in it: the landlord behind the bar and the lass
 with her tray — the one the croft is quietly being built for, drawn to be recognised, since
@@ -487,8 +529,193 @@ Codes show as `?????` until entered, which is what keeps `1680` from giving the 
 to a player who hasn't gone looking for it. It summons the wolf with none of the real
 conditions met — but what happens when he arrives is unchanged, and still decided by whether
 the broadsword is on the wall. The flock is still not cut until the animation has played.
+**A run that uses a code which changes the game earns no achievements** — `SILLER`,
+`HIRSEL`, `LANGDAY`, `HAAR` and `1680` mark it the moment they are used, and `ZEN` the first
+time it saves a tap. `RETRO`, `TOD` and `SKELP` never do. The end screen says so, so it is
+never a surprise. `state.cheated` holds it, and `hydrate` back-fills old saves as clean.
+
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.
 The simulation is untouched — only the words and the sprites swap.
+
+### Things that happen
+
+`sim/events.ts`. The world comes to the door: at most one event a dawn, rolled from the run's
+seed like everything else, none in the first week. Each is a card over the hill with a few
+choices, and every choice says what it costs — a tap out of today, money, or nothing. **Every
+event offers a choice that costs nothing**, so none can leave a player stuck, and one left
+unanswered overnight takes that choice at the next dawn (a test pins both). None mentions the
+sword, the wolf or how he is called.
+
+| event | when | the choice |
+| --- | --- | --- |
+| Callum, over the burn | the third morning, before any other event can come | shaking his hand: he is met, and everything else he does is someone the player knows |
+| letters | days 9, 40, 110, 190 — the old office, your mother (with £10), a friend, your sister | mostly words; they are the thread back to the desk in the opening |
+| the dealer | now and then, not in winter | a good ewe at ¾ of the cart price, or a tool you lack at ⅘ — never a second dog, the sword or the watch |
+| Callum's ewes are out | now and then | a tap to help him, or not |
+| Callum pays it back | after two kindnesses | 20 bales in the back end of the year, £15 in the front |
+| a stray | now and then, not in winter | walk her back (a tap, and a kindness) or keep her (a ewe, and he knows) |
+| the Highland show | the 18th of each summer | show your best grown ewe (breed, fleece, tended) for £25 or £12, or run the dog in the trial for £20 — the collie is the trials dog, and an old one is slower |
+| her afternoon off | once, after three evenings at the inn | walk the hill with her: it counts for an evening |
+| the ceilidh | the 10th of each autumn, once you know her | £4 and a tap: an evening, and hale for two days |
+
+**Callum has a face.** His cards — the introduction, his ewes out, his kindness paid back —
+carry a portrait (`render/portrait.ts`): flat cap, grey beard, tweed, drawn at 40×44 and
+scaled like everything else. It pops up with the card, blinks, and talks for the first
+moments of it. `speaker` on an event says whose face goes on it; he is the only one so far.
+
+The dated ones are asked before the chance ones each dawn, so a letter is never pushed off
+its day by the dealer. The card is its own layer for keys and a pad: focus lands on the first
+choice that can be afforded, and quick keys do nothing behind it.
+
+Measured with `tools/balance.ts` (the policy helps Callum, walks strays back, shows a ewe,
+goes to the dance, and buys off the dealer only with money to spare): median wins 182 / 214 /
+233 against 203 / 226 / 266 without events — a run is about a tenth shorter for a player who
+answers the door, with no more lost. Every number is in `EVENTS_BALANCE`. With the events
+switched off the tool reproduces the old figures exactly, so the difference is theirs.
+
+### Keys and a controller
+
+The game was built for a finger and a mouse; a Steam Deck needs it to be playable with a pad
+alone, and a desktop player may want the keys. `ui/controls.ts` reduces both to a handful of
+intents — move, choose, back, menu, the sky — and `ui/nav.ts` decides what each does in
+whichever **layer** is on top: the credits, Settings, the end of a run, the title, a sheet, a
+walkthrough card waiting on "Go on", the retro panels, or the hill.
+
+| | keys | pad |
+| --- | --- | --- |
+| move | arrows / WASD | d-pad / left stick (repeats when held) |
+| choose | Enter / Space | A |
+| back | Escape / Backspace | B |
+| settings | Escape on the hill | Start |
+| the sky | F | View |
+| walk | — | right stick |
+
+**In a DOM layer** a direction moves focus to the nearest button that way
+(`ui/spatial.ts` — distance along the direction counts once, drift across it twice, so down
+means the thing under you). Sliders take left and right. A sheet that is only for reading
+scrolls when there is nothing further to move to. Each layer lands focus on the obvious
+choice when it opens — "Go back to it" on the title, "Start again" at the end, the first live
+row of a sheet — and **never on selling stock**: a sale is one press from a second press, so
+those rows are reached on purpose, not arrived at.
+
+**On the hill** a cursor moves between the things you can tap, drawn with the same outline the
+tap highlight uses, and the hint line names it. The flock is one stop; the ground and the
+hills, which are bands the width of the screen, navigate by a box in the open grass and the
+middle of the band rather than their centres. Choosing is a tap on that target — `WorldUi`'s
+`activate` is the one path for both, so they cannot disagree. Indoors B goes back out of the
+door. The cursor follows the walkthrough's target as it moves on, so the first day can be
+played with nothing but Enter.
+
+The pointer is never switched off. The last device used decides whether the focus ring and
+the prompts along the bottom show; a click or a touch hides them again.
+
+**Quick keys** do a thing outright, for a player who has learned the game: G gather, C shear
+(the clip — S is down), T tend, M sell the wool, U muck, H cut hay, B work on the croft, P pipe,
+N a tune, I the inn, Z sleep, 1–3 move them to a pasture, E in or out of the house, K the cart,
+and ? opens Settings at the list of them (`QUICK_KEYS` in `ui/controls.ts`, pinned by a test
+never to take a movement key). They pass through `WorldUi.quick`, which checks what a tap on
+the row would — the walkthrough's lock on the thing it is teaching, the day's taps, whether
+the action can be done at all — and says why when it cannot. They work on the hill, over a
+sheet (which they close) and in the retro panels; behind Settings, the title or the end of a
+run the letters mean nothing, so a stray key cannot spend a tap. While the keyboard is in use
+each sheet row shows its key.
+
+The one text field (the cheat codes) asks Steam for its on-screen keyboard when chosen with a
+pad on the desktop build (`platform.textInput`), and falls back to the field itself.
+
+### Seasons
+
+`SEASON_DAYS` (24) a season, spring first: three turns of the moon each, so every season has
+the same three full moons and the wolf's calendar is unchanged. A year is 96 days, and a run
+to the croft is about two and a half of them. **The season is derived from the day** —
+`seasonOf(day)` in `rules.ts` — so it is never stored, a save cannot disagree with it, and
+the forecast can ask about a day that has not come yet.
+
+| | regrowth | fleece | wool price | fox | flystrike | weather |
+| --- | --- | --- | --- | --- | --- | --- |
+| spring | ×1.3 | — | — | — | ×0.6 | the old bag, unchanged |
+| summer | — | ×1.1 | ×0.9 | ×0.9 | ×1.5 | mostly sun |
+| autumn | ×0.6 | ×0.9 | **×1.35** | ×1.1 | ×0.8 | overcast and haar |
+| winter | **none** | ×0.85 | ×1.05 | ×1.1 | none | **snow**, three in eight |
+
+**Spring is the game as it always was.** Same weather bag, same growth, price and fox, so
+the opening a new player learns on — and every test that pins it — is untouched.
+
+**Winter is survived on what was put by.** Nothing regrows. On a day of snow the grass is
+buried altogether. What the ground cannot give, the barn does: hay, fed out at night in
+winter only, a bale for every 10 grass the flock is short. Hay comes the two ways everything
+comes — **taps** (Cut hay: summer, a dry day, 12 bales) or **money** (the cart: 10 bales for
+£5, £9 once winter is on you). A hungry night out in the snow can cost a beast. **The byre
+finally has a job**: on a night of snow the flock is brought in, out of the snow and out of a
+fox's reach.
+
+The walkthrough teaches the year: a step after the tools names the four seasons and what each
+is for, and ends on tapping the sky, which is where the season and the days left in it always
+are. Settings has a section of its own, **The year**, with a card for each season — its
+numbers from the same constants the sim uses, and what the season is for — the current one
+marked, and hay and lambing beside them. The night's spending is named for the season:
+salt and dip in spring, fly oil in summer, feed in autumn, and winter feed only in winter.
+
+The game says all this out loud rather than in a manual: a line at dawn when each season
+comes in, a warning six days before winter with the barn's count, the season in the HUD and
+the sky sheet, and a haystack by the croft that grows with the barn. Muck cannot go on frozen
+ground. Settings → Buffs & status lists the four seasons from the same numbers.
+
+Measured with `tools/balance.ts` — see the note above `SEASON_DAYS` in `config.ts`. The
+winter costs time, not lives: median wins are 5–10% later on every scale, busts are no worse,
+and a beast is lost to the snow in about one run in five.
+
+### The dog grows old
+
+`state.dogDays` counts the nights the working dog has worked, reset when a new one is taken
+on. For a year of work (96 days) she is in her prime. Then she is **getting on**: she still
+gathers, but her worth against a fox — and the collie's over the grass — is half what it
+was. At 120 days she **retires to the house** rather than dying: she is removed from
+`owned`, added to `state.retiredDogs`, and the slot is free, so the cart sells another dog
+of either kind. One working dog on the hill at a time is still the rule; the retired ones
+do not count against it.
+
+The retired dogs lie along the hearthstone in their own coats — the visible record of the
+years the hill has been worked — and each still lifts her head at anything moving outside
+at night: fox risk ×0.95, for up to two of them. A retired collie at a built hearth counts
+for Tippy; the fire is where she went.
+
+Dawn says when she gets old, when she has about a week left, and the morning she does not go
+out. The house's shelf ("What you have") shows her days on the hill and what is left. A run
+to the croft is about two and a half years, so nearly every run retires a dog: measured,
+40/40 on Gentle and Hard, 37/40 on Steady, at a cost of five to seven days on the median win.
+
+### Lambing
+
+The flock no longer grows only by buying. **The tup** (£48, one of him, at the cart from the
+start) runs with the ewes through the autumn; at dawn on the first day of winter about 85% of
+the grown ewes are **in lamb**. This year's lambs are too young.
+
+A hungry winter night can make a ewe **slip her lamb** (15% each), so the barn is feeding
+next year's flock as well as this one's. **The lambing** is the first ten days of spring:
+every ewe in lamb lambs somewhere in it, the last night taking whoever is left, and about one
+in three has twins. A lamb takes its mother's breed.
+
+**The byre makes lambing safe.** Born under cover, every lamb lives. Born out on the hill on a
+night of rain or haar, 40% do not — half that if the flock is being tended, which is what the
+Tend button says during the lambing. On a fair night nothing is lost either way. The byre is
+the third croft milestone, finished around day 170–230, so most runs lamb out on the hill at
+least once and feel what the byre is for when it comes.
+
+**Lambs** eat half what a grown beast does (the grass, the barn and the feed bill all count
+them as half a mouth — they are mostly on their mothers), carry half a fleece, and are grown
+after 72 days: by the winter they are ewes. They sell for 40% of a grown ewe's price, and for
+nearly all of it (×2.4) at **the autumn sales** — so the choice each autumn is which to keep
+and which to sell. The fox and the gathering count every head.
+
+Everything turns over in TOD: a dog fox, cubs, in cub. The tup is drawn at the edge of the
+flock, lambs are small and leggy, and the flock's count, the sky sheet and the cart all say
+how many lambs there are and how many are in lamb.
+
+Measured: a lamb that ate a full ration cost more to keep to the autumn than it fetched, and
+lambing made every run slower. At half a ration, a better autumn price and one ewe in three
+twinning, it pays a little — median wins 203/226/266 against 206/227/269 without it, about ten
+lambs a run.
 
 ### Tools beyond the spec
 
@@ -508,9 +735,10 @@ current values, with notes. Change them there rather than hunting for numbers:
 2. crook vs dog overlap — no flag, needs playtest data
 3. survivors after a wolf mauling (`survivorsAfterWolf`, currently 1)
 4. the wolf punishing the two best early purchases — by design, watch it
-5. the pelt ending the fox game — fine as a victory lap, seasons are the answer
-6. seasons — not built. The day loop is structured so a season layer can sit on top
-7. dog ageing and retirement — not built; `Sheep.age` exists as the pattern to follow
+5. the pelt ending the fox game — seasons now carry some of the pressure the fox did: the
+   winter, the hay and the snow do not care about the pelt
+6. seasons — built; see **Seasons** above. Season length is still a question (24 days)
+7. dog ageing and retirement — built; see **The dog grows old** above
 
 ### Starting money
 

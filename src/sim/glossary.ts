@@ -5,7 +5,7 @@
  * hand, so a future tuning pass (see the market price and wolf-survivor
  * changes) can't silently leave this appendix describing the wrong game.
  */
-import { BALANCE } from "./config";
+import { BALANCE, SEASON_DAYS, SEASON_ORDER, SEASONS } from "./config";
 import { loadEarned } from "./achievements";
 
 export interface GlossaryEntry {
@@ -69,7 +69,54 @@ export function workGlossary(): GlossaryEntry[] {
       meta: `2 taps past ${BALANCE.bigFlock} beasts, on your own`,
       effect: "A dog does the running for you, and the crook takes a tap off either way.",
     },
+    {
+      id: "dogs",
+      name: "The dog's years",
+      meta: `In her prime for ${BALANCE.dogOldDays} days on the hill · retires after ${BALANCE.dogRetireDays}`,
+      effect: `Once she is getting on she still gathers, but is worth ${Math.round(BALANCE.oldDogStrength * 100)}% of what she was. Retired, she lies by the fire and the cart will sell you another; each retired dog still takes fox risk ×${BALANCE.retiredFoxBias}, up to ${BALANCE.retiredCounted} of them.`,
+    },
+    {
+      id: "lambing",
+      name: "Lambing",
+      meta: `The tup goes in over the autumn · lambs over the first ${BALANCE.lambingDays} days of spring`,
+      effect: `About ${Math.round(BALANCE.tupRate * 100)}% of the ewes are in lamb by winter; a hungry winter night can cost one her lamb. About one ewe in ${Math.round(1 / BALANCE.twinChance)} has twins. In the byre every lamb lives; out on a wet night ${Math.round(BALANCE.lambLossBadNight * 100)}% are lost, half that if the flock is tended. Lambs carry half a fleece, are grown after ${BALANCE.lambGrowDays} days, and sell for ${Math.round(BALANCE.lambPrice * 100)}% of a ewe's price — ${Math.round(BALANCE.lambPrice * BALANCE.lambPriceAutumn * 100)}% at the autumn sales.`,
+    },
+    {
+      id: "hay",
+      name: "Hay",
+      meta: `Cut hay (summer, a dry day): ${BALANCE.hayCutBales} bales · the cart, summer to winter: ${BALANCE.hayLot} for £${BALANCE.hayLotCost}, £${BALANCE.hayLotCostWinter} in winter`,
+      effect: `Fed out at night in winter only, when the ground falls short. A bale stands in for ${BALANCE.hayGrass} grass. On a day of snow the grass is buried and hay is all they have.`,
+    },
   ];
+}
+
+/** what each part of the year does, straight from the numbers */
+export function seasonGlossary(): GlossaryEntry[] {
+  const x = (m: number) => (m === 1 ? null : m === 0 ? "none" : pct(m));
+  return SEASON_ORDER.map((id, i) => {
+    const s = SEASONS[id];
+    const parts = [
+      x(s.regen) && `grass regrowth ${x(s.regen)}`,
+      x(s.growth) && `fleece growth ${x(s.growth)}`,
+      x(s.price) && `wool price ${x(s.price)}`,
+      x(s.foxBias) && `fox risk ${x(s.foxBias)}`,
+      x(s.strike) && `flystrike ${x(s.strike)}`,
+    ].filter(Boolean);
+    // what the season is for, not only what it does to the numbers
+    const extra = {
+      spring: ` The lambing: ewes carrying from the winter lamb in the first ${BALANCE.lambingDays} days. The grass is at its best for putting the flock back on it.`,
+      summer: " The only time hay can be cut, on a dry day. Fleece comes on fastest and the flies with it: shear often, and tend a heavy flock. The Highland show is mid-season.",
+      autumn: " The wool sales, and the lamb sales: the best price of the year for both. The tup goes in with the ewes. Lay in hay before it ends — the barn is what the winter runs on.",
+      winter:
+        " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. Hay is fed out at night. No mucking frozen ground.",
+    }[id];
+    return {
+      id,
+      name: s.name,
+      meta: `${SEASON_DAYS} days · days ${i * SEASON_DAYS + 1}–${(i + 1) * SEASON_DAYS} of each year`,
+      effect: `${parts.length ? parts.join(", ") : "The hill as it is"}.${extra}`,
+    };
+  });
 }
 
 export function statusGlossary(): GlossaryEntry[] {

@@ -3,6 +3,10 @@ import { ACTIONS, type Game } from "../sim/game";
 import { BALANCE, BREEDS, CROFT, TOOLS } from "../sim/config";
 import {
   canShear,
+  dogIsOld,
+  hayLotCost,
+  hayNights,
+  season,
   flockValue,
   grade,
   isFullMoon,
@@ -13,7 +17,7 @@ import {
   tapsPerDay,
 } from "../sim/rules";
 import { WEATHER } from "../sim/config";
-import { actionName, toolWhat, lexicon } from "../sim/lexicon";
+import { actionName, toolName, toolWhat, lexicon } from "../sim/lexicon";
 import type { Animator } from "../render/animator";
 import type { Settings } from "../sim/settings";
 import type { BreedId, CroftId, ToolId } from "../sim/types";
@@ -71,6 +75,7 @@ export class View {
       hud.appendChild(el("div", { class: "stat" }, `<div class="k">${k}</div><div class="v ${cls}">${v}</div>`));
     };
     stat("Day", String(g.day));
+    stat("Season", season(g).name);
     stat("Taps left", String(g.taps), g.taps === 0 ? "warn" : "good");
     stat(flockLabel, String(g.flock.length));
     stat("Purse", `£${g.money}`, g.money < 10 ? "warn" : "");
@@ -215,9 +220,9 @@ export class View {
           "div",
           {
             class: `tile ${gr.label}`,
-            title: `${lex.breeds[s.breed]} · ${lex.wool} ${s.fleece.toFixed(1)} (${gr.label}) · ${s.age} day${s.age === 1 ? "" : "s"} in the ${lex.flock}`,
+            title: `${lex.breeds[s.breed]}${s.lamb ? ` ${lex.lamb}` : ""}${s.inLamb ? ` · ${lex.inLamb}` : ""} · ${lex.wool} ${s.fleece.toFixed(1)} (${gr.label}) · ${s.age} day${s.age === 1 ? "" : "s"} in the ${lex.flock}`,
           },
-          `<b>${lex.breeds[s.breed].split(" ")[0]}</b>${gr.label}`,
+          `<b>${lex.breeds[s.breed].split(" ")[0]}</b>${s.lamb ? lex.lamb : s.inLamb ? lex.inLamb : gr.label}`,
         ),
       );
     }
@@ -254,15 +259,47 @@ export class View {
       );
     });
 
+    // not in spring: see the cart's note in world-ui.ts
+    const lot = hayLotCost(g);
+    if (season(g).id !== "spring") sh.appendChild(el("div", { class: "shead" }, "Hay — for the winter"));
+    if (season(g).id !== "spring") sh.appendChild(
+      button(
+        "act buy",
+        `<span class="n">${BALANCE.hayLot} bales of hay · £${lot}</span>` +
+          `<span class="d">${g.hay ? `${g.hay} in the barn, about ${hayNights(g)} nights for the ${lex.flock}.` : "The barn is empty."} Or cut your own on a dry summer day.</span>`,
+        () => this.game.buyHay(),
+        g.money < lot || this.busy,
+      ),
+    );
+
     sh.appendChild(el("div", { class: "shead" }, "Tools — one of each"));
     for (const t of TOOLS) {
       const has = owns(g, t.id);
       sh.appendChild(
         button(
           `act buy${has ? " owned" : ""}`,
-          `<span class="n">${t.name}${has ? "" : ` · £${t.cost}`}</span><span class="d">${has ? `In the steading. ${toolWhat(lex, t.id, t.what)}` : toolWhat(lex, t.id, t.what)}</span>`,
+          `<span class="n">${toolName(lex, t.id, t.name)}${has ? "" : ` · £${t.cost}`}</span><span class="d">${
+            has && (t.id === "dog" || t.id === "collie")
+              ? `On the hill ${g.dogDays} days${dogIsOld(g) ? ", and getting on" : ""}. ${toolWhat(lex, t.id, t.what)}`
+              : has
+                ? `In the steading. ${toolWhat(lex, t.id, t.what)}`
+                : toolWhat(lex, t.id, t.what)
+          }</span>`,
           () => this.game.buyTool(t.id as ToolId),
           has || g.money < t.cost || this.busy,
+        ),
+      );
+    }
+
+    if (g.retiredDogs.length) {
+      sh.appendChild(
+        button(
+          "act buy owned",
+          `<span class="n">By the fire, retired</span><span class="d">${g.retiredDogs
+            .map((k) => (k === "collie" ? "a collie" : "a sheltie"))
+            .join(", ")}. They still lift their heads at anything moving outside at night.</span>`,
+          () => {},
+          true,
         ),
       );
     }

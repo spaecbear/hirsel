@@ -1,0 +1,83 @@
+# Builds of the Steam version: tests first, then the desktop app for Windows
+# and Linux, the full game and the demo, as artifacts ready to upload to
+# Steam. The web game on `main` is not built here — Vercel does that.
+name: Builds
+
+on:
+  push:
+    branches: [steam]
+  pull_request:
+    branches: [steam]
+  workflow_dispatch:
+
+concurrency:
+  group: builds-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Desktop shell tests
+        working-directory: desktop
+        env:
+          # the tests only need the compiled shell, not an Electron binary
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        run: |
+          npm ci
+          npm test
+
+  desktop:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+          - os: ubuntu-latest
+            target: linux
+    runs-on: ${{ matrix.os }}
+    env:
+      # no signing certificate yet: build unsigned rather than fail looking for one
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - run: npm ci
+      - name: Install the desktop shell
+        working-directory: desktop
+        run: npm ci
+      - name: Package the game
+        working-directory: desktop
+        run: npm run package:${{ matrix.target }}
+      - name: Package the demo
+        working-directory: desktop
+        run: npm run package:demo:${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hirsel-${{ matrix.target }}
+          path: desktop/release/*-unpacked/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hirsel-demo-${{ matrix.target }}
+          path: desktop/release-demo/*-unpacked/
+          if-no-files-found: error

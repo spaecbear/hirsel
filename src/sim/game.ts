@@ -10,7 +10,6 @@ import {
   PASTURES,
   START_MONEY,
   TOOLS,
-  WEATHER_BAG,
 } from "./config";
 import { makeRng, pick, randInt, type Rng } from "./rng";
 import {
@@ -21,14 +20,24 @@ import {
   shearCost,
   dogFoxBias,
   hasDog,
+  dogIsOld,
+  workingDog,
   feedCost,
   flockValue,
   flystrikeExposed,
   foxRisk,
   grade,
   grazing,
+  hayLotCost,
+  hayNights,
+  lambPrice,
+  lambingOn,
   here,
+  housed,
   isFullMoon,
+  isWinter,
+  season,
+  seasonOf,
   owns,
   woolPrice,
   readyToShear,
@@ -38,6 +47,7 @@ import {
   wolfWarningDue,
 } from "./rules";
 import { checkAchievements, loadEarned, type Achievement } from "./achievements";
+import { EVENT_ORDER, EVENTS_BALANCE, eventDef, type EventChoice } from "./events";
 import { NORMAL, type Lexicon } from "./lexicon";
 import type {
   ActionId,
@@ -71,6 +81,10 @@ export interface ActionDef {
   run: (game: Game) => void;
 }
 
+/** a collie lying at a built hearth: the working one, or one retired to it */
+export const collieAtFire = (g: GameState) =>
+  owns(g, "hearth") && (owns(g, "collie") || g.retiredDogs.includes("collie"));
+
 export function newGame(opts: GameOptions = {}): GameState {
   const seed = opts.seed ?? (Math.random() * 2 ** 32) >>> 0;
   const rng = makeRng(seed);
@@ -84,7 +98,7 @@ export function newGame(opts: GameOptions = {}): GameState {
     });
   }
   const forecast: WeatherId[] = [];
-  for (let i = 0; i < 3; i++) forecast.push(pick(rng, WEATHER_BAG));
+  for (let i = 0; i < 3; i++) forecast.push(pick(rng, seasonOf(1 + i).weather));
 
   return {
     day: 1,
@@ -123,8 +137,24 @@ export function newGame(opts: GameOptions = {}): GameState {
       wolfMaulings: 0,
       spunTwice: false,
       sawTippy: false,
+      snowLosses: 0,
+      hayInSun: false,
+      lambsBorn: 0,
+      lambsLost: 0,
+      lambsSold: 0,
+      rosettes: 0,
+      neighbourGifts: 0,
     },
     achievements: [],
+    hay: 0,
+    dogDays: 0,
+    retiredDogs: [],
+    event: null,
+    eventDays: {},
+    goodwill: 0,
+    married: null,
+    garden: false,
+    cheated: false,
     seed,
   };
 }
@@ -174,7 +204,7 @@ export class Game {
     this.state.log.unshift({ t, cls, day: this.state.day });
     if (this.state.log.length > 120) this.state.log.pop();
   }
-  private award() {
+  award() {
     for (const a of checkAchievements(this.state)) this.onAchievement(a);
   }
 
@@ -192,6 +222,9 @@ export class Game {
   private spend(n: number) {
     const g = this.state;
     if (!this.zen && !this.freeTaps) g.taps -= n;
+    // zen is a setting, not a one-shot code: the run is marked the first time
+    // it actually saves a tap, not merely for having the toggle on somewhere
+    if (this.zen) g.cheated = true;
     g.actsToday++;
     if (wolfWarningDue(g)) {
       this.say(`The ${this.lex.flock} will not settle. Something is watching from above the corrie.`, "bad");
@@ -268,11 +301,100 @@ export class Game {
     // some things want somewhere to go before they can be bought at all
     if ("needs" in t && t.needs && !owns(g, t.needs)) return;
     g.money -= t.cost;
-    g.owned[id] = true;
     this.say(`Bought the ${t.name.toLowerCase()} for £${t.cost}.`, "gold");
-    if (id === "boots" || id === "lamp") g.taps = Math.min(BALANCE.maxTaps, g.taps + 1);
+    this.grantTool(id);
     this.award();
     this.changed();
+  }
+
+  /** a tool is yours, however it came — the cart or the dealer. The money is the caller's business */
+  grantTool(id: ToolId) {
+    const g = this.state;
+    g.owned[id] = true;
+    if (id === "boots" || id === "lamp") g.taps = Math.min(BALANCE.maxTaps, g.taps + 1);
+    // a new dog starts her working life today
+    if (id === "dog" || id === "collie") {
+      g.dogDays = 0;
+      if (g.retiredDogs.length) this.say("The old dog looks up from the fire at the new one, and puts her head back down.", "cozy");
+    }
+  }
+
+  /* ---------- after she says aye ---------- */
+
+  /**
+   * Stay on the hill. The run was won and is carried on rather than ended:
+   * the win stays won (its achievement is already earned and nothing takes
+   * it back), she comes to live at the croft, and the day goes on from here.
+   */
+  stayOn() {
+    const g = this.state;
+    if (g.over?.kind !== "win" || g.married !== null) return;
+    g.over = null;
+    g.married = g.day;
+    g.taps = Math.min(BALANCE.maxTaps, g.taps + BALANCE.marriedTaps);
+    this.say("She came up the glen with one bag and her mother's clock, and put the clock on the mantel.", "gold");
+    this.say(`Two pairs of hands on the hill now. The day goes further.`, "cozy");
+    this.award();
+    this.changed();
+  }
+
+  /* ---------- things that happen ---------- */
+
+  /** the choices on the event waiting, with whether each can be taken just now */
+  eventChoices(): { choice: EventChoice; ok: boolean }[] {
+    const g = this.state;
+    if (!g.event) return [];
+    const ev = eventDef(g.event.id);
+    return ev.choices(g, g.event.data, this.lex).map((c) => ({
+      choice: c,
+      ok:
+        (c.taps ?? 0) <= (this.zen || this.freeTaps ? Infinity : g.taps) &&
+        (c.money ?? 0) <= g.money &&
+        (c.can ? c.can(g) : true),
+    }));
+  }
+
+  /** answer the event waiting. Anything that cannot be afforded is refused, not half done */
+  answerEvent(choiceId: string) {
+    const g = this.state;
+    if (!g.event || g.over) return;
+    const pick = this.eventChoices().find((x) => x.choice.id === choiceId);
+    if (!pick || !pick.ok) return;
+    const data = g.event.data;
+    g.event = null;
+    const c = pick.choice;
+    if (c.money) g.money -= c.money;
+    c.run(this, data);
+    // a choice that takes a tap is the day's work like any other, and counts as one
+    if (c.taps) this.spend(c.taps);
+    this.award();
+    this.changed();
+  }
+
+  /**
+   * At dawn: an event left unanswered takes its free choice, and then at most
+   * one new one comes. The dated ones are asked first, so a letter is never
+   * pushed off its day by a dealer.
+   */
+  private dawnEvents() {
+    const g = this.state;
+    if (g.event) {
+      const fallback = this.eventChoices().find((x) => x.choice.fallback);
+      if (fallback) this.answerEvent(fallback.choice.id);
+      else g.event = null;
+    }
+    if (g.over) return;
+    // Callum comes first, on the third morning; nothing else comes until he has
+    const met = g.eventDays["callum-intro"] !== undefined;
+    for (const id of EVENT_ORDER) {
+      if (id !== "callum-intro" && (!met || g.day < EVENTS_BALANCE.firstDay)) continue;
+      const data = eventDef(id).due(g, this.rng);
+      if (data) {
+        g.event = { id, day: g.day, data };
+        g.eventDays[id] = g.day;
+        return;
+      }
+    }
   }
 
   /**
@@ -302,8 +424,9 @@ export class Game {
   markTippy() {
     const g = this.state;
     // she cannot have settled at a fire that is not built, or been a collie
-    // that was never bought — the UI gates this too, but the rule lives here
-    if (!owns(g, "collie") || !owns(g, "hearth")) return;
+    // that was never bought — the UI gates this too, but the rule lives here.
+    // A collie retired to the house counts: the fire is where she went.
+    if (!collieAtFire(g)) return;
     if (this.state.stats.sawTippy) return;
     this.state.stats.sawTippy = true;
     this.award();
@@ -371,13 +494,17 @@ export class Game {
     const i = g.flock.findIndex((s) => s.id === id);
     if (i < 0) return;
     const sheep = g.flock[i];
-    const b = BREEDS[sheep.breed];
-    const take = Math.max(1, Math.round(b.cost * BALANCE.sellbackRate));
+    const take = this.sellPrice(id);
     g.flock.splice(i, 1);
     g.money += take;
-    g.stats.sheepSold++;
     g.stats.earned += take;
-    this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.unit} at the cart. £${take}.`, "gold");
+    if (sheep.lamb) {
+      g.stats.lambsSold++;
+      this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.lamb} at the cart. £${take}.`, "gold");
+    } else {
+      g.stats.sheepSold++;
+      this.say(`Sold a ${this.lex.breeds[sheep.breed]} ${this.lex.unit} at the cart. £${take}.`, "gold");
+    }
     if (g.flock.length === 0) {
       this.lose(this.lex.soldLast.title, this.lex.soldLast.body);
     }
@@ -389,7 +516,26 @@ export class Game {
   sellPrice(id: number): number {
     const sheep = this.state.flock.find((s) => s.id === id);
     if (!sheep) return 0;
+    if (sheep.lamb) return lambPrice(this.state, sheep);
     return Math.max(1, Math.round(BREEDS[sheep.breed].cost * BALANCE.sellbackRate));
+  }
+
+  /**
+   * A lot of hay from the cart. Money, not a tap, like every other trade —
+   * the tap-costing way is cutting it yourself in summer. Dearer once the
+   * winter is on you and everyone else wants it too.
+   */
+  buyHay() {
+    const g = this.state;
+    if (g.over) return;
+    // the cart has none in spring, with the grass coming
+    if (season(g).id === "spring") return;
+    const cost = hayLotCost(g);
+    if (g.money < cost) return;
+    g.money -= cost;
+    g.hay += BALANCE.hayLot;
+    this.say(`${BALANCE.hayLot} bales off the cart for £${cost}. ${g.hay} in the barn.`, "gold");
+    this.changed();
   }
 
   /* ---------- the last wolf ---------- */
@@ -481,25 +627,52 @@ export class Game {
     const wolfCame = wolfSummoned(g);
     if (wolfCame) this.wolf();
 
-    // 1. grazing and fleece growth
-    const { eaten, fed, growth } = grazing(g);
+    // 1. grazing and fleece growth — and in winter, the barn
+    const { eaten, hayUsed, fed, growth } = grazing(g);
     p.grass -= eaten;
+    if (hayUsed) {
+      g.hay -= hayUsed;
+      if (g.hay === 0) this.say(`The last of the ${this.lex.hay} went out tonight. The barn is empty.`, "bad");
+    }
     for (const s of g.flock) {
-      s.fleece += growth * breedOf(s).growth;
+      s.fleece += growth * breedOf(s).growth * (s.lamb ? BALANCE.lambGrowth : 1);
       s.age++;
     }
+    if (hasDog(g)) g.dogDays++;
+    this.lambingNight(fed, w.id);
     if (g.flock.length && fed < BALANCE.hungryBelow) {
       g.stats.daysHungry++;
-      this.say(this.lex.hungry(p.name), "bad");
+      this.say(
+        w.id === "snow"
+          ? `Snow over the grass and nothing in the barn. The ${this.lex.flock} went hungry.`
+          : this.lex.hungry(p.name),
+        "bad",
+      );
+    }
+
+    /*
+     * 1b. snow. With the byre they are brought in out of it. Without, a hungry
+     * night out in the snow can cost a beast — which is what the hay is for,
+     * and what the byre was always for.
+     */
+    if (housed(g) && g.flock.length) {
+      this.say(`Snow coming on. You bring the ${this.lex.flock} into the byre for the night.`, "cozy");
+    } else if (w.id === "snow" && g.flock.length && fed < BALANCE.hungryBelow && this.rng() < BALANCE.snowLossChance) {
+      const lostIndex = Math.floor(this.rng() * g.flock.length);
+      g.flock.splice(lostIndex, 1);
+      g.stats.snowLosses++;
+      this.say(this.lex.snowLost, "bad");
     }
 
     // 2. the dog brings them in
     if (hasDog(g) && !g.gatheredToday) {
       g.gatheredToday = true;
       this.say(
-        owns(g, "collie")
-          ? "She had them in and settled before you thought to look for her."
-          : "She brought them in herself while you were seeing to other things.",
+        dogIsOld(g)
+          ? "She had them in, slower about it than she used to be."
+          : owns(g, "collie")
+            ? "She had them in and settled before you thought to look for her."
+            : "She brought them in herself while you were seeing to other things.",
         "cozy",
       );
     }
@@ -534,7 +707,7 @@ export class Game {
 
     // 4. flystrike
     const struck = flystrikeExposed(g);
-    if (struck && this.rng() < BALANCE.flystrikeChance) {
+    if (struck && this.rng() < BALANCE.flystrikeChance * season(g).strike) {
       g.flock.splice(g.flock.indexOf(struck), 1);
       g.stats.strikeLosses++;
       this.say(this.lex.strike, "bad");
@@ -543,11 +716,16 @@ export class Game {
     // 5. feed
     const feed = feedCost(g);
     g.money -= feed;
-    if (feed) this.say(`Winter feed and odds and ends: £${feed}.`);
+    // what the money went on changes with the year: it is only winter feed in winter
+    if (feed) {
+      const what = { spring: "Salt, dip and odds and ends", summer: "Fly oil, salt and odds and ends", autumn: "Feed and odds and ends", winter: "Winter feed and odds and ends" }[season(g).id];
+      this.say(`${what}: £${feed}.`);
+    }
 
-    // 6. regrowth
+    // 6. regrowth — nothing at all in winter
+    const seasonRegen = season(g).regen;
     for (const x of g.pastures) {
-      let r = x.regen;
+      let r = x.regen * seasonRegen;
       if (w.id === "rain") r *= BALANCE.regenRain;
       if (w.id === "sun") r *= BALANCE.regenSun;
       x.grass = Math.min(x.cap, x.grass + r);
@@ -568,7 +746,9 @@ export class Game {
      */
     this.onAnim("dawn", () => {
       g.forecast.shift();
-      g.forecast.push(pick(this.rng, WEATHER_BAG));
+      // the new day on the end of the forecast is three on from today, and
+      // takes its weather from whatever season that day falls in
+      g.forecast.push(pick(this.rng, seasonOf(g.day + 3).weather));
       for (const k of Object.keys(g.buffs) as BuffId[]) {
         const v = (g.buffs[k] ?? 0) - 1;
         if (v <= 0) delete g.buffs[k];
@@ -583,7 +763,21 @@ export class Game {
       g.muckedToday = [];
       g.actsToday = 0;
       g.taps = tapsPerDay(g);
+      const s = season(g);
+      if (s.day === 1) this.say(s.arrives, "gold");
+      if (g.married !== null && g.day === g.married + 1) this.say("The first morning with two in the house. The kettle was on before you were up.", "cozy");
+      if (s.id === "winter" && s.day === 1) this.tupping();
       this.say(`— Day ${g.day}. ${weatherOn(g).name} over the glen. —`, "gold");
+      if (s.id === "autumn" && s.left === BALANCE.winterWarnDays) {
+        const nights = hayNights(g);
+        this.say(
+          g.hay === 0
+            ? `The nights are drawing in. Winter in ${s.left + 1} days, and nothing in the barn.`
+            : `The nights are drawing in. Winter in ${s.left + 1} days; ${g.hay} bales in the barn, about ${nights} night${nights === 1 ? "" : "s"} for the ${this.lex.flock}.`,
+          "bad",
+        );
+      }
+      this.dogYears();
       if (isFullMoon(g.day) && !owns(g, "pelt")) {
         this.say("Full moon tonight. The high ground is no place to be caught out late.", "bad");
       }
@@ -595,12 +789,139 @@ export class Game {
         this.lose("The purse is empty", "You cannot feed them and you cannot feed yourself. You go back to the job you left.");
       }
 
+      // whatever comes to the door comes after the night is settled, and not to a run that has ended
+      this.dawnEvents();
+
       this.award();
       this.changed();
     });
 
     this.award();
     this.changed();
+  }
+
+  /**
+   * As winter comes in: whatever the tup has been in with all autumn is in
+   * lamb now. Grown ewes only; this spring's lambs are too young.
+   */
+  private tupping() {
+    const g = this.state;
+    if (!owns(g, "tup")) return;
+    let n = 0;
+    for (const s of g.flock) {
+      if (s.lamb || s.inLamb) continue;
+      if (this.rng() < BALANCE.tupRate) {
+        s.inLamb = true;
+        n++;
+      }
+    }
+    const lex = this.lex;
+    this.say(
+      n
+        ? `The ${lex.tup} has been in with them all autumn. ${n} ${lex.unit}${n === 1 ? "" : "s"} ${lex.inLamb}, due in the spring. Keep them fed.`
+        : `The ${lex.tup} has been in with them all autumn, and nothing to show for it.`,
+      "cozy",
+    );
+  }
+
+  /**
+   * The night's share of the lambing, and what the winter does to a ewe
+   * carrying one.
+   *
+   * Every ewe in lamb lambs somewhere in the first `lambingDays` of spring,
+   * spread over them so the last night takes whoever is left. Born in the
+   * byre, a lamb lives. Born out on a wet or snowy night it may not, and a
+   * flock being tended loses half as many. A hungry winter night can make a
+   * ewe slip her lamb — the barn is feeding next year's flock as well.
+   */
+  private lambingNight(fed: number, weather: WeatherId) {
+    const g = this.state;
+    const s = season(g);
+    const lex = this.lex;
+
+    if (s.id === "winter" && fed < BALANCE.hungryBelow) {
+      for (const e of g.flock) {
+        if (e.inLamb && this.rng() < BALANCE.slipChance) {
+          e.inLamb = false;
+          g.stats.lambsLost++;
+          this.say(`A ${lex.unit} slipped her ${lex.lamb} on a hungry night.`, "bad");
+        }
+      }
+    }
+
+    // this spring's lambs grow up and are counted with the rest
+    let grown = 0;
+    for (const e of g.flock) {
+      if (e.lamb && e.age >= BALANCE.lambGrowDays) {
+        e.lamb = false;
+        grown++;
+      }
+    }
+    if (grown) this.say(`${grown} of the spring's ${lex.lambs} are grown now, and counted with the ${lex.flock}.`, "hi");
+
+    if (s.id !== "spring" || s.day > BALANCE.lambingDays) return;
+    const due = g.flock.filter((e) => e.inLamb);
+    if (!due.length) return;
+    const nightsLeft = BALANCE.lambingDays - s.day + 1;
+    const underCover = owns(g, "byre");
+    const bad = weather === "rain" || weather === "snow" || weather === "mist";
+    const lossChance = underCover || !bad ? 0 : BALANCE.lambLossBadNight * (buffed(g, "tended") ? BALANCE.lambLossTended : 1);
+    let born = 0;
+    let lost = 0;
+    for (const e of due) {
+      if (this.rng() >= 1 / nightsLeft) continue;
+      e.inLamb = false;
+      const twins = this.rng() < BALANCE.twinChance ? 2 : 1;
+      for (let i = 0; i < twins; i++) {
+        if (this.rng() < lossChance) {
+          lost++;
+          continue;
+        }
+        g.flock.push({ id: g.nextSheepId++, fleece: 0, breed: e.breed, age: 0, lamb: true });
+        born++;
+      }
+    }
+    g.stats.lambsBorn += born;
+    g.stats.lambsLost += lost;
+    if (born) {
+      this.say(
+        underCover
+          ? `${born} ${born === 1 ? lex.lamb : lex.lambs} born in the byre in the night, on ${born === 1 ? "its" : "their"} feet by morning.`
+          : `${born} ${born === 1 ? lex.lamb : lex.lambs} born out on the hill in the night.`,
+        "gold",
+      );
+    }
+    if (lost) {
+      this.say(
+        `${lost} ${lost === 1 ? lex.lamb : lex.lambs} born into the ${weather === "mist" ? "haar" : weather} did not last till morning. The byre would have saved ${lost === 1 ? "it" : "them"}.`,
+        "bad",
+      );
+    }
+  }
+
+  /**
+   * The dog's working life, told at dawn: when she gets old, when she has
+   * little left in her, and the morning she does not go out.
+   */
+  private dogYears() {
+    const g = this.state;
+    const kind = workingDog(g);
+    if (!kind) return;
+    const who = kind === "collie" ? "The collie" : "The sheltie";
+    if (g.dogDays === BALANCE.dogOldDays) {
+      this.say(`${who} is getting on. Grey about the muzzle, and slower on the hill than she was.`, "hi");
+    } else if (g.dogDays === BALANCE.dogRetireDays - BALANCE.dogRetireWarnDays) {
+      this.say(`${who} has not much work left in her. A week or so, and she will have earned the fire.`, "hi");
+    } else if (g.dogDays >= BALANCE.dogRetireDays) {
+      delete g.owned[kind];
+      g.retiredDogs.push(kind);
+      g.dogDays = 0;
+      this.say(
+        `${who} did not go out this morning. She has earned her place by the fire, and she still lifts her head at anything moving outside at night.`,
+        "gold",
+      );
+      this.say("The cart can find you another dog for the hill.", "cozy");
+    }
   }
 
   private lose(title: string, body: string) {
@@ -789,6 +1110,10 @@ export const ACTIONS: ActionDef[] = [
     anim: "tend",
     cost: one,
     desc: (g, lex) => {
+      // in the lambing, out on the hill, tending is what keeps a lamb alive on a wet night
+      if (lambingOn(g) && g.flock.some((s) => s.inLamb) && !owns(g, "byre")) {
+        return `The lambing is on. Out with them, fewer ${lex.lambs} are lost on a wet night.`;
+      }
       const at = g.flock.filter((s) => s.fleece >= BALANCE.flystrikeFleece).length;
       return at
         ? `${at} carrying heavy ${lex.fleeceWord}. Strike will take one if you leave it.`
@@ -823,15 +1148,35 @@ export const ACTIONS: ActionDef[] = [
     cost: one,
     desc: (g) => {
       const p = here(g);
+      if (isWinter(g)) return "Nothing will take in frozen ground. Spread it come the spring.";
       return p.grass > BALANCE.muckMaxGrass
         ? `The ${p.name} is in good heart already.`
         : `Spread muck and lime on the ${p.name}. Brings the grass back fast.`;
     },
-    can: (g) => here(g).grass <= BALANCE.muckMaxGrass,
+    can: (g) => !isWinter(g) && here(g).grass <= BALANCE.muckMaxGrass,
     run: (game) => {
       const p = here(game.state);
       p.grass = Math.min(p.cap, p.grass + BALANCE.muckGain);
       game.say(`Muck and lime across the ${p.name}. It will come back green.`, "hi");
+    },
+  },
+  {
+    id: "hay",
+    name: "Cut hay",
+    anim: "hay",
+    cost: one,
+    desc: (g, lex) => {
+      const barn = g.hay ? `${g.hay} bales in the barn, about ${hayNights(g)} nights for the ${lex.flock}.` : "The barn is empty.";
+      if (season(g).id !== "summer") return `Hay is a summer job. ${barn}`;
+      if (!weatherOn(g).shear) return `Wet hay only rots in the stack. ${barn}`;
+      return `A day with the scythe on the in-bye: ${BALANCE.hayCutBales} bales for the winter. ${barn}`;
+    },
+    can: (g) => season(g).id === "summer" && weatherOn(g).shear,
+    run: (game) => {
+      const g = game.state;
+      g.hay += BALANCE.hayCutBales;
+      if (weatherOn(g).id === "sun") g.stats.hayInSun = true;
+      game.say(`Cut and stacked. ${BALANCE.hayCutBales} bales more, ${g.hay} in the barn.`, "hi");
     },
   },
   {
@@ -847,7 +1192,8 @@ export const ACTIONS: ActionDef[] = [
         return `You hardly know her. ${g.pubs} evening${g.pubs === 1 ? "" : "s"} at the inn so far.`;
       return "The croft is finished and the ring is in your pocket. Go on.";
     },
-    can: (g) => CROFT.every((m) => owns(g, m.id)) && g.pubs >= BALANCE.pubsToAsk,
+    // asked once, and answered: there is no asking again
+    can: (g) => g.married === null && CROFT.every((m) => owns(g, m.id)) && g.pubs >= BALANCE.pubsToAsk,
     run: () => {},
   },
   {
@@ -908,6 +1254,11 @@ export const ACTIONS: ActionDef[] = [
       game.say(`£${BALANCE.pintCost} gone on beer and talk. Worth it, probably.`, "cozy");
       if (g.pubs === 2) game.say("The lass behind the bar knows your order now.", "cozy");
       if (g.pubs === 4) game.say("She kept you talking well past when she should have been closing.", "cozy");
+      if (g.married !== null) {
+        game.say("She is covering behind the bar tonight. She pours yours, and will not take your money for it.", "cozy");
+        g.money += BALANCE.pintCost;
+        return;
+      }
       // she wants to know there is something to come home to
       if (g.pubs >= 2) {
         if (!owns(g, "roof")) game.say("She asked whether the roof still lets the rain in. You said it did.", "cozy");

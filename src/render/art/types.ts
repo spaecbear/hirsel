@@ -40,6 +40,10 @@ export interface Scene {
   spotlight?: HotspotId | null;
   /** the tutorial is pointing at the bed, which is only inside */
   spotlightBed?: boolean;
+  /** sitting on at the inn after the pint, until the player heads back up the hill */
+  atInn?: boolean;
+  /** where the controller's cursor rests, outside or in; drawn only when keys or a pad are in use */
+  focus?: HotspotId | null;
 }
 
 export interface ArtPack {

@@ -29,6 +29,12 @@ export interface Cheat {
    * menu in any later run without being typed again.
    */
   kind: "toggle" | "action";
+  /**
+   * Using this changes the run enough that it should not earn achievements.
+   * Cosmetic and pace codes leave it off. ZEN is marked by the sim instead,
+   * when it actually saves a tap.
+   */
+  changesRun?: boolean;
   /** toggles only: is it currently on? */
   isOn?: (c: CheatContext) => boolean;
   apply: (c: CheatContext) => string;
@@ -48,6 +54,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "SILLER",
+    changesRun: true,
     kind: "action",
     name: "Siller",
     blurb: "£500 in the purse. For testing, and for the shameless.",
@@ -71,6 +78,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "HIRSEL",
+    changesRun: true,
     kind: "action",
     name: "Hirsel",
     blurb: "Twelve more beasts on the ground.",
@@ -84,6 +92,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "LANGDAY",
+    changesRun: true,
     kind: "action",
     name: "Lang day",
     blurb: "Fill the taps back up. Once per use, not permanent.",
@@ -97,6 +106,7 @@ export const CHEATS: Cheat[] = [
   {
     // the last wolf in Scotland was killed some time in the 1680s
     code: "1680",
+    changesRun: true,
     name: "1680",
     kind: "action",
     blurb: "He comes down off the skyline whether the night agrees or not. What happens after that is between him and whatever is hanging above your fire.",
@@ -136,6 +146,7 @@ export const CHEATS: Cheat[] = [
   },
   {
     code: "HAAR",
+    changesRun: true,
     kind: "action",
     name: "Haar",
     blurb: "Roll the forecast over. Sometimes that is all you need.",
@@ -179,6 +190,12 @@ export function revealNextCheat(found: string[]): Cheat | null {
   }
   // anything not listed above, so a new code can never be unreachable
   return CHEATS.find((c) => !have.has(c.code)) ?? null;
+}
+
+/** fire a code, marking the run first if the code changes it */
+export function runCheat(cheat: Cheat, c: CheatContext): string {
+  if (cheat.changesRun && !c.game.state.over) c.game.state.cheated = true;
+  return cheat.apply(c);
 }
 
 export function findCheat(input: string): Cheat | null {
