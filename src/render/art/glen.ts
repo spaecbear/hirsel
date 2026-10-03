@@ -18,6 +18,7 @@ import { spinNow } from "../dog-spin";
 import { tippyFrame } from "../tippy";
 import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
 import { drawLampLight, drawLampPost } from "../lamppost";
+import { drawOpening } from "../opening";
 import {
   TERRAIN,
   mix,
@@ -1580,67 +1581,9 @@ function pubScene(g: Painter, L: WorldLayout, p: number, time: number, holding =
   }
 }
 
-/**
- * The day you walked out. Runs once, at the start of a run.
- *
- * Three beats: the desk you are leaving, the door, and the hill you are
- * walking up. It is the only time the game shows you anywhere but the glen,
- * which is the point; everything after this is the hill.
- */
+/** The day you walked out: see render/opening.ts */
 function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
-  const beat = p < 0.42 ? 0 : p < 0.62 ? 1 : 2;
-
-  if (beat === 0) {
-    // a room with no daylight in it
-    g.px(0, 0, L.W, L.H, "#2b2c28");
-    for (let x = 0; x < L.W; x += 34) g.a(x, 0, 1, L.H, 0, 0, 0, 0.18);
-    const deskY = Math.round(L.H * 0.58);
-    g.px(0, deskY, L.W, 4, "#4a4034");
-    g.px(Math.round(L.W * 0.1), deskY + 4, Math.round(L.W * 0.8), Math.max(6, L.H - deskY - 4), "#3a332a");
-    // ledgers stacked, and the notice laid on top of them
-    g.px(Math.round(L.W * 0.2), deskY - 8, 22, 8, "#6b5433");
-    g.px(Math.round(L.W * 0.2), deskY - 12, 22, 5, "#7a6242");
-    const slide = ease(clamp01((p - 0.16) / 0.2));
-    g.px(Math.round(L.W * 0.52 + slide * 12), deskY - 6, 16, 6, "#e8e4d4");
-    g.px(Math.round(L.W * 0.54 + slide * 12), deskY - 4, 10, 1, "#8a8578");
-    // him, standing up from it
-    const rise = ease(clamp01((p - 0.24) / 0.16));
-    drawShepherd(g, Math.round(L.W * 0.34), deskY - 26 - rise * 4, {});
-    // the lamp overhead, and the window that is not his yet
-    g.a(Math.round(L.W * 0.34) - 10, deskY - 46, 32, 26, 240, 214, 150, 0.08);
-    return; // the line itself is DOM text: see updateCaption in main.ts
-  }
-
-  if (beat === 1) {
-    // the door: a rectangle of daylight getting bigger
-    const t = ease(clamp01((p - 0.42) / 0.2));
-    g.px(0, 0, L.W, L.H, "#2b2c28");
-    const dw = Math.round(10 + t * L.W);
-    const dh = Math.round(16 + t * L.H);
-    const dx = Math.round(L.W / 2 - dw / 2);
-    const dy = Math.round(L.H / 2 - dh / 2);
-    g.px(dx, dy, dw, dh, "#87b0b4");
-    g.a(dx, dy, dw, dh, 240, 230, 190, 0.3 * t);
-    if (t < 0.85) drawShepherd(g, Math.round(L.W / 2 - 6), Math.round(L.H * 0.52), { walk: p * 3 });
-    return;
-  }
-
-  // the hill, from below, walking up
-  const t = ease(clamp01((p - 0.62) / 0.38));
-  const [top, low] = SKY.sun;
-  paintSkyBands(g, L.W, L.H, top, low, 7);
-  // the hill rising to the right, him climbing it
-  const baseY = Math.round(L.H * 0.94);
-  for (let x = 0; x < L.W; x += 2) {
-    const y = baseY - Math.round((x / L.W) * L.H * 0.55) - Math.round(Math.sin(x / 23) * 3);
-    g.px(x, y, 2, L.H - y, "#3a4a30");
-    g.px(x, y, 2, 1, "#4a5a3c");
-  }
-  const wx = L.W * 0.1 + t * L.W * 0.6;
-  const wy = baseY - (wx / L.W) * L.H * 0.55 - 26;
-  // seen from behind: he is walking away up it. Front-facing, he looked like
-  // he was shuffling sideways up the slope with his face to the camera.
-  drawShepherd(g, Math.round(wx), Math.round(wy), { crook: true, walk: time / 90, back: true });
+  drawOpening(g, L.W, L.H, p, time);
 }
 
 

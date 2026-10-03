@@ -509,7 +509,9 @@ export const ANIM_MS: Record<string, number> = {
   fox: 2800,
   wolf: 6000,
   wolflost: 5000,
-  quit: 7000,
+  // the opening: the office, the sleeper north, the climb, and the glen. It
+  // takes its time on purpose, and a tap or a key skips it
+  quit: 26000,
   // the one moment the whole run has been for: let it breathe
   propose: 7600,
   bark: 900,

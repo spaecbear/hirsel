@@ -413,6 +413,70 @@ body.mode-retro .glen-chrome {
   pointer-events: none;
 }
 .caption.on { opacity: 1; }
+/* the opening: the quote over the climb runs longer, with its poet under it */
+.caption.quote {
+  white-space: pre-line;
+  max-width: min(520px, calc(100vw - 32px));
+  width: auto;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  transition: opacity 1.2s ease-out;
+}
+/* the name of the game, coming up over the glen; no box, just the words on the sky */
+.opening-title {
+  position: absolute;
+  top: 9%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  text-align: center;
+  z-index: 10;
+  opacity: 0;
+  /* in slowly over the glen; out quickly, before the hill starts talking */
+  transition: opacity 0.3s ease-in;
+  pointer-events: none;
+}
+.opening-title.on { opacity: 1; transition: opacity 1.6s ease-out; }
+.opening-title h1 {
+  margin: 0;
+  color: var(--gorse);
+  font-size: clamp(30px, 9vw, 64px);
+  font-weight: bold;
+  letter-spacing: 0.45em;
+  text-indent: 0.45em; /* letter-spacing pads the right; this balances it */
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 #1e2317, 0 0 18px rgba(20, 23, 15, 0.55);
+}
+.opening-title p {
+  margin: 8px 0 0;
+  color: #f4f0e2;
+  font-size: clamp(11px, 2.6vw, 15px);
+  letter-spacing: 0.18em;
+  text-wrap: balance;
+  max-width: min(560px, calc(100vw - 32px));
+  margin-inline: auto;
+  text-shadow: 0 1px 0 #1e2317, 0 0 10px rgba(20, 23, 15, 0.6);
+}
+/* how to get past the opening, small, out of the way */
+.skip-hint {
+  position: absolute;
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  color: var(--wool);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  transition: opacity 0.6s;
+  pointer-events: none;
+  z-index: 10;
+}
+.skip-hint.on { opacity: 0.45; }
+/* while the opening plays it has the screen: no day, no purse, no buttons */
+body.opening .hud-bar,
+body.opening .glen-chrome,
+body.opening .hint,
+body.opening .sky-log { visibility: hidden; }
 
 /* the first day's walkthrough. Sits at the top, clear of the sheet at the
    bottom, so a prompt and the thing it is telling you to tap are never

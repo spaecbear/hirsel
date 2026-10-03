@@ -36,6 +36,7 @@ import { eventDef } from "./sim/events";
 import { Painter } from "./render/painter";
 import { drawCallum, PORTRAIT_H, PORTRAIT_W } from "./render/portrait";
 import { DEMO_DAYS, IS_DEMO, STORE_URL, demoOver } from "./demo";
+import { OPENING, OPENING_QUOTE } from "./render/opening";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
@@ -785,18 +786,48 @@ function updateHint() {
 }
 
 const captionEl = $("caption");
+const openingTitle = $("opening-title");
+const skipHint = $("skip-hint");
 let captionText = "";
+/** how far through one of the opening's beats the scene is */
+const beatAt = (p: number, b: keyof typeof OPENING) => (p - OPENING[b][0]) / (OPENING[b][1] - OPENING[b][0]);
 function updateCaption(anim: string | null, p: number) {
   let want = "";
-  if (anim === "quit") {
-    if (p < 0.4) want = "You handed in your notice.";
-    else if (p >= 0.66) want = "A hill, and whatever you can make of it.";
+  const opening = anim === "quit";
+  if (opening) {
+    const office = beatAt(p, "office");
+    const train = beatAt(p, "train");
+    const climb = beatAt(p, "climb");
+    if (office > 0.06 && office < 0.6) want = "You handed in your notice.";
+    else if (train > 0.15 && train < 0.85) want = "You took the sleeper north.";
+    else if (climb > 0.1 && climb < 0.92) want = OPENING_QUOTE;
   }
+  document.body.classList.toggle("opening", opening);
+  openingTitle.classList.toggle("on", opening && beatAt(p, "crest") > 0.3);
+  skipHint.classList.toggle("on", opening && p > 0.02 && p < OPENING.crest[0]);
   if (want === captionText) return;
   captionText = want;
   captionEl.textContent = want;
+  captionEl.classList.toggle("quote", want === OPENING_QUOTE);
   captionEl.classList.toggle("on", want !== "");
 }
+
+/*
+ * The opening takes its time, so it can be skipped: a tap anywhere, any key,
+ * or a button on the pad. Taken here, ahead of everything else, so the press
+ * that skips it does nothing else as well.
+ */
+const skipOpening = (e: Event) => {
+  if (animator.current !== "quit") return false;
+  animator.finishNow();
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  return true;
+};
+addEventListener("pointerdown", skipOpening, { capture: true });
+addEventListener("keydown", (e) => {
+  if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) skipOpening(e);
+}, { capture: true });
 
 /* ---------- keys and a controller ---------- */
 const nav = new Nav({
@@ -834,6 +865,10 @@ const nav = new Nav({
 });
 nav.controls.onIntent = ((inner) => (i, native) => {
   firstGesture(); // a pad press is a gesture too, as far as the sound is concerned
+  if (animator.current === "quit") {
+    if (i === "confirm" || i === "back" || i === "menu") animator.finishNow();
+    return;
+  }
   inner(i, native);
 })(nav.controls.onIntent);
 

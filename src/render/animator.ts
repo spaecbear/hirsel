@@ -73,6 +73,11 @@ export class Animator {
     else this.onIdle();
   }
 
+  /** jump the one playing to its end: its `after` still runs, on the next tick */
+  finishNow() {
+    if (this.current) this.start = performance.now() - this.dur;
+  }
+
   /** cut everything short: used when starting a new game mid-animation */
   clear() {
     this.queue.length = 0;

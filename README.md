@@ -82,10 +82,25 @@ test/         Vitest over sim/
 
 ## Starting a run
 
-A title screen, and then the day you walked out: three beats: the desk you are leaving, the
-door, and the hill you are climbing. It is the only time the game shows you anywhere but the
-glen, which is the point. It plays on a new run only, is skipped under reduced motion, and
-never plays when continuing a save.
+A title screen, and then the day you walked out (`render/opening.ts`), about 26 seconds in
+four beats:
+
+1. **The office at dusk.** Rain on the glass and the city lit behind it. He is in a suit, the
+   only time he ever is, at a desk with a spreadsheet glowing on it. He puts the envelope in
+   the tray, stands, and goes out of the door. *You handed in your notice.*
+2. **The sleeper north.** The carriage window: the city's lights running out, the dark, and
+   the dawn coming up over moor and loch. *You took the sleeper north.*
+3. **The climb.** A long, slow walk up the hill in his coat and bunnet, past a dyke, a burn and
+   a few ewes, with one stop halfway to look back down. Over it, Burns: *My heart's in the
+   Highlands, my heart is not here.*
+4. **Over the crest.** From behind him at the top, the glen opens out below: the burn, the old
+   croft under its thatch, a few sheep. The name of the game comes up over the sky, and the
+   scene goes up into the light and becomes the hill.
+
+The game's own chrome (the strip at the top, the buttons) stays off it while it plays. A tap,
+any key, or A, B or Start on a pad skips it, and that press does nothing else. It is the only
+time the game shows you anywhere but the glen, which is the point. It plays on a new run only,
+in the glen interface, is skipped under reduced motion, and never plays when continuing a save.
 
 ## The first day
 
