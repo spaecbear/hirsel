@@ -1384,6 +1384,24 @@ body.modal {
   outline: none;
   border-color: var(--gorse);
 }
+/* the Enter beside it: the game's own button, not the browser's grey one */
+.cheat-row button {
+  background: var(--peat);
+  border: 1px solid var(--gorse);
+  color: var(--gorse);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 9px 14px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.cheat-row button:hover,
+.cheat-row button:focus-visible {
+  background: var(--moss);
+  outline: none;
+}
 .ach {
   display: flex;
   flex-wrap: wrap;
