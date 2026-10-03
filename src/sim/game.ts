@@ -145,6 +145,7 @@ export function newGame(opts: GameOptions = {}): GameState {
       lambsSold: 0,
       rosettes: 0,
       neighbourGifts: 0,
+      dances: 0,
     },
     achievements: [],
     hay: 0,
@@ -426,6 +427,28 @@ export class Game {
 
   /** one day's work on whatever is being built */
   /** she has crossed the room and settled at the fire, and you watched her */
+  /**
+   * A turn round the floor with her, at home, once you are wed. It costs
+   * nothing and does nothing for the flock: it is there because the croft was
+   * built for this, and a player who stayed on the hill should be able to.
+   */
+  dance() {
+    const g = this.state;
+    if (g.over || g.married === null) return;
+    g.stats.dances++;
+    this.say(
+      g.stats.dances === 1
+        ? "She was hoping you would ask. Round the kitchen floor, with the fire going."
+        : "Another turn round the floor. The dog has given up getting out of the way.",
+      "cozy",
+    );
+    this.onAnim("dance", () => {
+      this.award();
+      this.changed();
+    });
+    this.changed();
+  }
+
   markTippy() {
     const g = this.state;
     // she cannot have settled at a fire that is not built, or been a collie

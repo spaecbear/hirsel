@@ -81,10 +81,12 @@ world.onBark = () => sfx.play("bark");
  */
 function openingLines(g: Game, opts: { toldAlready?: boolean; teaching?: boolean } = {}) {
   const lex = lexicon(settings.inverse);
+  // counted, not written in: the walkthrough starts a beast short, and said "six" over five
+  const n = g.state.flock.length;
+  const count = ["None", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"][n] ?? String(n);
+  const purse = `${count} ${n === 1 ? lex.unit : lex.beasts}, ${g.state.money === 40 ? "forty pounds" : `£${g.state.money}`}, and a hill.`;
   g.say(
-    opts.toldAlready
-      ? `Six ${lex.beasts}, forty pounds, and a hill.`
-      : `You handed in your notice. Six ${lex.beasts}, forty pounds, and a hill.`,
+    opts.toldAlready ? purse : `You handed in your notice. ${purse}`,
     "gold",
   );
   if (!opts.teaching) {

@@ -496,6 +496,11 @@ body.opening .sky-log { visibility: hidden; }
 .tutorial.on {
   display: block;
 }
+/* on the step that points at the sky, the card gets out of the sky's way */
+.tutorial.low {
+  top: auto;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+}
 /* a refused tap: pull the eye back to the prompt rather than saying nothing */
 .tutorial.nudge {
   animation: tut-nudge 0.42s ease-out;

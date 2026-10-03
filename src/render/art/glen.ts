@@ -595,32 +595,40 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
    * The set pieces keep their own order: there the choreography decides who
    * passes in front of whom, and it is deliberate.
    */
+  /*
+   * She lives here now: out by the croft door, wandering a little way from it
+   * and back the way the flock does round their marks. Built before the quiet
+   * hill and the set pieces part ways, because she belongs in both: she used
+   * to be drawn only on a quiet hill, so every piece of work he did made her
+   * vanish until it was over.
+   */
+  let her: Actor | null = null;
+  if (st.married !== null) {
+    const hx = L.croft.x + Math.round(L.croft.w * 0.5) + 14;
+    const hy = L.croft.y + L.croft.h + 8;
+    const d = driftFor(77711, s.time, { dx: L.shepherd.x - hx, dy: L.shepherd.y - hy });
+    const x = Math.round(hx + d.dx * 0.6);
+    const feet = Math.round(hy + d.dy * 0.4);
+    her = { feet, paint: () => drawHerAtHome(g, x, feet, s.time) };
+  }
+
   if (k === null) {
     const cast: Actor[] = [...sheep];
     if (stack) cast.push(stack);
     if (post) cast.push(post);
     if (hasDog(st)) cast.push({ feet: L.dogAt.y + DOG_FEET, paint: paintDog });
-    /*
-     * She lives here now: out by the croft door, wandering a little way
-     * from it and back the way the flock does round their marks.
-     */
-    if (st.married !== null) {
-      const hx = L.croft.x + Math.round(L.croft.w * 0.5) + 14;
-      const hy = L.croft.y + L.croft.h + 8;
-      const d = driftFor(77711, s.time, { dx: L.shepherd.x - hx, dy: L.shepherd.y - hy });
-      const x = Math.round(hx + d.dx * 0.6);
-      const feet = Math.round(hy + d.dy * 0.4);
-      cast.push({ feet, paint: () => drawHerAtHome(g, x, feet, s.time) });
-    }
+    if (her) cast.push(her);
     cast.push({ feet: sy + SHEPHERD_H, paint: () => paintShepherdIdle(g, L, s) });
     cast.sort((a, b) => a.feet - b.feet);
     for (const a of cast) a.paint();
     return;
   }
 
-  // in a set piece the choreography decides the order: the stack is scenery at the back
+  // in a set piece the choreography decides the order: the stack is scenery at the back,
+  // and she is by the croft door, behind whatever the work is
   stack?.paint();
   post?.paint();
+  her?.paint();
   for (const a of sheep) a.paint();
   let dogAfter = false;
 
@@ -1596,7 +1604,16 @@ function quitScene(g: Painter, L: WorldLayout, p: number, time: number) {
  * the croft you are paying for is somewhere you actually stand rather than a
  * row of ticks in a shop. The bed is how the day ends.
  */
-function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number, isNight: boolean, spotlightBed: boolean) {
+function drawInterior(
+  g: Painter,
+  I: InteriorLayout,
+  st: GameState,
+  time: number,
+  isNight: boolean,
+  spotlightBed: boolean,
+  /** how far through a dance with her, 0 to 1, if one is playing */
+  dance?: number,
+) {
   const hearthBuilt = owns(st, "hearth");
 
   // walls: rough stone, and floorboards below
@@ -1870,14 +1887,16 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
    * comes after everything at the wall and before the table, which is nearer
    * the camera than he is.
    */
-  // her, between him and the fire, on the same boards he stands on
-  if (st.married !== null) {
-    drawHerAtHome(g, Math.round((I.hearth.x + I.hearth.w + I.man.x) / 2) + 8, I.man.y, time);
+  if (dance !== undefined && I.her) {
+    drawDance(g, I, dance, time);
+  } else {
+    // her, between him and the fire, on the same boards he stands on
+    if (I.her) drawHerAtHome(g, I.her.x, I.her.y, time);
+    drawShepherd(g, I.man.x, I.man.y - SHEPHERD_H, {
+      facing: -1, // looking across at the hearth
+      tick: idleTick(time) ?? undefined,
+    });
   }
-  drawShepherd(g, I.man.x, I.man.y - SHEPHERD_H, {
-    facing: -1, // looking across at the hearth
-    tick: idleTick(time) ?? undefined,
-  });
   /*
    * The table last of all: it stands nearest the camera, so it has to be able
    * to paint over the dog and over him. Drawn with the wall furniture it cut
@@ -1915,7 +1934,93 @@ function drawInterior(g: Painter, I: InteriorLayout, st: GameState, time: number
   g.px(sx + 5, sy + 5, 2, 7, "#3d3020");
   g.px(sx + 1, sy + 9, 10, 1, "#3d3020"); // the stretcher between them
 
+  // and once you are wed, a second one at the other end of the table: hers
+  if (st.married !== null) {
+    const s2 = tx + 45;
+    g.a(s2 - 2, sy + 13, 16, 3, 0, 0, 0, 0.2);
+    g.px(s2, sy, 12, 4, "#5b4a30");
+    g.px(s2 + 1, sy, 10, 1, "#7c6242");
+    g.px(s2, sy + 4, 12, 1, "#43351f");
+    g.px(s2, sy + 5, 3, 9, "#4a3a26");
+    g.px(s2 + 9, sy + 5, 3, 9, "#4a3a26");
+    g.px(s2 + 5, sy + 5, 2, 7, "#3d3020");
+    g.px(s2 + 1, sy + 9, 10, 1, "#3d3020");
+  }
 
+
+}
+
+/**
+ * A turn round the kitchen floor with her.
+ *
+ * They step in from where they stand, take hands, and go round each other
+ * three times in the middle of the boards, with a bounce in it on the beat,
+ * then step back to their places. Each faces the other the whole way round,
+ * and whoever is nearer the camera is drawn in front. A few notes and the
+ * odd heart go up off them while the tune plays.
+ */
+function drawDance(g: Painter, I: InteriorLayout, p: number, time: number) {
+  const her = I.her!;
+  const manFoot = { x: I.man.x + 6, y: I.man.y };
+  const cx = Math.round((manFoot.x + her.x) / 2);
+  const cy = Math.round((manFoot.y + her.y) / 2) + 2;
+  // in for the first tenth, out for the last: from their places to the middle and back
+  const into = ease(clamp01(p / 0.1)) * (1 - ease(clamp01((p - 0.9) / 0.1)));
+  const turn = ease(clamp01((p - 0.06) / 0.88)) * Math.PI * 2 * 3;
+  const r = 12;
+  const hop = Math.floor(time / 210) % 2; // on the beat
+  const his = {
+    x: manFoot.x + (cx + Math.cos(turn) * r - manFoot.x) * into,
+    y: manFoot.y + (cy + Math.sin(turn) * 3 - manFoot.y) * into - (into > 0.5 ? hop : 0),
+  };
+  const hers = {
+    x: her.x + (cx - Math.cos(turn) * r - her.x) * into,
+    y: her.y + (cy - Math.sin(turn) * 3 - her.y) * into - (into > 0.5 ? 1 - hop : 0),
+  };
+  const paintHim = () =>
+    drawShepherd(g, Math.round(his.x) - 6, Math.round(his.y) - SHEPHERD_H, {
+      facing: his.x < hers.x ? 1 : -1,
+      walk: into > 0.05 ? time / 170 : 0,
+    });
+  const paintHer = () => drawHerAtHome(g, Math.round(hers.x), Math.round(hers.y), time * 2.5);
+  // the nearer of them goes in front
+  if (his.y >= hers.y) {
+    paintHer();
+    paintHim();
+  } else {
+    paintHim();
+    paintHer();
+  }
+  // their hands, joined between them while they are close enough to hold
+  const gap = Math.abs(his.x - hers.x);
+  if (into > 0.6 && gap > 3 && gap < 24) {
+    const hx = Math.round(Math.min(his.x, hers.x)) + 2;
+    const hy = Math.round((his.y + hers.y) / 2) - 13;
+    g.px(hx, hy, Math.round(gap) - 3, 1, "#c9a583");
+  }
+  // notes, and now and then a heart, going up off them
+  if (into > 0.3) {
+    for (let i = 0; i < 4; i++) {
+      const t = ((time / 1700 + i / 4) % 1);
+      const nx = cx - 14 + i * 9 + Math.sin(t * 6 + i) * 2;
+      const ny = cy - 34 - t * 26;
+      const a = Math.sin(t * Math.PI) * into;
+      if (i === 2) {
+        // a heart
+        g.a(nx, ny, 2, 1, 214, 92, 112, a);
+        g.a(nx + 3, ny, 2, 1, 214, 92, 112, a);
+        g.a(nx - 1, ny + 1, 7, 1, 214, 92, 112, a);
+        g.a(nx, ny + 2, 5, 1, 214, 92, 112, a);
+        g.a(nx + 1, ny + 3, 3, 1, 214, 92, 112, a);
+        g.a(nx + 2, ny + 4, 1, 1, 214, 92, 112, a);
+      } else {
+        // a note: a head and a stem
+        g.a(nx, ny + 3, 2, 2, 224, 196, 120, a);
+        g.a(nx + 2, ny, 1, 4, 224, 196, 120, a);
+        g.a(nx + 2, ny, 2, 1, 224, 196, 120, a);
+      }
+    }
+  }
 }
 
 /* ================================================================== *
@@ -1963,7 +2068,7 @@ export const GLEN_ART: ArtPack = {
     // inside the house: a different room, not a different hill
     if (s.interior) {
       const I = layoutInterior(g.W, g.H, st);
-      drawInterior(g, I, st, s.time, k === "sleep", !!s.spotlightBed);
+      drawInterior(g, I, st, s.time, k === "sleep", !!s.spotlightBed, k === "dance" ? p : undefined);
       if (s.focus && !k) drawHighlight(g, I, s.focus, s.time);
         return;
     }

@@ -36,7 +36,9 @@ export type HotspotId =
   | "hearth"
   | "door"
   | "kit"
-  | "dog";
+  | "dog"
+  /** her, at home, once you are wed */
+  | "lass";
 
 export interface Hotspot {
   id: HotspotId;
@@ -323,6 +325,8 @@ export interface InteriorLayout {
   retiredSpots: { x: number; y: number; kind: DogKind }[];
   /** where the man stands, top-left of his sprite */
   man: { x: number; y: number };
+  /** where she stands once you are wed: the middle of her, at her feet. Null before */
+  her: { x: number; y: number } | null;
   hearth: Rect;
   bed: Rect;
   door: Rect;
@@ -398,11 +402,14 @@ export function layoutInterior(W: number, H: number, st?: GameState): InteriorLa
     return { x: fireX + slot * 25, y: floorY + 3 + (slot % 2) * 6, kind };
   });
 
+  const her = st && st.married !== null ? { x: Math.round((hearth.x + hearth.w + man.x) / 2) + 8, y: man.y } : null;
+
   return {
     W,
     H,
     floorY,
     midY,
+    her,
     dogSpot,
     retiredSpots,
     frontY,
@@ -422,6 +429,8 @@ export function layoutInterior(W: number, H: number, st?: GameState): InteriorLa
       ...(st && (st.owned.dog || st.owned.collie)
         ? [{ id: "dog" as const, rects: [{ x: dogSpot.x - 8, y: dogSpot.y - 12, w: 36, h: 30 }], label: "The dog" }]
         : []),
+      // her, between him and the fire: ahead of the hearth so a tap on her is a tap on her
+      ...(her ? [{ id: "lass" as const, rects: [{ x: her.x - 9, y: her.y - 30, w: 20, h: 32 }], label: "Her" }] : []),
       { id: "bed", rects: [pad(bed, 6)], label: "The bed" },
       { id: "hearth", rects: [pad(hearth, 4)], label: "The hearth" },
       { id: "door", rects: [pad(door, 4)], label: "Out to the hill" },

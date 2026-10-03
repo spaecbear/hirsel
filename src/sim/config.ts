@@ -521,5 +521,7 @@ export const ANIM_MS: Record<string, number> = {
   quit: 26000,
   // the one moment the whole run has been for: let it breathe
   propose: 7600,
+  // a waltz round the kitchen floor: as long as the tune that goes with it
+  dance: 8200,
   bark: 900,
 };

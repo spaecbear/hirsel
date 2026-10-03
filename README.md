@@ -284,15 +284,22 @@ Married life is a victory lap with a little more in it:
 
 - **Two pairs of hands**: a tap more a day, still inside the cap of six
 - **She lives at the croft**: out by the door on the hill, wandering a little as the flock
-  does, and between you and the fire indoors: the same woman the inn and the proposal draw
+  does, and between you and the fire indoors: the same woman the inn and the proposal draw.
+  She stays put while you work: the day's set pieces used to leave her out, so she vanished
+  for every action and came back after it. There is a second stool at the table, hers
+- **Dance with her**: tap her in the house. A turn round the kitchen floor, hand in hand,
+  three times round to a wee waltz in D written for it (`waltz` in `audio/sfx.ts`), with notes
+  and a heart going up off them. Free, and good for nothing but itself
 - The ask is gone from your sheet; at the inn she is covering the bar and will not take your
   money; the first morning has its own line
 - Three events of its own: **the anniversary** a year on (a day off together, hale for three),
   **her kale patch** (two taps to dig it, and the feed bill is £1 a night lighter for good),
   and **her mother** coming up on the post bus. Every one can be declined for nothing
 - The courting events (her afternoon off, the ceilidh) are for before, and stop
-- Two achievements for the long game, **A year wed** and **Fifty lambs**, marked `longGame`
-  and left out of what the credits ask for, since the credits roll at the moment of a win
+- Three achievements for the long game, **A year wed**, **Fifty lambs** and **A turn by the
+  fire** (the dance), marked `longGame` and left out of what the credits ask for, since the
+  credits roll at the moment of a win. None is secret: they are there to be seen as a reason
+  to stay on the hill
 
 ### Finishing a run
 

@@ -133,7 +133,34 @@ describe("married life", () => {
   });
 
   it("keeps the long game's achievements out of what the credits ask for", () => {
-    expect(ACHIEVEMENTS.filter((a) => a.longGame).map((a) => a.id).sort()).toEqual(["fifty-lambs", "year-wed"]);
+    expect(ACHIEVEMENTS.filter((a) => a.longGame).map((a) => a.id).sort()).toEqual(["dance", "fifty-lambs", "year-wed"]);
+  });
+
+  it("dances with her at home once wed: free, played out, and counted", () => {
+    const { game, g } = wonRun();
+    game.stayOn();
+    const taps = g.taps;
+    const money = g.money;
+    const played: string[] = [];
+    game.onAnim = (a, after) => {
+      played.push(a);
+      after?.();
+    };
+    game.dance();
+    expect(played).toEqual(["dance"]);
+    expect(g.stats.dances).toBe(1);
+    expect(g.taps).toBe(taps);
+    expect(g.money).toBe(money);
+    expect(g.achievements).toContain("dance");
+    // and the achievement is there to be seen, as a reason to stay on the hill
+    expect(ACHIEVEMENTS.find((a) => a.id === "dance")!.secret).toBeFalsy();
+  });
+
+  it("will not dance before the wedding", () => {
+    const game = new Game(newGame());
+    game.onAnim = (_a, after) => after?.();
+    game.dance();
+    expect(game.state.stats.dances).toBe(0);
   });
 
   it("counts fifty lambs for the long game", () => {

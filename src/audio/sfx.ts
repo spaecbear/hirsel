@@ -14,6 +14,7 @@ export type SfxName =
   | "build"
   | "pipes"
   | "fiddle"
+  | "waltz"
   | "bark"
   | "build"
   | "pipe"
@@ -108,6 +109,48 @@ export class Sfx {
           });
           break;
         }
+        case "waltz": {
+          /*
+           * A wee waltz in D for a turn round the kitchen floor: a bowed
+           * tune in three-four over an oom-pah-pah, eight seconds long, the
+           * length of the dance. Written for this rather than borrowed, so the
+           * air and the jig stay the run's own.
+           */
+          const beat = 0.38;
+          const tune: [number, number][] = [
+            [74, 2], [73, 1], [71, 1], [69, 1], [66, 1], [69, 2], [74, 1], [76, 3],
+            [78, 1], [76, 1], [74, 1], [71, 1], [73, 1], [76, 1], [74, 3],
+          ];
+          let at = t + 0.05;
+          for (const [n, beats] of tune) {
+            const dur = beats * beat * 0.92;
+            const o = e.tone1(at, HZ(n), HZ(n), dur, "sawtooth", 0.075);
+            if (o && e.ac) {
+              const vib = e.ac.createOscillator();
+              vib.frequency.value = 5;
+              const amt = e.ac.createGain();
+              amt.gain.value = 3;
+              vib.connect(amt);
+              amt.connect(o.frequency);
+              vib.start(at);
+              vib.stop(at + dur);
+            }
+            e.noise(at, 0.025, "bandpass", 2400, 3, 0.02); // the bow taking the string
+            at += beats * beat;
+          }
+          // the oom-pah-pah: a low root on one, the chord on two and three
+          // seven bars, under the seven of the tune: D, G, D, A, D, A, and home to D
+          const bars: [number, number[]][] = [
+            [50, [62, 66]], [43, [62, 67]], [50, [62, 66]], [45, [61, 67]],
+            [50, [62, 66]], [45, [61, 67]], [50, [62, 66]],
+          ];
+          bars.forEach(([root, chord], b) => {
+            const bt = t + 0.05 + b * beat * 3;
+            e.tone1(bt, HZ(root), HZ(root), beat * 0.8, "triangle", 0.09);
+            for (const k of [1, 2]) for (const c of chord) e.tone1(bt + k * beat, HZ(c), HZ(c), beat * 0.45, "triangle", 0.035);
+          });
+          break;
+        }
         case "pipes":
           e.drone(HZ(50), t, 2.0, 0.1, e.sfxBus);
           [62, 69, 74, 76, 74, 69].forEach((n, i) => e.tone1(t + 0.15 + i * 0.28, HZ(n), HZ(n), 0.3, "sawtooth", 0.1));
@@ -180,6 +223,7 @@ export class Sfx {
       wolf: "sword",
       wolflost: "wolf",
       buysheep: "buy",
+      dance: "waltz",
     };
     const first = map[anim];
     if (first) this.play(first);

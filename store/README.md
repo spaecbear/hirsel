@@ -67,9 +67,9 @@ For the demo the same, with `Hirsel Demo/saves`. The saves are written atomicall
 
 ### Achievements
 
-28, listed with their exact API names in `desktop/README.md` (regenerate with
+29, listed with their exact API names in `desktop/README.md` (regenerate with
 `npm run achievements` in `desktop/`). Tick **Hidden** on the four secret ones. Each wants
-two 64×64 icons, earned and locked: 56 images, the biggest art job left.
+two 64×64 icons, earned and locked: 58 images, the biggest art job left.
 
 ### Steam Input
 
