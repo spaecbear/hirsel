@@ -578,8 +578,8 @@ sword, the wolf or how he is called.
 
 **Callum has a face.** His cards (the introduction, his ewes out, his kindness paid back)
 carry a portrait (`render/portrait.ts`): flat cap, grey beard, tweed, drawn at 40×44 and
-scaled like everything else. It pops up with the card, blinks, and talks for the first
-moments of it. `speaker` on an event says whose face goes on it; he is the only one so far.
+scaled like everything else. He is drawn the way everyone in the glen is: flat colour, dot
+eyes, no mouth. It pops up with the card. `speaker` on an event says whose face goes on it; he is the only one so far.
 
 The dated ones are asked before the chance ones each dawn, so a letter is never pushed off
 its day by the dealer. The card is its own layer for keys and a pad: focus lands on the first

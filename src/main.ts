@@ -168,11 +168,10 @@ let eventKey = "";
 const portraitEl = $<HTMLCanvasElement>("event-portrait");
 const portraitPainter = new Painter(portraitEl.getContext("2d")!, PORTRAIT_W, PORTRAIT_H);
 let portraitSpeaker: string | null = null;
-let portraitSince = 0;
-/** once a frame while a card with someone on it is up */
-function drawPortrait(now: number) {
+/** while a card with someone on it is up */
+function drawPortrait() {
   if (!portraitSpeaker || !eventEl.classList.contains("on")) return;
-  if (portraitSpeaker === "callum") drawCallum(portraitPainter, now, now - portraitSince);
+  if (portraitSpeaker === "callum") drawCallum(portraitPainter);
 }
 function updateEvent() {
   const g = game.state;
@@ -190,7 +189,6 @@ function updateEvent() {
   const ev = eventDef(g.event!.id);
   // his face, if it is him; it pops in with the card (the CSS restarts on unhiding)
   portraitSpeaker = ev.speaker ?? null;
-  portraitSince = performance.now();
   portraitEl.hidden = !portraitSpeaker;
   const lex = game.lex;
   $("event-title").textContent = ev.title(g, g.event!.data, lex);
@@ -912,7 +910,7 @@ function updatePrompts() {
 const innLeave = $("inn-leave");
 function frame(now: number) {
   animator.tick(now);
-  drawPortrait(now);
+  drawPortrait();
   innLeave.classList.toggle("on", world.atInn && !animator.busy);
   nav.tick(now);
   updatePrompts();
