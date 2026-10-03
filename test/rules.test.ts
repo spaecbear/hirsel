@@ -14,6 +14,7 @@ import {
   priceOn,
   readyToShear,
   tapsPerDay,
+  wolfBeatable,
   wolfSummoned,
   wolfWarningDue,
   woolPrice,
@@ -214,33 +215,36 @@ describe("flystrike", () => {
 });
 
 describe("the last wolf", () => {
-  const summonable = () =>
-    g({ at: 2, day: 5, actsToday: 5, owned: { boots: true, crook: true }, flock: [f(4)] });
+  // day 5 is a full moon; the corrie is pasture 2
+  const summonable = () => g({ at: 2, day: 5, taps: 0, flock: [f(4)] });
 
-  it("needs crook, boots, the corrie, a full moon and five actions", () => {
+  it("comes to any flock on the corrie on a full moon: no kit and no day's work needed", () => {
     expect(wolfSummoned(summonable())).toBe(true);
     expect(wolfSummoned({ ...summonable(), at: 1 })).toBe(false);
     expect(wolfSummoned({ ...summonable(), day: 4 })).toBe(false);
-    expect(wolfSummoned({ ...summonable(), actsToday: 4 })).toBe(false);
-    expect(wolfSummoned({ ...summonable(), owned: { boots: true } })).toBe(false);
     expect(wolfSummoned({ ...summonable(), flock: [] })).toBe(false);
-  });
-
-  it("does not need the sword to be summoned", () => {
-    const s = summonable();
-    expect(wolfSummoned(s)).toBe(true);
-    s.owned.sword = true;
-    expect(wolfSummoned(s)).toBe(true);
+    // every full moon, not only the first
+    expect(wolfSummoned({ ...summonable(), day: 5 + 8 })).toBe(isFullMoon(13));
   });
 
   it("never comes again once the pelt is taken", () => {
-    expect(wolfSummoned({ ...summonable(), owned: { boots: true, crook: true, pelt: true } })).toBe(false);
+    expect(wolfSummoned({ ...summonable(), owned: { pelt: true } })).toBe(false);
   });
 
-  it("warns on the fourth action, with a tap still in hand", () => {
-    expect(wolfWarningDue({ ...summonable(), actsToday: 4 })).toBe(true);
-    expect(wolfWarningDue({ ...summonable(), actsToday: 3 })).toBe(false);
-    expect(wolfWarningDue({ ...summonable(), actsToday: 4, at: 0 })).toBe(false);
+  it("is beaten only with the broadsword and four taps still unspent", () => {
+    expect(wolfBeatable({ ...summonable(), owned: { sword: true }, taps: BALANCE.wolfFightTaps })).toBe(true);
+    expect(wolfBeatable({ ...summonable(), owned: { sword: true }, taps: 5 })).toBe(true);
+    // tired: the day worked through
+    expect(wolfBeatable({ ...summonable(), owned: { sword: true }, taps: BALANCE.wolfFightTaps - 1 })).toBe(false);
+    // rested, but nothing to fight with
+    expect(wolfBeatable({ ...summonable(), taps: 6 })).toBe(false);
+  });
+
+  it("is warned of whenever the flock is on his ground on a full-moon day", () => {
+    expect(wolfWarningDue(summonable())).toBe(true);
+    expect(wolfWarningDue({ ...summonable(), at: 0 })).toBe(false);
+    expect(wolfWarningDue({ ...summonable(), day: 4 })).toBe(false);
+    expect(wolfWarningDue({ ...summonable(), owned: { pelt: true } })).toBe(false);
   });
 });
 

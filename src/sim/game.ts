@@ -43,6 +43,7 @@ import {
   readyToShear,
   tapsPerDay,
   weatherOn,
+  wolfBeatable,
   wolfSummoned,
   wolfWarningDue,
 } from "./rules";
@@ -226,12 +227,6 @@ export class Game {
     // it actually saves a tap, not merely for having the toggle on somewhere
     if (this.zen) g.cheated = true;
     g.actsToday++;
-    if (wolfWarningDue(g)) {
-      this.say(`The ${this.lex.flock} will not settle. Something is watching from above the corrie.`, "bad");
-    }
-    // the wolf is not called here: he comes at night, when you lie down on his
-    // ground. Spending the fifth action only sets the conditions: walking back
-    // off the corrie before you sleep still gets you out of it.
     this.award();
     this.changed();
   }
@@ -275,6 +270,16 @@ export class Game {
     this.say(this.lex.driveUp(g.pastures[i].name), "hi");
     this.onAnim("move");
     this.spend(1);
+    if (wolfWarningDue(g)) this.wolfWarning();
+  }
+
+  /**
+   * The flock is on his ground on a full-moon day. Said at dawn and on
+   * driving them up, while there is still a tap to bring them down. It never
+   * names him: the wolf is found, not explained.
+   */
+  private wolfWarning() {
+    this.say(`The ${this.lex.flock} will not settle. Something is watching from above the corrie.`, "bad");
   }
 
   /* ---------- the steading ---------- */
@@ -559,8 +564,9 @@ export class Game {
       this.changed();
       return "none";
     }
-    this.wolf();
-    // normal play reaches the wolf through spend(), which does these two
+    // the cheat brings him at any hour, so only the sword is asked about
+    this.wolf(armed);
+    // normal play reaches the wolf through the night, which does these two
     // afterwards; the cheat path has to do them itself or the pelt is taken
     // without the achievement firing or the HUD noticing
     this.award();
@@ -568,9 +574,10 @@ export class Game {
     return armed ? "pelt" : "mauled";
   }
 
-  private wolf() {
+  /** `beats` is whether he is beaten: see wolfBeatable for the night's own rule */
+  private wolf(beats: boolean) {
     const g = this.state;
-    if (owns(g, "sword")) {
+    if (beats) {
       this.say("Something is standing on the skyline that is not a fox.", "bad");
       this.say("The last wolf in Scotland. You draw the broadsword.", "gold");
       // the pelt is not yours until you have watched him lose it: the same
@@ -587,7 +594,12 @@ export class Game {
       const survivors = g.flock.slice(0, keep);
       g.stats.wolfMaulings++;
       this.say("Something is standing on the skyline that is not a fox.", "bad");
-      this.say("The last wolf in Scotland, and nothing in your hands but a crook.", "bad");
+      this.say(
+        owns(g, "sword")
+          ? "The last wolf in Scotland. You draw the broadsword, but the day has had the best of you, and he has the rest."
+          : "The last wolf in Scotland, and nothing in your hands but a crook.",
+        "bad",
+      );
       // the flock is not gone until you have watched it go
       this.onAnim("wolflost", () => {
         g.flock = survivors;
@@ -625,7 +637,7 @@ export class Game {
      * ground he has walked over, so the fox check is skipped when he does.
      */
     const wolfCame = wolfSummoned(g);
-    if (wolfCame) this.wolf();
+    if (wolfCame) this.wolf(wolfBeatable(g));
 
     // 1. grazing and fleece growth, and in winter, the barn
     const { eaten, hayUsed, fed, growth } = grazing(g);
@@ -781,6 +793,8 @@ export class Game {
       if (isFullMoon(g.day) && !owns(g, "pelt")) {
         this.say("Full moon tonight. The high ground is no place to be caught out late.", "bad");
       }
+      // and if the flock is already up there, they know it before you do
+      if (wolfWarningDue(g)) this.wolfWarning();
 
       // 8. fail state
       if (g.flock.length === 0) {

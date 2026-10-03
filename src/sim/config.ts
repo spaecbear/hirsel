@@ -155,8 +155,15 @@ export const BALANCE = {
   marketBase: 105,
   marketSwing: 34,
 
-  wolfActionsNeeded: 5,
-  wolfWarnOnAction: 4,
+  /*
+   * The last wolf comes down to any flock left on the High Corrie on a
+   * full-moon night. He can be beaten only with the broadsword and this
+   * many taps still unspent when you lie down: a man who has worked the day
+   * through is too tired for the fight. Four, so that a day of four or more
+   * (the boots, or the lantern) can spend one taking the flock up the hill
+   * and still be ready for him, rather than having to wait a whole moon.
+   */
+  wolfFightTaps: 4,
 
   /*
    * Hay, for the winter.

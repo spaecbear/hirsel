@@ -425,8 +425,16 @@ Things that are easy to break by accident:
 - **The sword, the wolf and the summon conditions are never explained in the UI.**
   Not in tooltips, not in achievements (those two are hidden), not in cheat codes. The pelt
   is the exception the player earns: once taken, the shepherd wears it in every scene.
-- **Both wolf warnings stay.** Dawn of the full moon, and the fourth action on the corrie
-  with one tap still in hand.
+- **The last wolf comes to any flock on the High Corrie on a full-moon night**, every full
+  moon until his pelt is taken. Nothing else calls him: no kit, no day's work. Beating him
+  takes the broadsword **and four taps still unspent** at nightfall (`wolfFightTaps`): a man
+  who has worked the day through is too tired for the fight. Four rather than five, so that
+  a day of four or more taps (the boots, or the lantern) can spend one driving the flock up
+  and still be ready, without waiting a whole moon. Lose, with or without the sword, and the
+  flock is cut to `survivorsAfterWolf`.
+- **The wolf is warned of, never named.** Every full-moon dawn says the high ground is no
+  place to be caught out late; a flock on the corrie that day (at dawn, or on being driven
+  up) "will not settle", while there is still a tap to bring them down.
 - **`test/setup.ts` installs a real in-memory `localStorage` for every test run, unconditionally.**
   This machine's Node has a global `localStorage` that exists but is broken: a bare `{}`
   with no methods, downstream of the experimental `--localstorage-file` flag pointing nowhere
@@ -752,7 +760,8 @@ current values, with notes. Change them there rather than hunting for numbers:
 1. opening difficulty at £40 (`startMoney`): now the live default, so this one is under test
 2. crook vs dog overlap; no flag, needs playtest data
 3. survivors after a wolf mauling (`survivorsAfterWolf`, currently 1)
-4. the wolf punishing the two best early purchases, by design, watch it
+4. the wolf comes to any flock on the corrie at a full moon, from the first one on day 5:
+   the dawn warnings are the only defence a new player has, so watch whether they are enough
 5. the pelt ending the fox game: seasons now carry some of the pressure the fox did (the
    winter, the hay and the snow do not care about the pelt)
 6. seasons: built; see **Seasons** above. Season length is still a question (24 days)
