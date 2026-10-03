@@ -6,7 +6,7 @@ import { CHEATS, REVEAL_ORDER, revealNextCheat } from "../src/sim/cheats";
 
 /**
  * These pin the glossary's wording to the live BALANCE numbers, not to a
- * second hardcoded copy of them — the whole point of building the appendix
+ * second hardcoded copy of them: the whole point of building the appendix
  * from config.ts is that a tuning pass (see the market price fix) can't
  * silently leave it describing a game that no longer exists. If a percentage
  * or day count in config.ts moves, these fail until the glossary catches up.
@@ -36,7 +36,7 @@ describe("the buff glossary", () => {
     expect(hale.effect).toContain(String(BALANCE.maxTaps));
   });
 
-  it("none of the four buffs are masked — they're ordinary mechanics, not the wolf", () => {
+  it("none of the four buffs are masked; they're ordinary mechanics, not the wolf", () => {
     for (const e of buffGlossary()) expect(e.secret).toBeFalsy();
   });
 });
@@ -67,12 +67,12 @@ describe("the status glossary", () => {
   });
 
   it("never states the summon recipe, even once the pelt is known", () => {
-    // "gathered ... free with the crook" is fine — the crook's ordinary
+    // "gathered ... free with the crook" is fine: the crook's ordinary
     // effect is already public from day one. What must never appear is the
     // conditions strung together as a trigger: which tools, which ground,
     // which moon, how many actions. The revealed pelt text names the ground
     // and the moon alone, matching the existing owned-pelt shop tile
-    // ("Taken on the High Corrie under a full moon") — a place and a time,
+    // ("Taken on the High Corrie under a full moon"): a place and a time,
     // not instructions.
     saveEarned(["pelt"]);
     const text = statusGlossary()

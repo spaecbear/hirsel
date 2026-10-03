@@ -3,7 +3,7 @@ import { QUICK_MS, SPIN_MS, resetSpin, spinNow, startSpin } from "../src/render/
 
 /*
  * Arrow spun in circles when she was pleased to see you, so the trick is
- * two turns back to back — and the game has to be forgiving about how you
+ * two turns back to back, and the game has to be forgiving about how you
  * ask for them, because mashing the dog twice is what anyone will do.
  */
 describe("the sheltie's spin", () => {
@@ -53,7 +53,7 @@ describe("the sheltie's spin", () => {
      * The bug this exists for: chaining used to push the start time forward
      * by a turn's length, which sent the progress negative for the rest of
      * the first turn. She stopped dead the moment you asked for the second
-     * one, waited, then played a single turn — two barks and one spin.
+     * one, waited, then played a single turn: two barks and one spin.
      */
     startSpin(1000);
     startSpin(1200); // asked again while she is still going round

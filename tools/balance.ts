@@ -9,7 +9,7 @@
  * this way; this file is so the next measurement can be repeated rather than
  * rebuilt. Change the game, run it before and after, compare.
  *
- * The policy is deliberately ordinary — what a player who has understood the
+ * The policy is deliberately ordinary: what a player who has understood the
  * game would do, not an optimiser. It shears at prime, sells when the price
  * is decent or the purse is thin, buys the kit in a sensible order, grows the
  * flock towards a dozen, builds the croft, does its six evenings at the inn,
@@ -24,7 +24,7 @@ import type { ActionId, Difficulty, GameState, ToolId } from "../src/sim/types";
 const RUNS = Number(process.argv[2] ?? 40);
 const DAYS = Number(process.argv[3] ?? 200);
 
-/* seasons may or may not exist in the build being measured — look, don't assume */
+/* seasons may or may not exist in the build being measured: look, don't assume */
 const r = rules as Record<string, unknown>;
 const seasonOf = r.seasonOf as ((day: number) => { id: string; day: number }) | undefined;
 const hayNeeded = r.hayNeeded as ((g: GameState) => number) | undefined;
@@ -86,7 +86,7 @@ function play(seed: number, difficulty: Difficulty): Result {
 
     /*
      * Something at the door: help Callum, walk his stray back, show a ewe,
-     * go to the dance and walk out with her — and buy off the dealer only
+     * go to the dance and walk out with her, and buy off the dealer only
      * with money to spare. Older builds have no events; skip if so.
      */
     const ev = (g as GameState & { event?: { id: string; data: Record<string, string | number> } | null }).event;

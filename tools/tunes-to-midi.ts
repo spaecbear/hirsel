@@ -1,8 +1,8 @@
 /**
  * Write the game's tunes out as Standard MIDI Files.
  *
- * The tunes live in src/audio/tunes.ts as note data — MIDI numbers and
- * durations in beats — and the game turns them into sound at runtime with
+ * The tunes live in src/audio/tunes.ts as note data: MIDI numbers and
+ * durations in beats, and the game turns them into sound at runtime with
  * oscillators. That same data is all a .mid file holds, so this reads the
  * real tune and emits it, rather than anyone transcribing it by ear into a
  * second copy that can drift.
@@ -16,7 +16,7 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { HIRSEL_AIR, LONG_ROAD_HOME, TOD_JIG, type Tune } from "../src/audio/tunes";
 
-/** ticks per quarter note — 480 is the usual, and divides every duration here */
+/** ticks per quarter note: 480 is the usual, and divides every duration here */
 const TPQ = 480;
 
 /* ---------- the bytes ---------- */

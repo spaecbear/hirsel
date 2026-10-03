@@ -62,8 +62,8 @@ export class AudioEngine {
      *
      * Safari always hands one back suspended, and Chrome does too whenever
      * it was constructed outside a real user gesture. Only the early-return
-     * path above ever called resume(), so the very first context — the one
-     * every player gets — was left suspended and silent. `started` was then
+     * path above ever called resume(), so the very first context (the one
+     * every player gets) was left suspended and silent. `started` was then
      * true, so the gesture handler bailed out on every tap afterwards and it
      * never got a second chance.
      */
@@ -75,8 +75,8 @@ export class AudioEngine {
    * Nudge the context back into running, wherever we are.
    *
    * Cheap and safe to call on every gesture: a context that is already
-   * running ignores it. Browsers suspend audio for reasons of their own —
-   * a backgrounded tab, a phone call, an iOS interruption — so this is the
+   * running ignores it. Browsers suspend audio for reasons of their own
+   * (a backgrounded tab, a phone call, an iOS interruption), so this is the
    * way back from all of them, not only from the first start.
    */
   resume() {
@@ -192,7 +192,7 @@ export class AudioEngine {
 
   /**
    * Filtered noise that swells and falls away rather than starting loud and
-   * decaying — breath, wind, a draw on a pipe. `noise` can't do this: its
+   * decaying: breath, wind, a draw on a pipe. `noise` can't do this: its
    * envelope only ever decays.
    */
   noiseSwell(t: number, dur: number, type: BiquadFilterType, f0: number, f1: number, q: number, gain: number) {
@@ -240,7 +240,7 @@ export class AudioEngine {
 
   /**
    * A whistle: the melody voice. Breath at the onset, a slow vibrato that only
-   * arrives once the note has settled — a whistle played by a person, not a
+   * arrives once the note has settled: a whistle played by a person, not a
    * sine wave. Two oscillators a hair apart so it isn't glassy.
    */
   whistle(freq: number, t: number, dur: number, gain = 0.2, bus?: AudioNode) {
@@ -308,7 +308,7 @@ export class AudioEngine {
   }
 
   /**
-   * A persistent, looping filtered-noise bed — for ambience that has to run
+   * A persistent, looping filtered-noise bed, for ambience that has to run
    * continuously (rain on the ground) rather than fire once and decay. The
    * source itself never stops; the caller fades the returned gain node in
    * and out. Generic enough that any future weather layer (wind, the burn in

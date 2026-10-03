@@ -3,14 +3,14 @@
  *
  * This plays a written tune (see `tunes.ts`) rather than a random walk, one bar
  * at a time, with the arrangement chosen from what is happening in the game.
- * Nothing here repeats at a fixed high frequency — an earlier version pinged a
+ * Nothing here repeats at a fixed high frequency: an earlier version pinged a
  * quiet 1.9kHz noise burst on beat three of every bar forever, which sounded
  * exactly like a watermark. There is no ticking layer any more; the pulse is a
  * low bodhrán thud and it sits under the drone.
  *
  * Arrangement by mood:
  *   day    whistle carries the tune, harp underneath, drone, soft pulse
- *   night  no whistle and no pulse — the harp takes the melody, drone an
+ *   night  no whistle and no pulse: the harp takes the melody, drone an
  *          octave down, ornaments off. The same tune, after dark
  *   rain   harp figures drop out, the whistle softens and shortens
  */
@@ -43,7 +43,7 @@ export class Score {
     this.load(HIRSEL_AIR);
   }
 
-  /** swap tunes without restarting the clock — it takes at the next bar line */
+  /** swap tunes without restarting the clock; it takes at the next bar line */
   setTune(tune: Tune) {
     if (tune === this.tune) return;
     this.load(tune);
@@ -92,12 +92,12 @@ export class Score {
    * A cue takes the glen over: the air ducks out, something else happens, and
    * the tune comes back when it is finished. Two of them.
    *
-   * `wolf` — D and A flat, a tritone apart. The diabolus in musica, and about
+   * `wolf`: D and A flat, a tritone apart. The diabolus in musica, and about
    * as far from a Dorian air as it is possible to get in two notes. A heartbeat
    * that speeds up as he comes down the hill, a rising swell, and a cluster of
    * dissonance on the clash.
    *
-   * `fox` — tense, not evil. It keeps the tonic and rubs a minor second against
+   * `fox`: tense, not evil. It keeps the tonic and rubs a minor second against
    * it, over a quickening pulse. A bad night, not the end of the world.
    */
   cue(kind: "wolf" | "fox") {

@@ -47,7 +47,7 @@ export class Sfx {
           break;
         }
         case "shears":
-          // two cuts. A narrow filter (high Q) passes almost no energy — these
+          // two cuts. A narrow filter (high Q) passes almost no energy; these
           // were inaudible at Q 7 however high the gain went.
           for (const [at, f] of [[0, 4200], [0.13, 3500]] as [number, number][]) {
             e.noise(t + at, 0.06, "bandpass", f, 2.4, 0.5);

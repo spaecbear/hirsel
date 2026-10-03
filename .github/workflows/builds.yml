@@ -1,6 +1,6 @@
 # Builds of the Steam version: tests first, then the desktop app for Windows
 # and Linux, the full game and the demo, as artifacts ready to upload to
-# Steam. The web game on `main` is not built here — Vercel does that.
+# Steam. The web game on `main` is not built here: Vercel does that.
 name: Builds
 
 on:

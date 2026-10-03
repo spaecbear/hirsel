@@ -1,10 +1,10 @@
 /**
- * Node's global `localStorage` is unreliable in some environments — this one
+ * Node's global `localStorage` is unreliable in some environments; this one
  * included, where it's present but broken (a bare `{}` with no methods,
  * downstream of Node's experimental `--localstorage-file` flag pointing
  * nowhere valid). `saveEarned`/`saveSettings`/`saveGame` all swallow storage
  * errors on purpose (a failed save is never worth throwing over for a
- * player), which means a broken global fails *silently* — a test can call
+ * player), which means a broken global fails *silently*: a test can call
  * `saveEarned(["pelt"])` and get no error, then `loadEarned()` back an empty
  * array, and the only sign anything's wrong is the assertion after it.
  *

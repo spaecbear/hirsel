@@ -8,7 +8,7 @@
  * It deliberately teaches nothing about how a run ends *well*. No croft
  * milestones as a goal, no ring, no her, and above all nothing about the
  * sword or what walks the high ground on a full moon. A player should find
- * all of that themselves — the tutorial's job is to stop them being confused,
+ * all of that themselves: the tutorial's job is to stop them being confused,
  * not to hand them the story.
  */
 import { BREEDS } from "./config";
@@ -36,8 +36,8 @@ export const TUTORIAL_START_FLOCK = 5;
  * The first clip is rigged to pay for the sixth ewe exactly.
  *
  * Being handed the money taught nothing; earning it in the first three steps
- * teaches the whole economy — fleece becomes wool, wool becomes money, money
- * becomes another beast — before anything is asked of the player. The fleece
+ * teaches the whole economy: fleece becomes wool, wool becomes money, money
+ * becomes another beast, before anything is asked of the player. The fleece
  * is set so the clip comes to `TUTORIAL_WOOL` stone, and day one's price is
  * fixed by `priceOn(1)`, so the sale always lands on the cost of a Blackface.
  */
@@ -46,21 +46,21 @@ export const TUTORIAL_TARGET_PAY = BREEDS.blackface.cost;
 export const TUTORIAL: TutorialStep[] = [
   {
     id: "welcome",
-    text: "This is the hill. Five beasts on it and forty pounds to your name. Today costs you nothing — take your time.",
+    text: "This is the hill. Five beasts on it and forty pounds to your name. Today costs you nothing, so take your time.",
     readOnly: true,
     done: (_g, seen) => seen.has("welcome"),
   },
   {
     id: "flock",
-    text: "Tap a beast to work the flock. Gather them in close — a gathered flock is far harder for a fox to get at come night.",
+    text: "Tap a beast to work the flock. Gather them in close: a gathered flock is far harder for a fox to get at come night.",
     target: "flock",
     done: (g) => g.gatheredToday,
   },
   {
     id: "shear",
     text:
-      "Now shear them. Fleece grows every night they graze and is worth most between the fourth and ninth day of growth — " +
-      "leave it longer and it mats, and matted wool fetches next to nothing. You cannot shear in rain or haar either, " +
+      "Now shear them. Fleece grows every night they graze and is worth most between the fourth and ninth day of growth. " +
+      "Leave it longer and it mats, and matted wool fetches next to nothing. You cannot shear in rain or haar either, " +
       "so take it while the weather holds.",
     target: "flock",
     // day one is forced fair, but never park a player on a step the weather
@@ -70,14 +70,14 @@ export const TUTORIAL: TutorialStep[] = [
   },
   {
     id: "market",
-    text: "Wool is only money once it is sold. Take it to the cart — the price moves day to day, so it can be worth holding on.",
+    text: "Wool is only money once it is sold. Take it to the cart. The price moves day to day, so it can be worth holding on.",
     target: "cart",
     skip: (g) => g.wool === 0 && g.stats.earned === 0,
     done: (g) => g.stats.earned > 0,
   },
   {
     id: "buy",
-    text: "That clip paid for a ewe. Buy one from the cart to make it six — buying and selling never costs you a tap, only money.",
+    text: "That clip paid for a ewe. Buy one from the cart to make it six. Buying and selling never costs you a tap, only money.",
     target: "cart",
     done: (g) => g.flock.length >= 6,
   },
@@ -85,7 +85,7 @@ export const TUTORIAL: TutorialStep[] = [
     id: "scale",
     text:
       "Mind that a bigger flock is more work, not just more wool. Past ten beasts a clip takes two taps, " +
-      "and past a dozen you cannot gather them alone in one — a dog does the running, and a crook takes a tap off either way.",
+      "and past a dozen you cannot gather them alone in one. A dog does the running, and a crook takes a tap off either way.",
     readOnly: true,
     done: (_g, seen) => seen.has("scale"),
   },
@@ -98,19 +98,19 @@ export const TUTORIAL: TutorialStep[] = [
   },
   {
     id: "hills",
-    text: "Tap the hills to move them. Higher ground feeds better — and foxes are bolder up there. That is the trade.",
+    text: "Tap the hills to move them. Higher ground feeds better, and foxes are bolder up there. That is the trade.",
     target: "hills",
     done: (g) => g.at !== 0,
   },
   {
     id: "self",
-    text: "Tap yourself for the comforts. A pipe, the pipes, a pint at the inn — they cost you a tap, and they are worth it.",
+    text: "Tap yourself for the comforts. A pipe, the pipes, a pint at the inn: they cost you a tap, and they are worth it.",
     target: "shepherd",
     done: (_g, seen) => seen.has("did-comfort"),
   },
   {
     id: "tools",
-    text: "The cart sells tools as well as beasts. Tools buy the day back — a crook makes gathering free, boots give you another tap. Watch for them.",
+    text: "The cart sells tools as well as beasts. Tools buy the day back: a crook makes gathering free, boots give you another tap. Watch for them.",
     target: "cart",
     readOnly: true,
     done: (_g, seen) => seen.has("tools"),
@@ -125,15 +125,15 @@ export const TUTORIAL: TutorialStep[] = [
     id: "seasons",
     text:
       "The year turns every twenty-four days, and each season works the hill differently. Spring: the grass comes back fast. " +
-      "Summer: fleece grows quickest and the flies are at their worst — and it is the only time to cut hay. " +
+      "Summer: fleece grows quickest and the flies are at their worst, and it is the only time to cut hay. " +
       "Autumn: wool fetches its best price of the year. Winter: nothing grows, snow buries the grass, and the flock lives on " +
-      "what is in the barn. Tap the sky — the season, and the days left in it, are always there.",
+      "what is in the barn. Tap the sky: the season, and the days left in it, are always there.",
     target: "sky",
     done: (_g, seen) => seen.has("did-sky"),
   },
   {
     id: "croft",
-    text: "That is your house. Tap it and go in — it is in a poor state, but it is yours to fix up, and what you buy for it shows up inside.",
+    text: "That is your house. Tap it and go in. It is in a poor state, but it is yours to fix up, and what you buy for it shows up inside.",
     target: "croft",
     done: (_g, seen) => seen.has("went-inside"),
   },
@@ -142,7 +142,7 @@ export const TUTORIAL: TutorialStep[] = [
      * The one thing the walkthrough never said.
      *
      * It pointed at the house and called it "yours to fix up" and left it
-     * there — so a new player had no idea the croft was the thing the run is
+     * there, so a new player had no idea the croft was the thing the run is
      * actually for, and no idea that paying for a piece of it buys the
      * materials and nothing else. Buy the roof, watch £240 leave the purse,
      * see no roof: the only explanation was buried in the cart's own text.
@@ -153,7 +153,7 @@ export const TUTORIAL: TutorialStep[] = [
      */
     id: "croft-work",
     text:
-      "The hearth in here is where you take the place in hand — a roof that keeps the rain out, a fire worth the name, " +
+      "The hearth in here is where you take the place in hand: a roof that keeps the rain out, a fire worth the name, " +
       "a byre to bring them into. None of it is cheap, and the money is only the materials: once a piece is paid for it " +
       "wants days of your own work on top, a tap at a time. It is the slowest thing you will do, and it is what all the rest is for.",
     target: "hearth",
@@ -169,7 +169,7 @@ export const TUTORIAL: TutorialStep[] = [
   },
   {
     id: "loss",
-    text: "Two ways it ends badly: lose every last beast, or let the purse go under. Mind both. Sleep when you are ready — from tomorrow the day is only three taps.",
+    text: "Two ways it ends badly: lose every last beast, or let the purse go under. Mind both. Sleep when you are ready. From tomorrow the day is only three taps.",
     target: "interior-bed",
     done: (g) => g.day > 1,
   },
@@ -178,7 +178,7 @@ export const TUTORIAL: TutorialStep[] = [
 /**
  * The first step that still needs doing.
  *
- * A step that has been passed stays passed — `seen` holds its id. Reading the
+ * A step that has been passed stays passed: `seen` holds its id. Reading the
  * live state alone was not enough: moving the flock clears `gatheredToday`,
  * so walking up the hill sent the walkthrough back to "gather them in" and it
  * looped. Conditions describe *becoming* done, and this remembers that they did.
@@ -194,7 +194,7 @@ export function currentStep(g: GameState, seen: Set<string>): TutorialStep | nul
 }
 
 /**
- * Mark everything up to the current step as passed — including steps that
+ * Mark everything up to the current step as passed, including steps that
  * were skipped rather than done.
  *
  * Skipping alone was not enough to retire a step. Shearing skips itself once
@@ -249,7 +249,7 @@ export function tutorialSetup(g: GameState) {
   /*
    * The smallest clip that still clears the price of a ewe. It cannot always
    * be exact: every beast has to be left shearable, the minimum shearable
-   * fleece is 4, so five sheep cannot clip less than 20 stone — worth rather
+   * fleece is 4, so five sheep cannot clip less than 20 stone: worth rather
    * more than a ewe at a good price. A pound or two of change is the floor,
    * not slack in the rig.
    */
@@ -266,7 +266,7 @@ export function tutorialSetup(g: GameState) {
   /*
    * A fair first day. Shearing and selling are the whole economy, and with
    * rain or haar rolled for day one the tutorial skipped both of those steps
-   * entirely — a new player could finish the walkthrough never having been
+   * entirely: a new player could finish the walkthrough never having been
    * shown where money comes from. The weather from tomorrow is as random as
    * it ever was.
    */

@@ -4,14 +4,14 @@
  * The web build keeps its saves in `localStorage` and has no achievements
  * service and no Quit. A desktop build (Electron, for Steam) puts a
  * `hirselPlatform` bridge on the window before the game loads, and the game
- * uses that instead — so the sim, the save format and every call site are the
+ * uses that instead, so the sim, the save format and every call site are the
  * same in both, and only this file knows there is more than one.
  *
  * Storage calls are synchronous on purpose. Saves are small and written once a
  * night; making them async would ripple through every caller for nothing.
  */
 export interface Platform {
-  /** "web" or "steam" — for the few places that show different things, like Quit */
+  /** "web" or "steam", for the few places that show different things, like Quit */
   readonly kind: "web" | "steam";
   read(key: string): string | null;
   /** throws on failure; callers decide whether a failed write is worth mentioning */
@@ -25,7 +25,7 @@ export interface Platform {
   setFullscreen?(on: boolean): void;
   isFullscreen?(): boolean;
   /**
-   * desktop only: ask for a line of text without a keyboard — Steam's
+   * desktop only: ask for a line of text without a keyboard: Steam's
    * on-screen keyboard on the Deck. Resolves null if it was cancelled or
    * could not be shown.
    */

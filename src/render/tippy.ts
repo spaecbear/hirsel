@@ -31,7 +31,7 @@ export interface TippyState {
 /**
  * Call once per drawn interior frame.
  *
- * `fire` is "she has a hearth to lie at" — the collie and the built hearth
+ * `fire` is "she has a hearth to lie at": the collie and the built hearth
  * together. The walk only starts when that turns true in a room that was
  * already on screen; arriving to find it true means she is already down.
  */

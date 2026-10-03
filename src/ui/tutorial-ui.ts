@@ -3,7 +3,7 @@
  *
  * Watches the game rather than driving it: each step names a thing to point
  * at and a condition that means the player has done it, and the banner moves
- * on when the condition comes true. Nothing is blocked or forced — a player
+ * on when the condition comes true. Nothing is blocked or forced: a player
  * who ignores the prompt and does something else entirely is not stuck, and
  * a step that stops making sense (nothing worth shearing) is skipped.
  */
@@ -24,7 +24,7 @@ export class TutorialUi {
   /**
    * Whether a way out is offered.
    *
-   * False on a player's first run — that one is the point of the thing —
+   * False on a player's first run; that one is the point of the thing,
    * and true when they have asked to see it again from Settings.
    */
   canSkip = false;
@@ -77,7 +77,7 @@ export class TutorialUi {
     return this.active && this.step?.target === "interior-bed";
   }
 
-  /** the walkthrough locks everything but the lesson — see allowsInteraction */
+  /** the walkthrough locks everything but the lesson: see allowsInteraction */
   allows(id: HotspotId): boolean {
     return !this.active || allowsInteraction(this.step, id);
   }
@@ -119,7 +119,7 @@ export class TutorialUi {
      * The way out is only offered to someone who has been here before.
      *
      * It was on every step of every run, including a player's very first
-     * one — a single tap on their first minute in the game, and the
+     * one: a single tap on their first minute in the game, and the
      * walkthrough was gone for good, since finishing and skipping both set
      * the same flag. That is exactly how a new player ends up on a hill with
      * no idea what shearing is. A first run teaches; a replay, which is

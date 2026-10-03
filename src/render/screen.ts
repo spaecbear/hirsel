@@ -8,7 +8,7 @@ import type { ArtPack } from "./art/types";
  * Two kinds of pack:
  *  - fixed  (retro): a set logical size, scaled up to fit its element
  *  - fluid  (glen):  fills the viewport, so the logical size is derived from
- *                    it — a phone gets a tall hillside, a desktop a wide one.
+ *                    it: a phone gets a tall hillside, a desktop a wide one.
  *                    The scale is chosen first and the logical size falls out
  *                    of it, which is what keeps the pixel grid honest.
  */

@@ -2,7 +2,7 @@
  * Arrow's spin.
  *
  * A sheltie who is pleased to see you turns on the spot, so the spin is not
- * something the dog does on a timer any more — you have to tap her, and only
+ * something the dog does on a timer any more; you have to tap her, and only
  * the Shetland sheepdog does it. The border collie has her own habit (see the
  * hearth in the interior).
  *
@@ -13,7 +13,7 @@
 
 /** how long one full turn takes */
 export const SPIN_MS = 800;
-/** two turns inside this window is "in quick succession" — the Arrow */
+/** two turns inside this window is "in quick succession": the Arrow */
 export const QUICK_MS = 2600;
 
 let startedAt = -Infinity;
@@ -25,7 +25,7 @@ let turns = 1;
  *
  * The sequence is a start time and a number of turns, rather than a start
  * time that gets pushed about. Chaining used to add a turn's length to
- * `startedAt`, which sent `spinNow` negative for the rest of the first turn —
+ * `startedAt`, which sent `spinNow` negative for the rest of the first turn,
  * so asking for the second one stopped her dead, left a gap, and then played
  * a single turn. Two barks, one spin.
  *

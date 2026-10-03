@@ -2,7 +2,7 @@
  * Sending the shepherd somewhere.
  *
  * Hold a finger on the pasture and he walks to it. It costs no tap and
- * changes nothing in the sim — it is there because a hill you can only
+ * changes nothing in the sim; it is there because a hill you can only
  * look at feels like a menu, and one you can wander feels like a place.
  *
  * The position lives here rather than in the game state for exactly that
@@ -10,7 +10,7 @@
  * must never be something a player can lose progress over. Both the art and
  * the hit-testing read it from here, so the man you tap is the man you see.
  */
-const SPEED = 26; // logical pixels a second — a walk, not a sprint
+const SPEED = 26; // logical pixels a second: a walk, not a sprint
 
 export class Walk {
   private from: { x: number; y: number } | null = null;

@@ -8,7 +8,7 @@
  * Two halves, because the light has to land on top of the dark: the post and
  * the unlit lantern are painted with everything else standing in the field,
  * sorted by `foot` like the flock, and the light is painted after the night
- * has been laid over the scene — laid under it, the dark ate it.
+ * has been laid over the scene: laid under it, the dark ate it.
  */
 import type { Painter } from "./painter";
 

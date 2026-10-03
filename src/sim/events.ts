@@ -4,8 +4,8 @@
  * The day loop is the same three taps whatever the season, and by the second
  * year the hill had nothing new to say. These are the world coming to the
  * door: a letter from the life you left, the dealer on the road, Callum over
- * the burn, the show, her. Each one arrives at dawn — at most one a day,
- * rolled from the run's seed like everything else — and waits on a choice.
+ * the burn, the show, her. Each one arrives at dawn, at most one a day,
+ * rolled from the run's seed like everything else, and waits on a choice.
  *
  * Every choice costs what it says on it and nothing else. A choice that costs
  * nothing is always offered, so no event can leave the player stuck, and an
@@ -56,7 +56,7 @@ export const NEIGHBOUR = "Callum";
 /* ---------- the numbers ---------- */
 
 export const EVENTS_BALANCE = {
-  /** no events before this day — the first week is the hill and nothing else */
+  /** no events before this day: the first week is the hill and nothing else */
   firstDay: 6,
   /** except Callum coming over to say who he is, on the third morning */
   introDay: 3,
@@ -133,7 +133,7 @@ export const EVENTS: GameEvent[] = [
   {
     /*
      * He was asking for help, paying it back and losing his ewes onto your
-     * ground without ever having been met — a stranger with a name. This is
+     * ground without ever having been met: a stranger with a name. This is
      * the meeting: on the third morning, before any other event can come,
      * so every later card with him on it is someone the player knows.
      */
@@ -142,7 +142,7 @@ export const EVENTS: GameEvent[] = [
     due: (g) => (g.day >= E.introDay && once(g, "callum-intro") ? {} : null),
     title: () => `${NEIGHBOUR}, over the burn`,
     body: (_g, _d, lex) =>
-      `A man about your father's age comes over the burn on the stepping stones, a collie at his heel. ${NEIGHBOUR} — ` +
+      `A man about your father's age comes over the burn on the stepping stones, a collie at his heel. ${NEIGHBOUR}: ` +
       `the next hill is his, and his father's before him, and he has come to see who is daft enough to take this one on. ` +
       `He looks your ${lex.flock} over and says nothing about it, which is a kindness. He will give you a hand when he can, ` +
       `he says, and he will ask for one when he needs it. Up here nobody gets by on their own.`,
@@ -227,7 +227,7 @@ export const EVENTS: GameEvent[] = [
     },
     title: () => "The Highland show",
     body: (g, _d, lex) =>
-      `It is the show in the town today — the pens, the judges in their hats, the whole glen in its good coat. ` +
+      `It is the show in the town today: the pens, the judges in their hats, the whole glen in its good coat. ` +
       `You could take your best ${lex.unit} down${hasDog(g) ? ", or run the dog in the trial" : ""}. It is a day off the hill either way.`,
     choices: (g, _d, lex) => {
       const best = showScore(g);
@@ -277,7 +277,7 @@ export const EVENTS: GameEvent[] = [
           },
         });
       }
-      out.push({ id: "stay", label: "Stay on the hill — there is work", fallback: true, run: (game) => game.say("You heard the pipe band from the top field, faintly, all afternoon.", "cozy") });
+      out.push({ id: "stay", label: "Stay on the hill: there is work", fallback: true, run: (game) => game.say("You heard the pipe band from the top field, faintly, all afternoon.", "cozy") });
       return out;
     },
   },
@@ -382,7 +382,7 @@ export const EVENTS: GameEvent[] = [
     title: () => "A dealer on the road",
     body: (_g, d, lex) =>
       d.kind === "ewe"
-        ? `A man with a trailer has stopped at the gate. He has a ${lex.breeds[d.id as BreedId]} ${lex.unit} he would let go for £${d.price} — under what the cart asks, and he knows it.`
+        ? `A man with a trailer has stopped at the gate. He has a ${lex.breeds[d.id as BreedId]} ${lex.unit} he would let go for £${d.price}, under what the cart asks, and he knows it.`
         : `A man with a van has stopped at the gate. Among the rest of it there is ${String(d.name).toLowerCase()}, and he would let it go for £${d.price}.`,
     choices: (_g, d) => [
       {
@@ -463,7 +463,7 @@ export const EVENTS: GameEvent[] = [
       },
       {
         id: "keep",
-        label: "Keep her — who is to know",
+        label: "Keep her. Who is to know?",
         fallback: true,
         run: (game) => {
           const g2 = game.state;
@@ -511,7 +511,7 @@ EVENTS.push(
         : null,
     title: () => "A kale patch",
     body: () =>
-      "She wants a kale patch by the door — a proper one, dug deep and walled from the wind. Greens for the pot, and the " +
+      "She wants a kale patch by the door: a proper one, dug deep and walled from the wind. Greens for the pot, and the " +
       "outer leaves for the beasts in the back end of the year.",
     choices: () => [
       {

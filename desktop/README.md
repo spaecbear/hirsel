@@ -19,7 +19,7 @@ npm run package:demo:win
 npm run achievements    # the table below, from the game's own list
 ```
 
-**Every push to `steam` builds all four** — the game and the demo, Windows and Linux — in
+**Every push to `steam` builds all four** (the game and the demo, Windows and Linux) in
 GitHub Actions (`.github/workflows/builds.yml`), after the tests pass. Download them from the
 run's **Artifacts**; each is the unpacked folder Steam's upload tool takes as a depot. They
 are unsigned: there is no code-signing certificate yet, and Steam does not need one.
@@ -27,7 +27,7 @@ are unsigned: there is no code-signing certificate yet, and Steam does not need 
 ### The demo
 
 A Steam demo is its own app, with its own id. `stage-web --demo` stages the demo web build
-(`npm run build:demo` at the root: the first 14 days, then a wishlist card) and writes
+(`npm run build:demo` at the root: the first 30 days, then a wishlist card) and writes
 `web/build.json`, which is how the shell knows. The demo uses `STEAM_DEMO_APP_ID`, names its
 user-data folder "Hirsel Demo" so its saves never meet the full game's, and packages as
 "Hirsel Demo". Set up Auto-Cloud for it the same way, with `Hirsel Demo/saves`.
@@ -41,7 +41,7 @@ exactly the same; achievements just stay in the game's own list. **F11** toggles
 | file | job |
 | --- | --- |
 | `src/main.ts` | the window, the `app://hirsel/` scheme the game is served from, Steam init, IPC |
-| `src/preload.ts` | puts `window.hirselPlatform` in place before the game loads — nothing else from Node reaches the page |
+| `src/preload.ts` | puts `window.hirselPlatform` in place before the game loads; nothing else from Node reaches the page |
 | `src/store.ts` | one JSON file per storage key, written atomically (temp file, then rename) |
 | `scripts/stage-web.mjs` | copies `../dist` to `web/`, minus the service worker and manifest |
 | `scripts/achievements.mjs` | prints the achievements for the partner site |
@@ -59,7 +59,7 @@ page gets a Content-Security-Policy that allows nothing but its own files.
 
 ### App id
 
-`STEAM_APP_ID` in `src/main.ts` is **480** — Valve's public test app (Spacewar), so init
+`STEAM_APP_ID` in `src/main.ts` is **480**: Valve's public test app (Spacewar), so init
 and the overlay can be tried before Hirsel has an id of its own. Replace it with the real
 id from the partner site. Once it is real, a packaged build started outside Steam relaunches
 itself through Steam (`restartAppIfNecessary`), which is what makes the overlay,
@@ -124,7 +124,7 @@ Each needs a 64×64 icon, earned and unearned.
 | `PELT` | The last wolf in Scotland | You had the reach of him. He is on your back now. | yes |
 | `MAULED` | Caught out late | The high ground was no place to be, and you were told. | yes |
 
-A run that used a code which changes the game earns none of these — see "Cheat codes" in
+A run that used a code which changes the game earns none of these: see "Cheat codes" in
 the root README.
 
 ### Steam Input

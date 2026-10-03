@@ -3,7 +3,7 @@
  * Steamworks for achievements and the overlay.
  *
  * The game itself is not built here. `npm run stage` copies the root web build
- * into `web/`, and this file serves it — so the Steam build and the web build
+ * into `web/`, and this file serves it, so the Steam build and the web build
  * are the same game, and everything desktop-specific lives in this folder.
  */
 import { app, BrowserWindow, ipcMain, Menu, net, protocol, shell } from "electron";
@@ -40,7 +40,7 @@ const appId = Number(process.env.SteamAppId) || OWN_APP_ID;
 /*
  * The name decides the user-data folder, which is where saves live and what
  * Steam Auto-Cloud is pointed at. Pinned here so a development run and a
- * packaged one use the same folder — and the demo keeps its saves apart.
+ * packaged one use the same folder, and the demo keeps its saves apart.
  */
 app.setName(IS_DEMO ? "Hirsel Demo" : "Hirsel");
 

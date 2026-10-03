@@ -1,11 +1,11 @@
-# Hirsel — build spec
+# Hirsel: build spec
 
 A cozy 8-bit Scottish sheep farming game. Web-first, works on desktop and phone from
 one codebase. You give up your job, take on a hill, and try to build a life on it.
 
 A working prototype exists (`hirsel.html`, single file, ~1100 lines). **Read it before
 starting.** Every number below is already tuned and playtested in it. Treat it as the
-design reference and the balance source of truth, not as code to port — it is DOM
+design reference and the balance source of truth, not as code to port; it is DOM
 buttons and a hand-rolled canvas loop, deliberately throwaway.
 
 ---
@@ -18,7 +18,7 @@ A proper project, not a single file.
 
 - Vite + TypeScript
 - Canvas 2D for the scene. Pixi.js is fine if the sprite count grows, but the whole
-  game currently draws in a few hundred `fillRect` calls — don't reach for a renderer
+  game currently draws in a few hundred `fillRect` calls: don't reach for a renderer
   it doesn't need yet
 - Plain state module or Zustand. No Redux
 - No backend. Save to `localStorage`
@@ -29,7 +29,7 @@ A proper project, not a single file.
 
 - One codebase, desktop and mobile. Mobile is a first-class target, not a port
 - Integer-scaled pixel art. Never let the browser interpolate the canvas
-- Respect `prefers-reduced-motion` — collapse all animations to instant
+- Respect `prefers-reduced-motion`: collapse all animations to instant
 - 60fps on a mid-range phone
 - All audio synthesized at runtime via Web Audio (see §8)
 
@@ -80,7 +80,7 @@ and the cozy actions are locked behind money. Tools buy the day back. Do not loo
 | `pub` | A pint at the inn | 1 | **£8.** `hale` 3 days: +1 tap/day. Increments `pubs` |
 | `ask` | Walk down and ask her | 1 | Requires ring + `pubs` ≥ 6. **Wins the game** |
 
-Buff durations are set with `max(existing, n)` — they refresh, they don't stack.
+Buff durations are set with `max(existing, n)`; they refresh, they don't stack.
 
 ---
 
@@ -102,7 +102,7 @@ Regrowth multipliers: rain ×2.2, sun ×1.2.
 ## 5. Weather and moon
 
 Three-day forecast, visible to the player. This is what makes the game plannable
-rather than reactive — do not hide it.
+rather than reactive: do not hide it.
 
 | Weather | Graze | Shearing | Fox bias |
 |---|---|---|---|
@@ -121,7 +121,7 @@ its true phase, moving along an arc across the night sky as the cycle turns.
 
 ## 6. Sheep, wool, and threats
 
-**Fleece value curve** — the central tension. Wool gains value, peaks, then rots:
+**Fleece value curve**: the central tension. Wool gains value, peaks, then rots:
 
 ```
 fleece < 4    → f × 0.5          "short"
@@ -151,7 +151,7 @@ risk = pastureRisk × weatherFoxBias
      × (settledFlock ? 0.85 : 1)
 ```
 With the wolf pelt this is overridden to a flat **1%**.
-On a hit, lose one sheep — but **remove it only after the raid animation finishes.**
+On a hit, lose one sheep, but **remove it only after the raid animation finishes.**
 Seeing the counter drop before the fox arrives was a real complaint in playtest.
 
 **Flystrike.** If any sheep has fleece ≥11, `tended` is not active, and it isn't
@@ -183,11 +183,11 @@ Roughly 30–95p. Stable within a day, so the player can choose to hold wool.
 The sword's description must give nothing away. Current wording:
 *"Hangs well above the fire. Bonny thing. Not much use for keeping foxes off, mind."*
 
-**The croft** — the long goal, strictly sequential:
+**The croft**: the long goal, strictly sequential:
 
 | Milestone | Cost | Unlocks |
 |---|---|---|
-| Slate the cottage roof | £240 | — |
+| Slate the cottage roof | £240 | - |
 | Build up the hearth | £330 | after roof |
 | Raise a stone byre | £420 | after hearth |
 | A silver ring, Inverness | £520 | after byre |
@@ -200,11 +200,11 @@ survived. The action's description names the next missing piece, so the player i
 guessing what's left.
 
 She asks for the croft herself. From the second pub visit onward, each pint surfaces a
-line about whatever is still missing — the roof letting rain in, a house with no proper
-fire being four walls and a draught, nowhere to put the flock in bad weather — and once
+line about whatever is still missing: the roof letting rain in, a house with no proper
+fire being four walls and a draught, nowhere to put the flock in bad weather, and once
 it's all built, she simply stops asking. The requirement is diegetic, not a checklist.
 
-The pub is doing four jobs at once — a gamble on a tap, a route to the wolf, the entire
+The pub is doing four jobs at once: a gamble on a tap, a route to the wolf, the entire
 courtship, and the delivery mechanism for the croft goals. Keep this. It's the best
 thing in the design.
 
@@ -212,7 +212,7 @@ thing in the design.
 
 ---
 
-## 8. The secret boss — the last wolf
+## 8. The secret boss: the last wolf
 
 Wolves were hunted out of Scotland around the 1680s. This is the last one.
 
@@ -240,7 +240,7 @@ summoned again on a later full moon.
 
 1. Dawn of every full moon: *"Full moon tonight. The high ground is no place to be
    caught out late."*
-2. On the corrie, on the **fourth** action — one tap still in hand, so escape is
+2. On the corrie, on the **fourth** action; one tap still in hand, so escape is
    possible: *"The flock will not settle. Something is watching from above the corrie."*
 
 A player who ignores both earned it. A player with no warning was mugged. Keep both.
@@ -265,17 +265,17 @@ recorded turns so it handles chores and leaves decisions alone.
 
 ## 10. Interface
 
-**Desktop:** everything visible at once — HUD, scene, actions, pastures, steading, log.
+**Desktop:** everything visible at once: HUD, scene, actions, pastures, steading, log.
 Hover for sheep detail (breed, fleece grade, age).
 
-**Mobile:** four tabs — Day, Land, Steading, Glen. HUD + scene + tab bar lock together
+**Mobile:** four tabs: Day, Land, Steading, Glen. HUD + scene + tab bar lock together
 as one sticky header; only the panel scrolls beneath it. Do not create two separate
-sticky elements at `top: 0` — they collide, which was a real bug.
+sticky elements at `top: 0`; they collide, which was a real bug.
 
 **Critical:** the last three log lines appear inline at the top of the Day panel,
 newest at full brightness with a brief flash, older ones dimmed. The narration is most
 of this game's character, and when it lived only in a separate tab, mobile players
-never saw it. After sleeping, mobile switches to the Glen tab automatically — the
+never saw it. After sleeping, mobile switches to the Glen tab automatically: the
 night is the one moment the full log is genuinely the content.
 
 **Palette** (peat and heather, deliberately not the default warm-neutral look):
@@ -298,19 +298,19 @@ overscroll, honour safe-area insets.
 ## 11. Animations
 
 Every action gets a set piece. Buttons lock while one plays. They need a completion
-callback and a queue — the fox raid runs *after* the night animation, and the routine
+callback and a queue: the fox raid runs *after* the night animation, and the routine
 player chains actions off animation completion.
 
 `gather` `shear` `market` `tend` `muck` `pipe` `music` `pub` `move` `sleep`
 `buysheep` `fox` `wolf` `wolflost`
 
 Notable ones: the pub leaves the pasture entirely for a dark room with a fire and a
-pint filling — that's what makes an £8 pint feel like an event. The fox raid darkens
+pint filling: that's what makes an £8 pint feel like an event. The fox raid darkens
 to night and the flock scatters based on proximity. Sleep runs dusk → stars → moon at
 true phase → dawn.
 
-A persistent shepherd sprite works the field. The sheepdog is tricolour — black
-saddle, tan points, white blaze, ruff, socks and tail tip — and must remain visible
+A persistent shepherd sprite works the field. The sheepdog is tricolour: black
+saddle, tan points, white blaze, ruff, socks and tail tip, and must remain visible
 during the night animation.
 
 ---
@@ -362,7 +362,7 @@ Don't silently resolve these. Build them as tunable config and flag them.
    market, winter survival where nothing grows. This is the obvious next system and
    the answer to (5). Build the day loop so a season layer can sit on top.
 7. **Dog ageing and retirement.** Dogs should age and retire to live in the house
-   rather than dying — retired dogs by the fire as a visible record of survival, with
+   rather than dying: retired dogs by the fire as a visible record of survival, with
    a small passive bonus. Designed, not built.
 
 ---
@@ -373,5 +373,5 @@ Don't silently resolve these. Build them as tunable config and flag them.
 - Don't add taps to make it friendlier. The scarcity *is* the game
 - Don't explain the sword, the wolf, or the summon conditions anywhere in the UI
 - Don't cut the warning messages to make the wolf more surprising
-- Don't let the cozy actions become free. They compete with work — that's the point
+- Don't let the cozy actions become free. They compete with work: that's the point
 - Don't use localStorage for anything until the save system is deliberately designed

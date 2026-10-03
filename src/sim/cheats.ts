@@ -2,7 +2,7 @@
  * Cheat codes. Typed into the box in Settings.
  *
  * Deliberately none of these mention the sword, the wolf, or the summon
- * conditions — §15 stands, cheats included.
+ * conditions: §15 stands, cheats included.
  */
 import type { Game } from "./game";
 import type { Settings } from "./settings";
@@ -15,7 +15,7 @@ export interface CheatContext {
   toggleZen: () => void;
   toggleSwift: () => void;
   setSpeed: (mult: number) => void;
-  /** get out of the way — some codes have something to show you */
+  /** get out of the way: some codes have something to show you */
   closeSettings: () => void;
 }
 
@@ -171,7 +171,7 @@ export const CHEATS: Cheat[] = [
  *   SKELP    pace only, nothing about the game changes
  *   HAAR     three days of weather, once
  *   LANGDAY  three taps, once
- *   HIRSEL   twelve beasts — powerful, but you still have to farm them
+ *   HIRSEL   twelve beasts: powerful, but you still have to farm them
  *   1680     dangerous rather than strong, if you do not know what you are
  *            doing. By here the player has won five times and has almost
  *            certainly met him, so it gives nothing away that is still secret

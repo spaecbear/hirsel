@@ -3,7 +3,7 @@
 /*
  * The face is shipped, not assumed. Windows has no DejaVu Sans Mono, so every
  * Windows player was reading the game in Consolas. Subset to Latin, general
- * punctuation and arrows (everything the text uses — £, —, ·, ×, →, ✓) and
+ * punctuation and arrows (everything the text uses: £, ·, ×, →, ✓) and
  * converted to woff2; the licence is alongside in src/fonts.
  */
 @font-face {
@@ -163,7 +163,7 @@ body.mode-retro #scene {
   border-top: 0;
 }
 
-/* glen: the canvas IS the game — it fills the viewport, and the sheets and
+/* glen: the canvas IS the game; it fills the viewport, and the sheets and
    chrome float over it. No page scrolling: the hill does not scroll. */
 body.mode-glen {
   padding: 0;
@@ -195,7 +195,7 @@ body.mode-retro #glen-root {
   position: absolute;
   inset: 0;
 }
-/* Always reachable, in either interface — never nested inside a shell that
+/* Always reachable, in either interface, never nested inside a shell that
    the other mode hides. In the glen it sits bottom-right, clear of the HUD
    strip along the top; in retro it sits up by the title. */
 .glen-chrome {
@@ -390,7 +390,7 @@ body.mode-retro .glen-chrome {
 .hint.on { opacity: 1; }
 
 /* Cutscene lines. Same crisp DOM text as the chips, rather than the canvas
-   bitmap font — at 7px, hardened to 1-bit, those lines were unreadable, and
+   bitmap font, at 7px, hardened to 1-bit, those lines were unreadable, and
    they carry the whole reason the run is happening. */
 .caption {
   position: absolute;
@@ -413,6 +413,70 @@ body.mode-retro .glen-chrome {
   pointer-events: none;
 }
 .caption.on { opacity: 1; }
+/* the opening: the quote over the climb runs longer, with its poet under it */
+.caption.quote {
+  white-space: pre-line;
+  max-width: min(520px, calc(100vw - 32px));
+  width: auto;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  transition: opacity 1.2s ease-out;
+}
+/* the name of the game, coming up over the glen; no box, just the words on the sky */
+.opening-title {
+  position: absolute;
+  top: 9%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  text-align: center;
+  z-index: 10;
+  opacity: 0;
+  /* in slowly over the glen; out quickly, before the hill starts talking */
+  transition: opacity 0.3s ease-in;
+  pointer-events: none;
+}
+.opening-title.on { opacity: 1; transition: opacity 1.6s ease-out; }
+.opening-title h1 {
+  margin: 0;
+  color: var(--gorse);
+  font-size: clamp(30px, 9vw, 64px);
+  font-weight: bold;
+  letter-spacing: 0.45em;
+  text-indent: 0.45em; /* letter-spacing pads the right; this balances it */
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 #1e2317, 0 0 18px rgba(20, 23, 15, 0.55);
+}
+.opening-title p {
+  margin: 8px 0 0;
+  color: #f4f0e2;
+  font-size: clamp(11px, 2.6vw, 15px);
+  letter-spacing: 0.18em;
+  text-wrap: balance;
+  max-width: min(560px, calc(100vw - 32px));
+  margin-inline: auto;
+  text-shadow: 0 1px 0 #1e2317, 0 0 10px rgba(20, 23, 15, 0.6);
+}
+/* how to get past the opening, small, out of the way */
+.skip-hint {
+  position: absolute;
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  color: var(--wool);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  transition: opacity 0.6s;
+  pointer-events: none;
+  z-index: 10;
+}
+.skip-hint.on { opacity: 0.45; }
+/* while the opening plays it has the screen: no day, no purse, no buttons */
+body.opening .hud-bar,
+body.opening .glen-chrome,
+body.opening .hint,
+body.opening .sky-log { visibility: hidden; }
 
 /* the first day's walkthrough. Sits at the top, clear of the sheet at the
    bottom, so a prompt and the thing it is telling you to tap are never
@@ -790,7 +854,7 @@ body.no-motion .credits-scroll {
 
 /* HUD + art + word of the glen + tabs are ONE locked block at every width;
    the panels scroll away underneath it. Never make a second sticky element
-   at top:0 — two of them collide, which was a real bug in the prototype. */
+   at top:0: two of them collide, which was a real bug in the prototype. */
 .scene {
   position: sticky;
   top: 0;
@@ -958,7 +1022,7 @@ body.no-motion .credits-scroll {
 }
 
 /* Sleep and the sub-tabs stay put while the action list scrolls under them.
-   It sticks *below* the scene block rather than at top:0 — two sticky elements
+   It sticks *below* the scene block rather than at top:0: two sticky elements
    at the same offset collide, which was a real bug in the prototype. The scene
    measures itself into --scene-h, since the HUD rewraps at different widths. */
 .day-head {
@@ -970,7 +1034,7 @@ body.no-motion .credits-scroll {
   padding: 11px 11px 0;
 }
 
-/* sub-tabs inside the day panel — the day's actions in short lists */
+/* sub-tabs inside the day panel: the day's actions in short lists */
 .subtabs {
   display: flex;
   margin: 2px 0 9px;
@@ -1051,7 +1115,7 @@ body.no-motion .credits-scroll {
   background: var(--grass);
 }
 
-/* the flock roster — hover for breed, grade and age */
+/* the flock roster: hover for breed, grade and age */
 .tiles {
   display: flex;
   flex-wrap: wrap;
@@ -1320,6 +1384,24 @@ body.modal {
   outline: none;
   border-color: var(--gorse);
 }
+/* the Enter beside it: the game's own button, not the browser's grey one */
+.cheat-row button {
+  background: var(--peat);
+  border: 1px solid var(--gorse);
+  color: var(--gorse);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 9px 14px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.cheat-row button:hover,
+.cheat-row button:focus-visible {
+  background: var(--moss);
+  outline: none;
+}
 .ach {
   display: flex;
   flex-wrap: wrap;
@@ -1346,7 +1428,7 @@ body.modal {
   line-height: 1.5;
 }
 
-/* buffs & status reference — plain information, not something to unlock, so
+/* buffs & status reference: plain information, not something to unlock, so
    it reads at full brightness rather than the dimmed "not earned yet" look */
 .gloss {
   display: flex;
@@ -1677,12 +1759,16 @@ body.no-motion .event-portrait {
   }
 }
 
-/* the way out of the inn, when the evening is done — not before */
+/* the way out of the inn, when the evening is done, not before */
 .inn-leave {
   position: absolute;
-  left: 50%;
+  /* centred by its margins, not a translate: the pop-in animation below sets
+     transform, and with fill-mode both it replaced translateX(-50%) for good,
+     leaving the button's left edge at the middle of the screen, half off a phone */
+  left: 0;
+  right: 0;
+  margin-inline: auto;
   bottom: calc(22px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
   width: min(320px, calc(100vw - 32px));
   display: none;
   z-index: 9;
@@ -1694,6 +1780,12 @@ body.no-motion .event-portrait {
 body.input-keys .inn-leave,
 body.input-pad .inn-leave {
   bottom: calc(60px + env(safe-area-inset-bottom));
+}
+/* on a narrow screen it would sit on the Sound and Settings chips: lift it clear */
+@media (max-width: 700px) {
+  .inn-leave {
+    bottom: calc(52px + env(safe-area-inset-bottom));
+  }
 }
 /* the season the run is in, picked out among the four */
 .gloss div.now {

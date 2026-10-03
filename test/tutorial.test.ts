@@ -12,7 +12,7 @@ import {
   tutorialSetup,
 } from "../src/sim/tutorial";
 describe("the first day's setup", () => {
-  it("starts a beast short, at the ordinary starting purse — the ewe is earned, not given", () => {
+  it("starts a beast short, at the ordinary starting purse: the ewe is earned, not given", () => {
     const g = newGame({ seed: 4 });
     tutorialSetup(g);
     expect(g.flock).toHaveLength(TUTORIAL_START_FLOCK);
@@ -124,7 +124,7 @@ describe("the walkthrough", () => {
     latchDone(g, seen);
     expect(seen.has("shear")).toBe(true);
 
-    // a fine day, with heavy fleece on the hill — it must not come back
+    // a fine day, with heavy fleece on the hill; it must not come back
     g.forecast[0] = "sun";
     for (const sheep of g.flock) sheep.fleece = 8;
     latchDone(g, seen);
@@ -178,7 +178,7 @@ describe("the walkthrough", () => {
      * told what the house is for has no goal at all, and entering it jumped
      * straight to "here is how you end the day". Naming the roof, the hearth
      * and the byre is telling someone what their work is for. The ending
-     * those pieces add up to — the ring, and who it is for — is the secret,
+     * those pieces add up to (the ring, and who it is for) is the secret,
      * and that stays out.
      */
     const text = TUTORIAL.map((s) => s.text).join(" ").toLowerCase();
@@ -240,7 +240,7 @@ describe("locking the walkthrough to its lesson", () => {
 
 describe("the walkthrough teaches the croft", () => {
   /*
-   * It pointed at the house, called it "yours to fix up", and stopped there —
+   * It pointed at the house, called it "yours to fix up", and stopped there,
    * so a new player had no idea the croft was what the run is for, nor that
    * paying for a piece of it buys the materials and nothing else. Buy the
    * roof, watch £240 leave the purse and no roof appear, and the only
@@ -258,7 +258,7 @@ describe("the walkthrough teaches the croft", () => {
     expect(step.text).toMatch(/work/i);
   });
 
-  it("is read, not done — the first piece costs six times a first day's purse", () => {
+  it("is read, not done: the first piece costs six times a first day's purse", () => {
     // £240 for the roof against £40 to your name: there is nothing here a
     // player could be asked to try on day one
     expect(step.readOnly).toBe(true);
@@ -274,8 +274,8 @@ describe("the walkthrough teaches the croft", () => {
   it("leaves no step in the walkthrough unreachable", () => {
     /*
      * Walk the whole thing the way a player would and check every step
-     * actually surfaces. A step can be defined and never shown — its `done`
-     * already true when the walkthrough arrives at it — and nothing else
+     * actually surfaces. A step can be defined and never shown; its `done`
+     * already true when the walkthrough arrives at it, and nothing else
      * would catch that.
      */
     const g = newGame({ seed: 3 });

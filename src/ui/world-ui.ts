@@ -6,7 +6,7 @@
  * house to build it up, the hills to move, the ground under your feet for the
  * ground's own work. Tapping opens a sheet listing what can be done there.
  *
- * The sheets are DOM rather than drawn into the canvas on purpose — they carry
+ * The sheets are DOM rather than drawn into the canvas on purpose; they carry
  * prices, reasons an action is unavailable, and long descriptive lines, and
  * they inherit the panel styling the game already had. The world is pixels;
  * the words about the world are text.
@@ -53,15 +53,15 @@ interface Row {
   label: string;
   detail: string;
   disabled?: boolean;
-  /** already taken care of today — marked rather than hidden */
+  /** already taken care of today: marked rather than hidden */
   done?: boolean;
   tone?: "cozy" | "gold" | "stock" | "life";
-  /** not a choice — something to read. Rendered as text, not a dimmed button. */
+  /** not a choice; something to read. Rendered as text, not a dimmed button. */
   info?: boolean;
   /**
    * Close the sheet after picking this, so whatever it sets off is visible.
    * Buying a beast walks her onto the hill and selling wool sends the cart
-   * off down the road — on a phone the sheet covered both of them.
+   * off down the road, on a phone the sheet covered both of them.
    */
   closes?: boolean;
   /**
@@ -73,7 +73,7 @@ interface Row {
   onPick: () => void;
 }
 
-/** which target on the hill an action belongs to — what the walkthrough's lock is asked about */
+/** which target on the hill an action belongs to: what the walkthrough's lock is asked about */
 const ACTION_HOME: Partial<Record<ActionId, HotspotId>> = {
   gather: "flock",
   shear: "flock",
@@ -202,7 +202,7 @@ export class WorldUi {
   }
 
   /**
-   * What is under a point — at the moment the player was *aiming*, not the
+   * What is under a point, at the moment the player was *aiming*, not the
    * moment their finger came up.
    *
    * The dog moves: she covers the best part of six hundred pixels in a lap,
@@ -249,7 +249,7 @@ export class WorldUi {
   }
 
   /**
-   * Act on a target, however it was chosen — a tap on it, or a controller's
+   * Act on a target, however it was chosen: a tap on it, or a controller's
    * cursor resting on it and A pressed. Everything the tap used to decide
    * lives here, so the two can never disagree about what a target does.
    */
@@ -269,14 +269,14 @@ export class WorldUi {
      * Nothing that acts on the world answers while an animation or the
      * watch's sequence is running. The sheet's buttons were already disabled
      * for this, but the house, the door and the bed bypassed the sheet
-     * entirely — so you could walk in and sleep in the middle of the watch
+     * entirely, so you could walk in and sleep in the middle of the watch
      * running a recorded day.
      */
     /*
      * The dog answers a tap herself rather than opening a sheet, and she
      * answers it even while something else is playing.
      *
-     * This sat below the busy gate, and tapping her starts a bark — which
+     * This sat below the busy gate, and tapping her starts a bark, which
      * made the world busy for 900ms, longer than the 800ms window a second
      * turn has to land in. The second tap of the pair was swallowed every
      * time, so Arrow could not be asked for at all. She changes nothing in
@@ -286,7 +286,7 @@ export class WorldUi {
     /*
      * The dog answers a tap herself rather than opening a sheet, and she
      * answers it even while something else is playing. She only has a target
-     * indoors — see layoutInterior — so this cannot spend a day's work by
+     * indoors (see layoutInterior), so this cannot spend a day's work by
      * accident the way a target out on the hill could.
      *
      * The bark is a sound rather than an animation on purpose. Played through
@@ -344,7 +344,7 @@ export class WorldUi {
    *
    * Tippy is earned by being in the room and watching the collie settle at
    * the fire. This used to live in refresh(), which only runs when the game
-   * state changes — and walking through your own front door changes nothing,
+   * state changes, and walking through your own front door changes nothing,
    * so the award sat waiting until the next thing the player happened to do.
    * The same gap swallowed the other route in: if the hearth was finished
    * while you stood there, she takes a second and a half to cross the room,
@@ -365,7 +365,7 @@ export class WorldUi {
   }
 
   /**
-   * The top strip. Text, not pixels — these are the numbers the game is
+   * The top strip. Text, not pixels; these are the numbers the game is
    * played by, and the canvas bitmap font could not be read at the size the
    * strip allows.
    */
@@ -425,7 +425,7 @@ export class WorldUi {
             /*
              * Trades normally keep the sheet open, so several things can be
              * bought in a row without reopening it. Anything with something
-             * to watch closes instead — the animation is the point.
+             * to watch closes instead: the animation is the point.
              */
             if ((id === "cart" || id === "croft") && !r.closes) this.refresh();
             else this.close();
@@ -455,7 +455,7 @@ export class WorldUi {
   focusId: HotspotId | null = null;
   /** a sheet opened by keys or a pad takes focus, so the selection lands in it */
   focusSheets = false;
-  /** print each row's quick key beside it — only while the keyboard is what is in use */
+  /** print each row's quick key beside it, only while the keyboard is what is in use */
   showKeys = false;
 
   /** a key's badge for a sheet row, or nothing */
@@ -466,9 +466,9 @@ export class WorldUi {
   }
 
   /**
-   * A quick key. Everything a tap on the row would check is checked here too
-   * — the walkthrough's lock on the thing it is teaching, a day's taps, the
-   * weather — and anything refused says why rather than nothing happening.
+   * A quick key. Everything a tap on the row would check is checked here too:
+   * the walkthrough's lock on the thing it is teaching, a day's taps, the
+   * weather, and anything refused says why rather than nothing happening.
    * Returns that reason, for the caller to show, or null.
    */
   quick(q: Quick): string | null {
@@ -542,7 +542,7 @@ export class WorldUi {
    * Most are their own tap rectangle. Three are not, because their rectangle
    * is not where the eye puts them: the flock is many small targets (one box
    * round all of them), and the ground and the hills are bands the width of
-   * the screen — navigating by their centres put the ground's anchor in the
+   * the screen: navigating by their centres put the ground's anchor in the
    * middle of the flock. The ground's box is the open grass near the bottom,
    * the hills' is the middle of their band.
    */
@@ -598,7 +598,7 @@ export class WorldUi {
   }
 
   /**
-   * The right stick walks him — the same walk a held finger sets off, a
+   * The right stick walks him: the same walk a held finger sets off, a
    * stride at a time in the direction pushed. Only out on the open ground,
    * and not while the walkthrough is teaching something else.
    */
@@ -643,7 +643,7 @@ export class WorldUi {
     }
   }
 
-  /** the lambs among them, and the ewes carrying — said wherever the flock is counted */
+  /** the lambs among them, and the ewes carrying: said wherever the flock is counted */
   private flockNote(): string {
     const g = this.game.state;
     const lex = this.game.lex;
@@ -691,7 +691,7 @@ export class WorldUi {
   /**
    * What the sky knows: the three-day forecast, the moon, and what is running
    * in you. The spec is emphatic that the forecast is what makes the game
-   * plannable rather than reactive and must not be hidden — in a UI with no
+   * plannable rather than reactive and must not be hidden, in a UI with no
    * panels, the sky is where it belongs.
    */
   /** the stack itself: what is in it, how far it goes, and where more comes from */
@@ -705,7 +705,7 @@ export class WorldUi {
       info("In the barn", `${g.hay} bales, about ${hayNights(g)} nights for the ${lex.flock} as it is now`),
       info(
         isWinter(g) ? "The rest of the winter" : "A winter",
-        short > 0 ? `wants about ${want} — ${short} short` : `wants about ${want} — enough put by`,
+        short > 0 ? `wants about ${want}, ${short} short` : `wants about ${want}, enough put by`,
       ),
       info("More", "cut on the open ground on a dry summer day, or bought at the cart any time but spring"),
     ];
@@ -884,7 +884,7 @@ export class WorldUi {
           /*
            * Out onto the hill first. The croft sheet is only reachable from
            * inside the house, and the painter draws the room and returns
-           * before it ever reaches an animation — so a day's work on the
+           * before it ever reaches an animation, so a day's work on the
            * roof, the chimney or the byre played entirely behind a closed
            * door and nobody ever saw one. The work is outside anyway.
            */
@@ -953,7 +953,7 @@ export class WorldUi {
       const names = g.retiredDogs.map((k) => (k === "collie" ? "a collie" : "a sheltie"));
       rows.push({
         label: g.retiredDogs.length === 1 ? "By the fire, retired" : `By the fire, ${g.retiredDogs.length} of them retired`,
-        detail: `${names.join(", ")}. They have earned it — and they still lift their heads at anything moving outside at night.`,
+        detail: `${names.join(", ")}. They have earned it, and they still lift their heads at anything moving outside at night.`,
         info: true,
         onPick: () => {},
       });
@@ -985,7 +985,7 @@ export class WorldUi {
     });
 
     /*
-     * Hay for the winter: money instead of the summer's taps. Not in spring —
+     * Hay for the winter: money instead of the summer's taps. Not in spring;
      * nobody sells hay with the grass coming, and the first day's walkthrough
      * is rigged to pay for exactly one ewe, which a hay row at the top of the
      * cart could quietly spend first.
@@ -1004,7 +1004,7 @@ export class WorldUi {
       onPick: () => this.game.buyHay(),
     });
 
-    // sell a beast — no tap, and a loss on her
+    // sell a beast; no tap, and a loss on her
     for (const breed of Object.keys(BREEDS) as BreedId[]) {
       const held = g.flock.filter((s) => s.breed === breed && !s.lamb);
       if (!held.length) continue;
@@ -1018,7 +1018,7 @@ export class WorldUi {
       });
     }
 
-    // sell a lamb — at their best at the autumn sales
+    // sell a lamb, at their best at the autumn sales
     for (const breed of Object.keys(BREEDS) as BreedId[]) {
       const lambs = g.flock.filter((s) => s.breed === breed && s.lamb);
       if (!lambs.length) continue;
@@ -1058,7 +1058,7 @@ export class WorldUi {
       if (takenBy) {
         rows.push({
           label: t.name,
-          detail: "You have a dog. One shepherd, one dog — that is what a hirsel is.",
+          detail: "You have a dog. One shepherd, one dog: that is what a hirsel is.",
           info: true,
           onPick: () => {},
         });
@@ -1066,7 +1066,7 @@ export class WorldUi {
       }
       /*
        * Some things want somewhere to go before they can be had at all. The
-       * locked line is the smith's patter rather than a hint — it says why
+       * locked line is the smith's patter rather than a hint; it says why
        * you cannot have it, and still nothing about what it is for.
        */
       const needs = "needs" in t ? (t.needs as string | undefined) : undefined;
@@ -1086,7 +1086,7 @@ export class WorldUi {
 
   /**
    * What the thing under the pointer is. Written here rather than in the art
-   * because it needs the game state and TOD's vocabulary — and because it is
+   * because it needs the game state and TOD's vocabulary, and because it is
    * text, which the canvas has no business rendering.
    */
   hintText(): string {
@@ -1095,7 +1095,7 @@ export class WorldUi {
     if (this.interior) {
       switch (this.hover) {
         case "bed":
-          return "The bed — sleep the night";
+          return "The bed: sleep the night";
         case "hearth":
           return "The hearth";
         case "door":
@@ -1108,21 +1108,21 @@ export class WorldUi {
     }
     switch (this.hover) {
       case "croft":
-        return owns(g, "ring") ? "The croft — finished" : "The croft — go in";
+        return owns(g, "ring") ? "The croft: finished" : "The croft: go in";
       case "cart":
-        return `The cart — ${this.lexicon.wool} ${woolPrice(g)}p a stone`;
+        return `The cart: ${this.lexicon.wool} ${woolPrice(g)}p a stone`;
       case "flock":
-        return `${this.lexicon.flockCap} — ${g.flock.length} on the hill${this.flockNote()}`;
+        return `${this.lexicon.flockCap}: ${g.flock.length} on the hill${this.flockNote()}`;
       case "shepherd":
         return "Yourself";
       case "ground":
-        return `${here(g).name} — grass ${Math.round(here(g).grass)}%`;
+        return `${here(g).name}: grass ${Math.round(here(g).grass)}%`;
       case "hills":
-        return "The hills — move them";
+        return "The hills: move them";
       case "sky":
         return "Word of the glen";
       case "hay":
-        return `The ${this.lexicon.hay} — ${this.barnLine()}`;
+        return `The ${this.lexicon.hay}: ${this.barnLine()}`;
       default:
         return "";
     }
@@ -1140,7 +1140,7 @@ export class WorldUi {
     if (g.over) return "";
     if (this.busy) return "";
     if (!canShear(g) && readyToShear(g.flock) > 0) return `No ${this.game.lex.shear.toLowerCase()} in this weather.`;
-    if (g.taps <= 0) return "The day is spent — tap the croft to sleep.";
+    if (g.taps <= 0) return "The day is spent. Tap the croft to sleep.";
     return "";
   }
 

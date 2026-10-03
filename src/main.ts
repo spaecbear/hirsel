@@ -36,6 +36,7 @@ import { eventDef } from "./sim/events";
 import { Painter } from "./render/painter";
 import { drawCallum, PORTRAIT_H, PORTRAIT_W } from "./render/portrait";
 import { DEMO_DAYS, IS_DEMO, STORE_URL, demoOver } from "./demo";
+import { OPENING, OPENING_QUOTE } from "./render/opening";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
@@ -98,8 +99,8 @@ function wire(g: Game) {
     render();
   };
   g.onAchievement = (a) => {
-    toast(`Achievement — ${a.name}`);
-    sky.add(`— ${a.name} —`, "gold", performance.now());
+    toast(`Achievement: ${a.name}`);
+    sky.add(`Earned: ${a.name}`, "gold", performance.now());
   };
   g.lex = lexicon(settings.inverse);
   g.zen = settings.zen;
@@ -112,7 +113,7 @@ function render() {
   if (settings.ui === "retro") view.render();
   else world.refresh();
   /*
-   * A run can end without an animation playing — selling the last beast at
+   * A run can end without an animation playing: selling the last beast at
    * the cart, for one. The end screen used to be raised only from the
    * animator going idle, so those endings left the game quietly over with
    * nothing on screen. Anything that finishes a run raises it now; the
@@ -126,8 +127,8 @@ function render() {
 }
 
 /**
- * The demo's last card. Comes up once the fortnight has been slept through,
- * and again on continuing a demo save that is past it — the demo does not go
+ * The demo's last card. Comes up once the last demo day has been slept through,
+ * and again on continuing a demo save that is past it: the demo does not go
  * on, it points at the game that does.
  */
 function showDemoEnd() {
@@ -137,8 +138,8 @@ function showDemoEnd() {
   const g = game.state;
   $("demo-body").textContent =
     `${DEMO_DAYS} days on the hill, ${g.flock.length} beasts on it and £${g.money} in the purse. ` +
-    "The full game goes on from here: the seasons and the winter, lambing, the dogs growing old, the dealer and the show " +
-    "and your neighbour over the burn — and the croft, and her.";
+    "The full game goes on from here: the summer and the hay, the Highland show, the autumn sales, the first winter " +
+    "and the lambs in the spring after it, the dogs growing old. And the croft, and her.";
   box.classList.add("on");
 }
 $("demo-wishlist").addEventListener("click", () => {
@@ -151,14 +152,14 @@ $("demo-again").addEventListener("click", () => {
   showTitle();
 });
 if (IS_DEMO) {
-  $("tagline").textContent = `a hill, a flock, and a life to build on it — the demo`;
+  $("tagline").textContent = `a hill, a flock, and a life to build on it (the demo)`;
   const sub = document.querySelector(".title-sub");
-  if (sub) sub.textContent = `a hill, a flock, and a life to build on it — the first ${DEMO_DAYS} days`;
+  if (sub) sub.textContent = `a hill, a flock, and a life to build on it (the first ${DEMO_DAYS} days)`;
 }
 
 /**
- * Something at the door. Shown once the night has played out — never over
- * the dark or the dawn — and built afresh only when the event or what can be
+ * Something at the door. Shown once the night has played out, never over
+ * the dark or the dawn, and built afresh only when the event or what can be
  * afforded changes, so a controller's selection is not thrown away every
  * render.
  */
@@ -167,11 +168,10 @@ let eventKey = "";
 const portraitEl = $<HTMLCanvasElement>("event-portrait");
 const portraitPainter = new Painter(portraitEl.getContext("2d")!, PORTRAIT_W, PORTRAIT_H);
 let portraitSpeaker: string | null = null;
-let portraitSince = 0;
-/** once a frame while a card with someone on it is up */
-function drawPortrait(now: number) {
+/** while a card with someone on it is up */
+function drawPortrait() {
   if (!portraitSpeaker || !eventEl.classList.contains("on")) return;
-  if (portraitSpeaker === "callum") drawCallum(portraitPainter, now, now - portraitSince);
+  if (portraitSpeaker === "callum") drawCallum(portraitPainter);
 }
 function updateEvent() {
   const g = game.state;
@@ -189,7 +189,6 @@ function updateEvent() {
   const ev = eventDef(g.event!.id);
   // his face, if it is him; it pops in with the card (the CSS restarts on unhiding)
   portraitSpeaker = ev.speaker ?? null;
-  portraitSince = performance.now();
   portraitEl.hidden = !portraitSpeaker;
   const lex = game.lex;
   $("event-title").textContent = ev.title(g, g.event!.data, lex);
@@ -198,11 +197,12 @@ function updateEvent() {
   box.innerHTML = "";
   for (const { choice: c, ok } of choices) {
     const costs = [c.taps ? `${c.taps} tap${c.taps > 1 ? "s" : ""}` : "", c.money ? `£${c.money}` : ""].filter(Boolean).join(" · ");
-    const why = !ok && (c.money ?? 0) > g.money ? " — you have not the money" : !ok && c.taps ? " — no taps left today" : "";
+    const why = !ok && (c.money ?? 0) > g.money ? "You have not the money." : !ok && c.taps ? "No taps left today." : "";
+    const note = [c.detail, why].filter(Boolean).join(" ");
     box.appendChild(
       button(
         "act",
-        `<span class="n">${c.label}${costs ? ` · ${costs}` : ""}</span>${c.detail || why ? `<span class="d">${c.detail ?? ""}${why}</span>` : ""}`,
+        `<span class="n">${c.label}${costs ? ` · ${costs}` : ""}</span>${note ? `<span class="d">${note}</span>` : ""}`,
         () => game.answerEvent(c.id),
         !ok,
       ),
@@ -303,7 +303,7 @@ const settingsUi = buildSettings({
     startGame(f.state);
     closeSettings();
     hideTitle();
-    toast(`Loaded — day ${f.state.day}.`);
+    toast(`Loaded: day ${f.state.day}.`);
   },
   exportSave: () => exportFile(game.state),
   importSave: (file) => {
@@ -312,7 +312,7 @@ const settingsUi = buildSettings({
       startGame(state);
       closeSettings();
       hideTitle();
-      toast(`Loaded — day ${state.day}.`);
+      toast(`Loaded: day ${state.day}.`);
     });
   },
   deleteSave: () => {
@@ -362,7 +362,7 @@ $("over-again").addEventListener("click", () => {
    * Back to the title, not straight onto a fresh hill.
    *
    * This used to start the next run immediately, and the scale is chosen on
-   * the title — so after finishing a run there was no way to play the next
+   * the title, so after finishing a run there was no way to play the next
    * one on a different one. The title is the only place that asks, and
    * finishing a run is exactly when a player wants to be asked.
    */
@@ -374,7 +374,7 @@ $("over-again").addEventListener("click", () => {
 /* ---------- the credits ---------- */
 
 /**
- * Shown for finishing a run with nothing left to find — every achievement
+ * Shown for finishing a run with nothing left to find: every achievement
  * earned and every code known. Not for winning; for finishing it.
  */
 function everythingFound(): boolean {
@@ -458,7 +458,7 @@ function creditsOutro() {
 
   // the hill goes out behind it, once the words have arrived
   at(2600, () => $("credits").classList.add("dimming"));
-  // and it is left alone a while — this is the last thing anyone reads
+  // and it is left alone a while; this is the last thing anyone reads
   at(7200, () => quote.classList.add("out"));
   at(8800, closeCredits);
 }
@@ -477,7 +477,7 @@ function closeCredits() {
   document.body.classList.remove("rolling");
   /*
    * A won run comes back to its end card rather than the menu, so staying on
-   * the hill is still on offer after the credits — they are for having found
+   * the hill is still on offer after the credits; they are for having found
    * everything, not a door shut on the run.
    */
   if (game.state.over?.kind === "win") {
@@ -522,7 +522,7 @@ function showTitle() {
   const cont = $<HTMLButtonElement>("title-continue");
   cont.disabled = !save;
   cont.style.display = save ? "" : "none";
-  $("title-foot").textContent = save ? `a run is waiting — day ${save.state.day}` : "";
+  $("title-foot").textContent = save ? `a run is waiting, on day ${save.state.day}` : "";
   $("title").classList.add("on");
 }
 function hideTitle() {
@@ -540,7 +540,7 @@ $("title-continue").addEventListener("click", () => {
   hideTitle();
   if (f) {
     startGame(f.state);
-    game.say(`— Picked up where you left off, day ${f.state.day}. —`, "cozy");
+    game.say(`Picked up where you left off, day ${f.state.day}.`, "cozy");
   } else startGame(undefined, { intro: true });
 });
 if (platform.quit) {
@@ -559,7 +559,7 @@ function firstGesture() {
    * Every gesture gets a go at the audio, not just the first one.
    *
    * This used to return the moment `started` was set, so if the context came
-   * up suspended — which is what Safari always does — there was no way back
+   * up suspended, which is what Safari always does, there was no way back
    * and the game stayed silent for the whole run. Resuming an already
    * running context costs nothing.
    */
@@ -585,7 +585,7 @@ document.addEventListener("visibilitychange", () => {
  * On the desktop the sound goes when the window does. A browser tab is left
  * playing because that is what tabs do; a game alt-tabbed away from is
  * expected to go quiet, and a Deck suspended mid-air to stop. There is
- * nothing else to pause — the day only moves when the player moves it, and
+ * nothing else to pause: the day only moves when the player moves it, and
  * an animation left running behind the window just finishes.
  */
 if (platform.kind === "steam") {
@@ -606,7 +606,7 @@ animator.onStart = (anim) => {
 /*
  * The pint is down and the room has settled: sit on. Not when the watch is
  * running a recorded day (it chains straight on to the next thing), and only
- * in the glen — the retro panels keep their own short evening.
+ * in the glen: the retro panels keep their own short evening.
  */
 animator.onFinish = (anim) => {
   if (anim === "pub" && settings.ui === "glen" && !game.busy && !game.state.over) world.enterInn();
@@ -627,7 +627,7 @@ animator.onIdle = () => {
 /*
  * Raised once per ending. It has to be idempotent because it writes settings
  * (the revealed code), which triggers a render, which is one of the things
- * that raises it — without this guard a single win recursed through the whole
+ * that raises it, without this guard a single win recursed through the whole
  * cheat list and handed over every code at once.
  */
 let endShown = false;
@@ -650,7 +650,7 @@ function showEnd() {
   box.style.display = "none";
   /*
    * The codes are hard's to give. Winning on Gentle or Steady is still a win
-   * — the ring, the wedding, the credits — but the glen only tells you
+   * (the ring, the wedding, the credits), but the glen only tells you
    * something it was keeping if you took it at its worst. Without that, the
    * three scales would be a difficulty menu with no reason to climb it.
    */
@@ -685,7 +685,7 @@ function showEnd() {
    * it has to be impossible to miss them.
    *
    * "Start again" used to sit there through the wait and then the screen cut
-   * hard to the picture — so a player could tap it before the credits had
+   * hard to the picture, so a player could tap it before the credits had
    * begun and skip the whole ending by accident, which is a poor reward for
    * having found everything in the game. The button is taken away for that
    * one ending, the words are left up long enough to read, and the two
@@ -713,8 +713,8 @@ function showEnd() {
 }
 
 /**
- * Stay on the hill: the won run goes on, with her at the croft. Saved at once
- * — the night's autosave is a day away, and a player who stays and then
+ * Stay on the hill: the won run goes on, with her at the croft. Saved at once:
+ * the night's autosave is a day away, and a player who stays and then
  * quits should not come back to the evening before the wedding.
  */
 function stayOnTheHill() {
@@ -784,18 +784,48 @@ function updateHint() {
 }
 
 const captionEl = $("caption");
+const openingTitle = $("opening-title");
+const skipHint = $("skip-hint");
 let captionText = "";
+/** how far through one of the opening's beats the scene is */
+const beatAt = (p: number, b: keyof typeof OPENING) => (p - OPENING[b][0]) / (OPENING[b][1] - OPENING[b][0]);
 function updateCaption(anim: string | null, p: number) {
   let want = "";
-  if (anim === "quit") {
-    if (p < 0.4) want = "You handed in your notice.";
-    else if (p >= 0.66) want = "A hill, and whatever you can make of it.";
+  const opening = anim === "quit";
+  if (opening) {
+    const office = beatAt(p, "office");
+    const train = beatAt(p, "train");
+    const climb = beatAt(p, "climb");
+    if (office > 0.06 && office < 0.6) want = "You handed in your notice.";
+    else if (train > 0.15 && train < 0.85) want = "You took the sleeper north.";
+    else if (climb > 0.1 && climb < 0.92) want = OPENING_QUOTE;
   }
+  document.body.classList.toggle("opening", opening);
+  openingTitle.classList.toggle("on", opening && beatAt(p, "crest") > 0.3);
+  skipHint.classList.toggle("on", opening && p > 0.02 && p < OPENING.crest[0]);
   if (want === captionText) return;
   captionText = want;
   captionEl.textContent = want;
+  captionEl.classList.toggle("quote", want === OPENING_QUOTE);
   captionEl.classList.toggle("on", want !== "");
 }
+
+/*
+ * The opening takes its time, so it can be skipped: a tap anywhere, any key,
+ * or a button on the pad. Taken here, ahead of everything else, so the press
+ * that skips it does nothing else as well.
+ */
+const skipOpening = (e: Event) => {
+  if (animator.current !== "quit") return false;
+  animator.finishNow();
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  return true;
+};
+addEventListener("pointerdown", skipOpening, { capture: true });
+addEventListener("keydown", (e) => {
+  if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) skipOpening(e);
+}, { capture: true });
 
 /* ---------- keys and a controller ---------- */
 const nav = new Nav({
@@ -833,11 +863,15 @@ const nav = new Nav({
 });
 nav.controls.onIntent = ((inner) => (i, native) => {
   firstGesture(); // a pad press is a gesture too, as far as the sound is concerned
+  if (animator.current === "quit") {
+    if (i === "confirm" || i === "back" || i === "menu") animator.finishNow();
+    return;
+  }
   inner(i, native);
 })(nav.controls.onIntent);
 
 /**
- * What the buttons do, along the bottom — only while keys or a pad are in
+ * What the buttons do, along the bottom, only while keys or a pad are in
  * use, and only the ones that do something where you are.
  */
 const promptsEl = $("prompts");
@@ -876,7 +910,7 @@ function updatePrompts() {
 const innLeave = $("inn-leave");
 function frame(now: number) {
   animator.tick(now);
-  drawPortrait(now);
+  drawPortrait();
   innLeave.classList.toggle("on", world.atInn && !animator.busy);
   nav.tick(now);
   updatePrompts();

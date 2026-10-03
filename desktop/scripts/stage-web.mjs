@@ -16,7 +16,7 @@ const from = join(here, "..", "..", demo ? "dist-demo" : "dist");
 const to = join(here, "..", "web");
 
 if (!existsSync(join(from, "index.html"))) {
-  console.error(`No web build at ${from} — run \`npm run ${demo ? "build:demo" : "build"}\` in the repo root first.`);
+  console.error(`No web build at ${from}. Run \`npm run ${demo ? "build:demo" : "build"}\` in the repo root first.`);
   process.exit(1);
 }
 rmSync(to, { recursive: true, force: true });

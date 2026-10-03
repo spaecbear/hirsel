@@ -1,11 +1,11 @@
-# Hirsel — the road to Steam
+# Hirsel: the road to Steam
 
 A plan for two pieces of work that run side by side: **making the game ready to ship on
 Steam**, and **making it more of a complete game**. Written against the code as it stands
 (149 tests green, 59 KB gzipped bundle, web-first PWA on Vercel).
 
 Read `hirsel-spec.md` and the README first. Everything here builds on them, and the design
-invariants in the README still hold — in particular: three taps is the game, the wolf is
+invariants in the README still hold, in particular: three taps is the game, the wolf is
 never explained, and the sim stays free of the DOM.
 
 ---
@@ -17,18 +17,18 @@ Two games, two branches:
 | branch | what it is | where it runs |
 | --- | --- | --- |
 | `main` | **the original Hirsel**, as it was before this plan: the web game | Vercel |
-| `steam` | **the Steam version**: everything in this plan — the desktop shell, and the seasons, breeding and other new content | Steam |
+| `steam` | **the Steam version**: everything in this plan: the desktop shell, and the seasons, breeding and other new content | Steam |
 
-`main` is kept as it is. All new work in this document — platform, input and content
-alike — lands on `steam`. The original stays playable on the web, unchanged, rather than
+`main` is kept as it is. All new work in this document (platform, input and content
+alike) lands on `steam`. The original stays playable on the web, unchanged, rather than
 turning into the Steam game one feature at a time.
 
 What that means in practice:
 
 1. **New work branches from `steam` and merges back into `steam`.** Nothing here goes to
    `main`.
-2. **A bug in the original game gets fixed on `main` and merged into `steam`** — a plain
-   merge, never a rebase — so both builds carry the fix. The reverse direction does not
+2. **A bug in the original game gets fixed on `main` and merged into `steam`**: a plain
+   merge, never a rebase, so both builds carry the fix. The reverse direction does not
    happen: `steam` never merges into `main`.
 3. **The web build still exists on `steam`.** `npm run dev` there runs the Steam version in
    a browser, which remains the quickest way to play-test new content. Only `desktop/`
@@ -49,12 +49,12 @@ What that means in practice:
 ### 1.1 Desktop wrapper
 
 **Electron + [`steamworks.js`](https://github.com/ceifa/steamworks.js).** Tauri builds are
-far smaller, but Steamworks support there is thinner, and the game is 165 KB of JS — the
+far smaller, but Steamworks support there is thinner, and the game is 165 KB of JS: the
 Electron runtime's size is the cost of the mature path, not a problem to solve.
 
 - [x] `desktop/src/main.ts`: one `BrowserWindow`, loads `dist/index.html` (Vite already builds
       with `base: "./"`, so relative paths work from disk)
-- [x] `desktop/src/preload.ts`: exposes a narrow `window.hirselPlatform` bridge — saves,
+- [x] `desktop/src/preload.ts`: exposes a narrow `window.hirselPlatform` bridge: saves,
       achievements, quit, fullscreen. `contextIsolation: true`, no `nodeIntegration`
 - [x] Packaging with `electron-builder` for **Windows x64** and **Linux x64**
       (the Steam Deck runs the Linux build, or the Windows one under Proton); macOS is optional
@@ -85,7 +85,7 @@ export interface Platform {
   write(key: string, value: string): void;
   remove(key: string): void;
   unlockAchievement(id: string): void;   // web: no-op
-  quit?(): void;                          // web: absent — no Quit button
+  quit?(): void;                          // web: absent; no Quit button
   setFullscreen?(on: boolean): void;
 }
 ```
@@ -95,7 +95,7 @@ export interface Platform {
 - [x] Steam implementation (Steam branch only) writes JSON files under
       `app.getPath("userData")`, synchronously through the preload bridge so the existing
       call sites do not become async
-- [x] `test/setup.ts` keeps working — the web platform is what the tests run against
+- [x] `test/setup.ts` keeps working: the web platform is what the tests run against
 
 **Done when:** `steam` has no direct `localStorage` call outside `src/platform/`, and all
 tests still pass.
@@ -103,7 +103,7 @@ tests still pass.
 ### 1.3 Saves and Steam Cloud
 
 - [x] File saves as above: `save.json`, `settings.json`, `achievements.json`
-- [x] Write atomically (write to `.tmp`, then rename) — a crash mid-write must not eat a run
+- [x] Write atomically (write to `.tmp`, then rename): a crash mid-write must not eat a run
 - [x] **Steam Auto-Cloud** in the Steamworks partner site, rooted at the userData folder for
       each OS (`WinAppDataRoaming`, `LinuxXdgDataHome`). No code needed beyond saving to a
       stable path
@@ -119,33 +119,33 @@ four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
 - [ ] Register all 28 in Steamworks with the same ids; hidden flag on the four secret ones,
       with their existing `hint` as the post-unlock description
 - [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
-- [x] On start-up, re-send every locally earned id — covers achievements earned offline
+- [x] On start-up, re-send every locally earned id: covers achievements earned offline
       or before Steam was running
 - [ ] **64×64 icons for each, earned and unearned** (56 images). Pixel art, integer-scaled
 - [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
-      to `GameState` — `hydrate` back-fills it for old saves — set it when any code that
+      to `GameState`, `hydrate` back-fills it for old saves, set it when any code that
       changes the run is used, and skip achievement checks while it is true. Show it on
       the end screen so it is never a surprise. `RETRO`, `TOD` and other purely cosmetic
       codes should not set it
 - [x] Consider whether `ZEN` (unlimited taps) and `SKELP` (double pace) count: `ZEN` should,
       `SKELP` should not
 
-### 1.5 Input — the largest piece of engineering
+### 1.5 Input: the largest piece of engineering
 
 Today the game is pointer-only; the only key it reads is Escape. Steam players on desktop
-expect a keyboard, and **Steam Deck Verified requires full controller play** — the Deck's
+expect a keyboard, and **Steam Deck Verified requires full controller play**: the Deck's
 touchscreen works, but Valve does not count it.
 
 The good news is the seam already exists: `render/layout.ts` hands back every tap target as
 a `Hotspot` list, and the art and the hit-testing both read it. Focus navigation can be
 built on the same list.
 
-> **Built** — see "Keys and a controller" in the README. What is left is Steam's side of it
+> **Built**: see "Keys and a controller" in the README. What is left is Steam's side of it
 > and a real Deck in the hand.
 
 - [x] **Focus model** (`ui/nav.ts`, `ui/spatial.ts`): a cursor on the hill and in the house,
-      moved to the nearest target in the direction pressed. The flock is one stop — its sheet
+      moved to the nearest target in the direction pressed. The flock is one stop; its sheet
       is about the whole flock, so per-sheep focus was never needed
 - [x] A focus ring over the focused target (the tap highlight), and on DOM buttons, only
       while keys or a pad were used last; mouse and touch look exactly as before
@@ -159,19 +159,19 @@ built on the same list.
 - [x] Button prompts along the bottom, for keys or pad, saying what does something where
       you are. Plain letters (A, B, Start, View) rather than drawn glyphs
 - [ ] Steam Input: a default controller configuration in the partner site (see
-      desktop/README.md) — needs the app id
+      desktop/README.md): needs the app id
 - [x] The on-screen keyboard for the cheat-code field (Steam's, through `platform.textInput`)
 - [ ] Deck checks on real hardware: legibility at 1280×800, suspend/resume
 
 The whole first-day walkthrough and a day's work were driven with the keyboard alone and with
 a simulated pad in a browser. A full run to the croft has not been played that way yet.
 
-**Done when:** a full run — title to croft — can be played on a controller alone, and on a
+**Done when:** a full run, title to croft, can be played on a controller alone, and on a
 keyboard alone.
 
 ### 1.6 Desktop basics
 
-- [x] **Quit to desktop** in Settings and on the title screen (Steam build only — the web
+- [x] **Quit to desktop** in Settings and on the title screen (Steam build only: the web
       build has no Quit)
 - [x] Fullscreen / windowed toggle; remember window size and position
 - [x] Mute when the window loses focus (the desktop build only). Nothing else needs
@@ -184,7 +184,7 @@ keyboard alone.
 Decide what happens to the free Vercel build once there is a paid one. Recommended:
 
 - [x] **The demo** is a build flag, not a fork: `npm run build:demo` (`.env.demo`,
-      `VITE_DEMO_DAYS=14`) stops after a fortnight on a card with a wishlist button. Set
+      `VITE_DEMO_DAYS=30`) stops at the turn into summer on a card with a wishlist button. Set
       `VITE_STORE_URL` once the store page exists. Pointing Vercel at it is still to decide
 - [x] The Steam demo: `desktop/` packages it as its own app (`npm run package:demo:*`), with
       its own app id constant and its own saves folder. Needs a demo app in Steamworks
@@ -197,12 +197,12 @@ Decide what happens to the free Vercel build once there is a paid one. Recommend
 
 - [ ] Steamworks partner account, tax interview, bank details
 - [ ] **Steam Direct fee: $100** per game (recouped after $1,000 gross)
-- [ ] Valve imposes a **30-day wait** between paying for your first app and releasing it —
+- [ ] Valve imposes a **30-day wait** between paying for your first app and releasing it:
       start this early, it runs in parallel with everything else
 - [ ] **Coming Soon page live at least 2 weeks before release**; store page and build are each
       reviewed by Valve (allow a few working days each)
 
-**Store assets** — all pixel art integer-scaled, never smoothed
+**Store assets**: all pixel art integer-scaled, never smoothed
 
 | asset | size |
 | --- | --- |
@@ -226,7 +226,7 @@ fire, a night with the full moon, and one tasteful hint of the wolf that gives n
 - [ ] Short description (≤300 chars), long description, tags (Cozy, Farming Sim, Pixel
       Graphics, Relaxing, Management, Singleplayer, Short)
 - [ ] Content survey: discloses **tobacco** (the pipe) and **alcohol** (the pint)
-- [ ] Privacy: no network, no telemetry, no accounts — say so
+- [ ] Privacy: no network, no telemetry, no accounts: say so
 - [ ] Music: all three tunes are original, written as note data in `audio/tunes.ts`. Keep a
       note on file that you wrote them; the README already records why The Tod is original
       rather than the traditional tune
@@ -246,7 +246,7 @@ own measurement is that spare taps mostly go to filler.
 
 Everything below lands on `steam`. The original game on `main` stays as it is.
 
-### 2.1 Seasons — the headline feature (spec §14.6)
+### 2.1 Seasons: the headline feature (spec §14.6)
 
 > **Built.** 24-day seasons (three moons each), spring first and unchanged; hay cut in summer
 > or bought at the cart; snow in winter; the byre houses the flock on snow nights. Spring
@@ -256,13 +256,13 @@ The spec calls this the obvious next system and the answer to the pelt ending th
 It gives a 100-day run a shape.
 
 - [x] A season layer on top of the day loop: e.g. 28-day seasons, starting in spring
-- [ ] **Spring** — lambing (§2.2); grass regrows fast; flystrike begins
-- [x] **Summer** — the main clip; fleece grows fastest; flystrike peaks
-- [x] **Autumn** — the big market: better prices for wool and store lambs; the tup sales
-- [x] **Winter** — nothing grows; snow joins the weather bag; flock must be fed hay (§2.3)
+- [ ] **Spring**: lambing (§2.2); grass regrows fast; flystrike begins
+- [x] **Summer**: the main clip; fleece grows fastest; flystrike peaks
+- [x] **Autumn**: the big market, with better prices for wool and store lambs; the tup sales
+- [x] **Winter**: nothing grows; snow joins the weather bag; flock must be fed hay (§2.3)
       or brought into the byre, which gives the byre a mechanical job, not just a milestone
 - [x] Seasons show on the forecast and change the palette of the glen (the terrain and sky
-      are already drawn from constants — winter is a palette pass plus snow)
+      are already drawn from constants: winter is a palette pass plus snow)
 - [x] Night resolution order in spec §2 gains a season step; add it at a fixed point and
       test the order the way the current night is tested
 - [x] Rebalance after: the headless 30- and 90-day simulations in the README are the tool.
@@ -275,21 +275,21 @@ It gives a 100-day run a shape.
 > dropped: the byre is finished around day 170–230, too late for a lambing before most runs
 > end. See "Lambing" in the README.
 
-- [x] A tup (ram) as a purchase — one slot, like the dog
+- [x] A tup (ram) as a purchase; one slot, like the dog
 - [x] Ewes with the tup in autumn lamb in spring; lambs have the ewe's breed
 - [x] Lambs can be kept (flock grows, feed rises) or sold at the autumn sales
 - [x] Gives the four breeds a long-term identity: which ones you breed from, not just buy
-- [ ] `Sheep.age` already exists; old ewes stop lambing and sell cheaply — a reason to renew
+- [ ] `Sheep.age` already exists; old ewes stop lambing and sell cheaply: a reason to renew
 
 ### 2.3 Work that fills the empty days
 
 The README names the next levers: actions that are investment rather than filler.
 
-- [ ] **Repair a dyke** — multi-day work like the croft; each stretch mended lowers fox risk
+- [ ] **Repair a dyke**: multi-day work like the croft; each stretch mended lowers fox risk
       on that pasture permanently
-- [ ] **Dip the flock** — prevents flystrike for longer than tending, costs money and a tap
-- [ ] **Cut and stack hay** in summer — the winter feed stock
-- [ ] **Cut peat** — fuel for the hearth; a warm house keeps the `hale` buff going in winter
+- [ ] **Dip the flock**: prevents flystrike for longer than tending, costs money and a tap
+- [ ] **Cut and stack hay** in summer: the winter feed stock
+- [ ] **Cut peat**: fuel for the hearth; a warm house keeps the `hale` buff going in winter
 - [ ] Each should make a *future* day better, so a spare tap becomes a plan
 
 ### 2.4 The dog grows old (spec §14.7)
@@ -301,7 +301,7 @@ The README names the next levers: actions that are investment rather than filler
 Cheap to build and it will land hard, with Tippy and Arrow already in the game.
 
 - [x] Dogs age; after N seasons she slows (smaller bonus), then retires to the house
-- [x] A retired dog lies by the fire in the interior — the visible record of a run — and
+- [x] A retired dog lies by the fire in the interior, the visible record of a run, and
       gives a small passive bonus
 - [ ] A pup can be taken on; it starts weaker and learns
 - [x] One working dog at a time is still the rule; retired dogs do not count against the slot
@@ -310,24 +310,24 @@ Cheap to build and it will land hard, with Tippy and Arrow already in the game.
 
 The inn is the only social space and she is the only arc.
 
-> **Built** — `sim/events.ts`; see "Things that happen" in the README. Two courtship beats
+> **Built**: `sim/events.ts`; see "Things that happen" in the README. Two courtship beats
 > (her afternoon off, the ceilidh) rather than a full arc: more of her is still the best
 > next piece of writing in the game.
 
-- [x] **More beats in the courtship** — her afternoon off, and a ceilidh each autumn
-- [x] **A neighbour** — Callum over the burn: asks for a hand, pays it back, loses a stray
-- [x] **A travelling dealer** — a good ewe or a tool you lack, under the cart price
+- [x] **More beats in the courtship**: her afternoon off, and a ceilidh each autumn
+- [x] **A neighbour**: Callum over the burn, who asks for a hand, pays it back, loses a stray
+- [x] **A travelling dealer**: a good ewe or a tool you lack, under the cart price
 - [x] **The Highland show / a sheepdog trial** each midsummer
-- [x] **Letters from the life you left** — four, on their days
+- [x] **Letters from the life you left**: four, on their days
 - [x] Events are seeded like everything else in the sim, so a save replays the same run
 
 ### 2.6 After she says aye
 
 Decide whether the game ends at the win or carries on.
 
-> **Built** — see "Staying on the hill" in the README.
+> **Built**: see "Staying on the hill" in the README.
 
-- [x] The win plays the proposal, then offers **"Stay on the hill"** beside "Start again" —
+- [x] The win plays the proposal, then offers **"Stay on the hill"** beside "Start again",
       also after the credits. The run continues with her at the croft
 - [x] Married life: a tap more a day, her on the hill and by the fire, a free pint, and three
       events (the anniversary, her kale patch, her mother)
@@ -336,9 +336,9 @@ Decide whether the game ends at the win or carries on.
 ### 2.7 Replay and polish
 
 - [ ] **Three save slots** rather than one
-- [ ] **A dawn summary card** — what the night did, in one glance, before the day's first tap
+- [ ] **A dawn summary card**: what the night did, in one glance, before the day's first tap
 - [ ] **A run history** in Settings: past runs, how they ended, on what day
-- [ ] **Seeded runs** — share a seed; optionally a daily seed
+- [ ] **Seeded runs**: share a seed; optionally a daily seed
 - [ ] New achievements for the new systems (first lamb, a winter with no losses, a prize at
       the show, a retired dog by the fire)
 - [ ] A pause menu reachable at any moment, not only between actions
@@ -354,10 +354,10 @@ page) run in parallel with the code.
 | --- | --- | --- | --- |
 | **1. Foundations** | platform seam, bundled font, cheated flag | `steam` | no direct `localStorage` outside `platform/`; tests green |
 | **2. Steam shell** | Electron, file saves, Steamworks, achievements, Quit/fullscreen | `steam` | a packaged build plays a full day and unlocks an achievement |
-| **3. Business, started** | pay the fee, fill in tax/bank, start the 30-day clock | — | account active |
+| **3. Business, started** | pay the fee, fill in tax/bank, start the 30-day clock | - | account active |
 | **4. Input** | focus model, keyboard, gamepad, prompts, Steam Input config | `steam` | a full run on controller alone |
 | **5. Seasons** | seasons, winter, hay; rebalance | `steam` | 90-day sims per difficulty within target |
-| **6. Store page** | capsules, screenshots, copy, Coming Soon live | — | page approved and public |
+| **6. Store page** | capsules, screenshots, copy, Coming Soon live | - | page approved and public |
 | **7. Lambing + work** | tup, lambs, dyke, dipping, peat | `steam` | new sims; new achievements |
 | **8. Demo** | demo flag; web demo; Steam demo; Next Fest if timing allows | `steam` | demo live with a wishlist link |
 | **9. Characters** | dog ageing, neighbour, dealer, show, letters, courtship beats | `steam` | playtested |
@@ -373,13 +373,13 @@ a post-launch update, which also gives the store page some news to post.
 
 Like the spec's §14, these are flagged rather than settled:
 
-1. **Price** — $6–10 depending on how much of §2 is in at launch
-2. **Demo length** — 10 days is a guess; the right cap is "just after the first tool is
+1. **Price**: $6–10 depending on how much of §2 is in at launch
+2. **Demo length**: 10 days is a guess; the right cap is "just after the first tool is
    bought and the first full moon has passed"
 3. **Does the run continue after the win?** (§2.6)
-4. **Retro interface on Steam** — hidden (recommended) or supported
-5. **macOS** — worth the notarisation cost only if wishlists show demand
-6. **Season length** — built at 24 days (three moons); a run is about two and a half years.
+4. **Retro interface on Steam**: hidden (recommended) or supported
+5. **macOS**: worth the notarisation cost only if wishlists show demand
+6. **Season length**: built at 24 days (three moons); a run is about two and a half years.
    Worth playtesting whether that feels long
 7. **Does the pelt still end the fox game** once seasons exist, or does it become one
    season's peace?

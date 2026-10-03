@@ -1,7 +1,7 @@
 /**
  * Where everything in the glen sits, for a canvas of any shape.
  *
- * The full-screen scene has no fixed resolution — the logical size comes from
+ * The full-screen scene has no fixed resolution: the logical size comes from
  * the viewport, so a phone in portrait gets a tall hillside and a desktop gets
  * a wide one. Nothing can be drawn at hardcoded coordinates any more, so this
  * is the single place that decides where the croft, the cart, the flock and
@@ -80,7 +80,7 @@ export interface WorldLayout {
 
 /**
  * How much sky you can see, by pasture. Standing higher means seeing further,
- * so the horizon drops and the sky opens up — the Low Field is hemmed in by
+ * so the horizon drops and the sky opens up: the Low Field is hemmed in by
  * the hills, the High Corrie is mostly sky. This is the "background height
  * changes with the pasture" the scene is built around.
  */
@@ -92,7 +92,7 @@ export interface LayoutOpts {
   /*
    * The clock, so the dog's place on her circuit is part of the layout rather
    * than something the painter works out on its own. She moves, so a fixed
-   * hotspot would not be on her — and this file is the single source for both
+   * hotspot would not be on her, and this file is the single source for both
    * where a thing is drawn and where it can be tapped.
    *
    * Required, and deliberately so. It was optional with a fallback to her old
@@ -157,8 +157,8 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
    */
   /*
    * Past the byre's gable in landscape. A portrait screen is too narrow for
-   * that — the cart is parked there, and the stack came out drawn on top of
-   * it — so there it stands just in front of the byre instead.
+   * that: the cart is parked there, and the stack came out drawn on top of
+   * it, so there it stands just in front of the byre instead.
    */
   const haystack = portrait
     ? { x: Math.round(byre.x + byre.w / 2), y: byre.y + byre.h + 12 }
@@ -191,7 +191,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
   /*
    * Nothing grazes through a wall. Sheep laid out on top of the croft, the
    * byre or the cart looked like they were standing in mid-air on the roof,
-   * so anything landing on a building gets nudged clear of it — downhill
+   * so anything landing on a building gets nudged clear of it: downhill
    * first, since that is toward the camera, then sideways if it has to be.
    */
   const solid = [croft, byre, cart].filter((r) => r.w > 0);
@@ -261,7 +261,7 @@ export function layoutWorld(W: number, H: number, st: GameState, opts: LayoutOpt
      *
      * Every tap on the hill is a real action, so a target sitting among the
      * flock and the ground invites mashing right where an unintended day's
-     * work could be spent — and out here she is working anyway: running the
+     * work could be spent, and out here she is working anyway: running the
      * outside of the flock, a small sprite crossing the glen. She answers
      * indoors, lying at the fire, where a tap costs nothing and she is still.
      */
@@ -283,7 +283,7 @@ function pad(r: Rect, n: number): Rect {
   return { x: r.x - n, y: r.y - n, w: r.w + n * 2, h: r.h + n * 2 };
 }
 
-/** works on any laid-out scene — the hill outside or the room inside */
+/** works on any laid-out scene: the hill outside or the room inside */
 export function hitTest(layout: { hotspots: Hotspot[] }, x: number, y: number): Hotspot | null {
   for (const h of layout.hotspots) {
     for (const r of h.rects) {
@@ -310,7 +310,7 @@ export function boundsOf(h: Hotspot): Rect {
 export interface InteriorLayout {
   W: number;
   H: number;
-  /** where the floor begins — the back wall line */
+  /** where the floor begins: the back wall line */
   floorY: number;
   /** the depth band he stands in */
   midY: number;
@@ -319,7 +319,7 @@ export interface InteriorLayout {
   table: Rect;
   /** where the dog is in the room: at the fire, or on her own mark */
   dogSpot: { x: number; y: number };
-  /** the retired dogs, curled along the hearthstone — the working collie keeps the middle of it */
+  /** the retired dogs, curled along the hearthstone: the working collie keeps the middle of it */
   retiredSpots: { x: number; y: number; kind: DogKind }[];
   /** where the man stands, top-left of his sprite */
   man: { x: number; y: number };
@@ -346,7 +346,7 @@ export function layoutInterior(W: number, H: number, st?: GameState): InteriorLa
    *
    * Everything used to sit on the one line where the floor meets the back
    * wall, so the whole room was a strip of furniture with a wide empty floor
-   * in front of it — and the dog, standing at the wall, came out behind the
+   * in front of it, and the dog, standing at the wall, came out behind the
    * table. Three bands instead: what is against the wall, where he stands,
    * and what is nearest the camera. Draw order follows the bands, so nothing
    * at the back can paint over something at the front.
@@ -359,7 +359,7 @@ export function layoutInterior(W: number, H: number, st?: GameState): InteriorLa
   const hearth: Rect = { x: Math.round(W * 0.06), y: floorY - 46, w: 48, h: 50 };
   const bed: Rect = { x: Math.round(W * 0.54), y: floorY - 20, w: bedW, h: 30 };
   /*
-   * The door is at the end of the room, not the middle of it — dead centre it
+   * The door is at the end of the room, not the middle of it: dead centre it
    * framed him in his own doorway. It is placed off the bed's right edge with
    * a gap that cannot close, since on a narrow screen the two were landing on
    * top of each other.
@@ -415,7 +415,7 @@ export function layoutInterior(W: number, H: number, st?: GameState): InteriorLa
     hotspots: [
       /*
        * She can be tapped indoors as well. She had no target in the house at
-       * all, so asking a sheltie for her turn only worked out on the hill —
+       * all, so asking a sheltie for her turn only worked out on the hill,
        * and the hearth is exactly where you would stoop to say hello to her.
        * Listed first so she wins over the hearth she is lying against.
        */
