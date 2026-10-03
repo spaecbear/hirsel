@@ -1762,9 +1762,13 @@ body.no-motion .event-portrait {
 /* the way out of the inn, when the evening is done, not before */
 .inn-leave {
   position: absolute;
-  left: 50%;
+  /* centred by its margins, not a translate: the pop-in animation below sets
+     transform, and with fill-mode both it replaced translateX(-50%) for good,
+     leaving the button's left edge at the middle of the screen, half off a phone */
+  left: 0;
+  right: 0;
+  margin-inline: auto;
   bottom: calc(22px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
   width: min(320px, calc(100vw - 32px));
   display: none;
   z-index: 9;
@@ -1776,6 +1780,12 @@ body.no-motion .event-portrait {
 body.input-keys .inn-leave,
 body.input-pad .inn-leave {
   bottom: calc(60px + env(safe-area-inset-bottom));
+}
+/* on a narrow screen it would sit on the Sound and Settings chips: lift it clear */
+@media (max-width: 700px) {
+  .inn-leave {
+    bottom: calc(52px + env(safe-area-inset-bottom));
+  }
 }
 /* the season the run is in, picked out among the four */
 .gloss div.now {
