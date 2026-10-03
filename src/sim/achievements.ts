@@ -102,6 +102,14 @@ export const ACHIEVEMENTS: Achievement[] = [
     won: (g) => owns(g, "pelt"),
   },
   {
+    id: "only-one",
+    name: "Only ever the one",
+    hint: "A clear night on the corrie with her, and the moon he came by.",
+    secret: true,
+    longGame: true,
+    won: (g) => g.stats.starNights > 0,
+  },
+  {
     id: "mauled",
     name: "Caught out late",
     hint: "The high ground was no place to be, and you were told.",

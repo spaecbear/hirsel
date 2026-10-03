@@ -295,11 +295,22 @@ Married life is a victory lap with a little more in it:
 - Three events of its own: **the anniversary** a year on (a day off together, hale for three),
   **her kale patch** (two taps to dig it, and the feed bill is £1 a night lighter for good),
   and **her mother** coming up on the post bus. Every one can be declined for nothing
+- Three evenings of the long game, each a card at dawn and a scene of its own:
+  - **The ceilidh, the two of you**: every autumn on the ceilidh's day. The village hall,
+    bunting, a fiddle and a box on the stage, couples going round, and the pair of you
+    spinning in the middle to a reel (`ceilidhScene`, `reel`)
+  - **Callum to his tea**: once, a while after the wedding. Callum on the near stool in his
+    cap, her on hers, you at the table between with the pot on, a candle and his bottle
+  - **A clear night**: only after the wolf, at a full moon on a clear day, at most once a
+    season. The two of you on the lip of the corrie under the whole sky and the moon he came
+    by, the croft's light far below, a star going over: *There was only ever the one.* It
+    earns a secret, **Only ever the one**. The card says "the top of the hill", never the
+    corrie, by the same rule as every other event
 - The courting events (her afternoon off, the ceilidh) are for before, and stop
-- Three achievements for the long game, **A year wed**, **Fifty lambs** and **A turn by the
-  fire** (the dance), marked `longGame` and left out of what the credits ask for, since the
-  credits roll at the moment of a win. None is secret: they are there to be seen as a reason
-  to stay on the hill
+- Four achievements for the long game, **A year wed**, **Fifty lambs**, **A turn by the
+  fire** (the dance) and the secret **Only ever the one** (the clear night), marked
+  `longGame` and left out of what the credits ask for, since the credits roll at the moment
+  of a win. The first three are visible on purpose, as a reason to stay on the hill
 
 ### Finishing a run
 

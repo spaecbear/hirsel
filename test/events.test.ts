@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Game, newGame } from "../src/sim/game";
 import { BALANCE, SEASON_DAYS, SEASON_ORDER } from "../src/sim/config";
 import { EVENT_ORDER, EVENTS, EVENTS_BALANCE as E, eventDef, showDayOfYear, showScore, trialChance } from "../src/sim/events";
+import { isFullMoon } from "../src/sim/rules";
 import { NORMAL, INVERSE } from "../src/sim/lexicon";
 import { hydrate } from "../src/sim/save";
 import type { EventId, GameState, Sheep } from "../src/sim/types";
@@ -71,7 +72,7 @@ describe("the events", () => {
 
   it("put his face on the cards he is in, and on no others", () => {
     const his = EVENTS.filter((e) => e.speaker === "callum").map((e) => e.id).sort();
-    expect(his).toEqual(["callum-intro", "neighbour", "neighbour-gift"]);
+    expect(his).toEqual(["callum-intro", "callum-supper", "neighbour", "neighbour-gift"]);
   });
 
   it("never mention the sword, the wolf or how he is called, in either vocabulary", () => {
@@ -273,3 +274,64 @@ describe("Callum, and the dealer", () => {
     for (const bad of ["dog", "collie", "sword", "watch"]) expect(offered.has(bad), bad).toBe(false);
   });
 });
+
+describe("the long game's evenings", () => {
+  const fullMoonFrom = (day: number) => {
+    let d = day;
+    while (!isFullMoon(d)) d++;
+    return d;
+  };
+
+  it("brings the ceilidh back each autumn once wed, and not before", () => {
+    const day = dayOf("autumn", E.ceilidhDay);
+    const wed = harness({ day, married: day - 40, pubs: 9 }).g;
+    expect(eventDef("ceilidh-wed").due(wed, () => 0.5)).not.toBeNull();
+    const single = harness({ day, married: null, pubs: 3 }).g;
+    expect(eventDef("ceilidh-wed").due(single, () => 0.5)).toBeNull();
+    // and going plays the hall
+    const { game, g } = harness({ day, married: day - 40, pubs: 9, money: 50 });
+    const played: string[] = [];
+    game.onAnim = (a, after) => {
+      played.push(a);
+      after?.();
+    };
+    pend(g, "ceilidh-wed");
+    game.answerEvent("go");
+    expect(played).toContain("ceilidh");
+  });
+
+  it("asks Callum in for his tea a while after the wedding, once, with his face on the card", () => {
+    const { g } = harness({ day: 80, married: 80 - E.supperAfter });
+    expect(eventDef("callum-supper").due(g, () => 0.5)).not.toBeNull();
+    expect(eventDef("callum-supper").due({ ...g, married: 79 }, () => 0.5)).toBeNull();
+    expect(eventDef("callum-supper").due({ ...g, eventDays: { ...g.eventDays, "callum-supper": 70 } }, () => 0.5)).toBeNull();
+    expect(eventDef("callum-supper").speaker).toBe("callum");
+  });
+
+  it("offers a clear night on the hill only after the wolf, wed, at a clear full moon", () => {
+    const day = fullMoonFrom(60);
+    const ready = harness({ day, married: 40, owned: { pelt: true }, forecast: ["sun", "sun", "sun"] }).g;
+    expect(eventDef("clear-night").due(ready, () => 0.5)).not.toBeNull();
+    expect(eventDef("clear-night").due({ ...ready, owned: {} }, () => 0.5)).toBeNull(); // the wolf still out there
+    expect(eventDef("clear-night").due({ ...ready, married: null }, () => 0.5)).toBeNull();
+    expect(eventDef("clear-night").due({ ...ready, forecast: ["rain", "sun", "sun"] }, () => 0.5)).toBeNull();
+    expect(eventDef("clear-night").due({ ...ready, day: day + 1 }, () => 0.5)).toBeNull();
+    // at most once a season
+    expect(eventDef("clear-night").due({ ...ready, eventDays: { ...ready.eventDays, "clear-night": day - 8 } }, () => 0.5)).toBeNull();
+  });
+
+  it("earns its secret on going up, and plays the night", () => {
+    const day = fullMoonFrom(60);
+    const { game, g } = harness({ day, married: 40, owned: { pelt: true }, forecast: ["sun", "sun", "sun"] });
+    const played: string[] = [];
+    game.onAnim = (a, after) => {
+      played.push(a);
+      after?.();
+    };
+    pend(g, "clear-night");
+    game.answerEvent("go");
+    expect(played).toContain("stars");
+    expect(g.achievements).toContain("only-one");
+  });
+});
+

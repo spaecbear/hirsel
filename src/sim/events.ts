@@ -14,7 +14,7 @@
  * None of them mentions the sword, the wolf or the summon conditions (§15).
  */
 import { BALANCE, BREEDS, SEASON_DAYS, TOOLS } from "./config";
-import { breedOf, buffed, dogIsOld, grade, hasDog, owns, season } from "./rules";
+import { breedOf, buffed, dogIsOld, grade, hasDog, isFullMoon, owns, season } from "./rules";
 import type { Game } from "./game";
 import type { Lexicon } from "./lexicon";
 import type { BreedId, EventId, GameState, ToolId } from "./types";
@@ -90,6 +90,8 @@ export const EVENTS_BALANCE = {
   gardenTaps: 2,
   herMotherAfter: 30,
   herMotherChance: 0.08,
+  /** Callum is asked in for his tea this long after the wedding */
+  supperAfter: 12,
 } as const;
 
 const E = EVENTS_BALANCE;
@@ -305,6 +307,39 @@ export const EVENTS: GameEvent[] = [
         },
       },
       { id: "stay", label: "Stay in", fallback: true, run: (game) => game.say("You could hear it from the road. You went to bed.", "hi") },
+    ],
+  },
+
+  /* ---- the ceilidh again, every autumn once you are wed ---- */
+  {
+    id: "ceilidh-wed",
+    due: (g) => {
+      const s = season(g);
+      return s.id === "autumn" && s.day === E.ceilidhDay && g.married !== null && g.day > g.married ? {} : null;
+    },
+    title: () => "The ceilidh, the two of you",
+    body: () =>
+      "The autumn ceilidh is on in the village hall tonight, and this year you are going together. " +
+      "She has had her good shoes out since breakfast.",
+    choices: () => [
+      {
+        id: "go",
+        label: "Go, the two of you",
+        detail: "The whole glen in the one hall, and a band that will not stop. You will be hale for a day or two after.",
+        taps: 1,
+        money: E.ceilidhCost,
+        run: (game) => {
+          game.buff("hale", 2);
+          game.say("Strip the Willow, twice through. She had you spun round half the glen and back before the band let up.", "cozy");
+          game.onAnim("ceilidh");
+        },
+      },
+      {
+        id: "stay",
+        label: "Stay in by the fire",
+        fallback: true,
+        run: (game) => game.say("You stayed in. She danced you round the kitchen instead, and hummed the band's part.", "cozy"),
+      },
     ],
   },
 
@@ -533,6 +568,77 @@ EVENTS.push(
     ],
   },
   {
+    id: "callum-supper",
+    speaker: "callum",
+    due: (g) =>
+      g.married !== null && g.day - g.married >= E.supperAfter && lastOn(g, "callum-intro") !== undefined && once(g, "callum-supper")
+        ? {}
+        : null,
+    title: () => `${NEIGHBOUR} to his tea`,
+    body: () =>
+      `${NEIGHBOUR} has been over the burn three times this week on one excuse or another. She says it is time ` +
+      "he was asked in for his tea, and she has a pot on already, so it is not really a question.",
+    choices: () => [
+      {
+        id: "ask",
+        label: "Have him in",
+        detail: "An evening at your own table, with the fire going. You will be hale for a day or two after.",
+        taps: 1,
+        run: (game) => {
+          game.buff("hale", 2);
+          game.say(`${NEIGHBOUR} came in with a bottle under his arm and his cap in his hand, and ate two helpings.`, "cozy");
+          game.say("He told the one about the tup and the minister twice, and laughed harder the second time.", "cozy");
+          game.onAnim("supper");
+        },
+      },
+      {
+        id: "later",
+        label: "Another week",
+        fallback: true,
+        run: (game) => game.say(`${NEIGHBOUR} says he will hold you to it.`, "hi"),
+      },
+    ],
+  },
+  /*
+   * After the wolf. A clear full-moon night, the pelt on the wall and nothing
+   * left on the high ground to be afraid of: she wants to go up and see it.
+   * At most once a season. The achievement it earns is a secret.
+   */
+  {
+    id: "clear-night",
+    due: (g) =>
+      g.married !== null &&
+      owns(g, "pelt") &&
+      isFullMoon(g.day) &&
+      g.forecast[0] === "sun" &&
+      since(g, "clear-night") >= SEASON_DAYS
+        ? {}
+        : null,
+    title: () => "A clear night",
+    body: () =>
+      "The moon will be full tonight and the sky is clear all the way to the Cairngorms. She wants to go up to the top " +
+      "of the hill and see it. Nothing walks up there now.",
+    choices: () => [
+      {
+        id: "go",
+        label: "Up the hill with her",
+        detail: "A flask, a blanket, and the whole sky.",
+        taps: 1,
+        run: (game) => {
+          game.state.stats.starNights++;
+          game.say("You sat up on the tops till the moon was high. She found the Plough; you found the croft's light.", "cozy");
+          game.onAnim("stars");
+        },
+      },
+      {
+        id: "tired",
+        label: "Not tonight",
+        fallback: true,
+        run: (game) => game.say("She watched it from the door, with the blanket round her, and told you about it after.", "cozy"),
+      },
+    ],
+  },
+  {
     id: "her-mother",
     due: (g, roll) =>
       g.married !== null && g.day - g.married >= E.herMotherAfter && once(g, "her-mother") && roll() < E.herMotherChance ? {} : null,
@@ -580,6 +686,8 @@ export const eventDef = (id: EventId) => EVENTS.find((e) => e.id === id)!;
 /** the order they are asked in at dawn: the dated ones first, so a chance one never pushes a letter off its day */
 export const EVENT_ORDER: EventId[] = [
   "callum-intro",
+  "ceilidh-wed",
+  "clear-night",
   "letter-boss",
   "letter-mother",
   "letter-friend",
@@ -594,6 +702,7 @@ export const EVENT_ORDER: EventId[] = [
   "neighbour",
   "stray",
   "her-mother",
+  "callum-supper",
 ];
 
 /** the day of the Highland show in a given year */

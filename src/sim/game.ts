@@ -146,6 +146,7 @@ export function newGame(opts: GameOptions = {}): GameState {
       rosettes: 0,
       neighbourGifts: 0,
       dances: 0,
+      starNights: 0,
     },
     achievements: [],
     hay: 0,

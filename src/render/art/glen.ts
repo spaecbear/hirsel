@@ -1613,6 +1613,8 @@ function drawInterior(
   spotlightBed: boolean,
   /** how far through a dance with her, 0 to 1, if one is playing */
   dance?: number,
+  /** how far through Callum's supper, 0 to 1, if he is in for his tea */
+  supper?: number,
 ) {
   const hearthBuilt = owns(st, "hearth");
 
@@ -1889,6 +1891,8 @@ function drawInterior(
    */
   if (dance !== undefined && I.her) {
     drawDance(g, I, dance, time);
+  } else if (supper !== undefined) {
+    drawSupperFolk(g, I, time);
   } else {
     // her, between him and the fire, on the same boards he stands on
     if (I.her) drawHerAtHome(g, I.her.x, I.her.y, time);
@@ -1914,9 +1918,13 @@ function drawInterior(
   g.px(tx + 2, ty + 6, 1, 15, "#63512f");
   g.px(tx + 34, ty + 6, 4, 15, "#54452c");
   g.px(tx + 34, ty + 6, 1, 15, "#63512f");
-  g.px(tx + 14, ty - 6, 6, 6, "#9aa3a5"); // a cup on it
-  g.px(tx + 14, ty - 6, 6, 1, "#b6bdbd");
-  g.px(tx + 20, ty - 4, 2, 3, "#9aa3a5"); // its handle
+  if (supper !== undefined) {
+    drawSupperTable(g, tx, ty, time);
+  } else {
+    g.px(tx + 14, ty - 6, 6, 6, "#9aa3a5"); // a cup on it
+    g.px(tx + 14, ty - 6, 6, 1, "#b6bdbd");
+    g.px(tx + 20, ty - 4, 2, 3, "#9aa3a5"); // its handle
+  }
 
   /*
    * The stool. It was three thin marks in the old room and read as a scuff on
@@ -2023,6 +2031,283 @@ function drawDance(g: Painter, I: InteriorLayout, p: number, time: number) {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * the long game's evenings
+ * ------------------------------------------------------------------ */
+
+/**
+ * Someone sitting on a stool, side on: body, head, a knee out in front and
+ * the shin down to the boards, and a forearm along the table. Built at the
+ * shepherd's scale (his head is eight wide, his body twelve) so the table's
+ * company are the same size as the man standing at it.
+ */
+function drawSitter(
+  g: Painter,
+  x: number,
+  seatY: number,
+  facing: 1 | -1,
+  o: { coat: string; coatLit: string; legs: string; hair: string; cap?: string; beard?: string; longHair?: boolean; bob?: number },
+) {
+  const f = facing;
+  const bob = o.bob ?? 0;
+  const px = (dx: number, dy: number, w: number, h: number, c: string) => g.px(f > 0 ? x + dx : x + 10 - dx - w, dy, w, h, c);
+  // the knee out in front, and the shin down to the floor
+  px(6, seatY - 2, 7, 3, o.legs);
+  px(10, seatY, 3, 11, o.legs);
+  px(10, seatY + 10, 4, 2, "#2a2118"); // a boot
+  // the body, and an arm along the table
+  px(0, seatY - 11 + bob, 10, 11 - bob, o.coat);
+  px(0, seatY - 11 + bob, 10, 1, o.coatLit);
+  px(8, seatY - 6, 6, 2, o.coat);
+  px(13, seatY - 6, 2, 2, "#c9a583"); // the hand
+  // the head
+  const hy = seatY - 18 + bob;
+  if (o.longHair) px(-1, hy, 4, 11, o.hair); // down her back
+  px(1, hy, 8, 7, "#c9a583");
+  px(1, hy - 1, 8, 2, o.hair);
+  if (o.longHair) px(0, hy - 1, 4, 5, o.hair);
+  if (o.beard) px(2, hy + 4, 7, 3, o.beard);
+  px(6, hy + 2, 1, 1, "#26201a"); // the one eye you can see
+  if (o.cap) {
+    px(0, hy - 2, 9, 3, o.cap);
+    px(8, hy - 1, 3, 1, o.cap); // the peak, out over his brow
+  }
+}
+
+/** Callum on the near stool and her on hers, with him standing at the table between */
+function drawSupperFolk(g: Painter, I: InteriorLayout, time: number) {
+  const tx = I.table.x;
+  const ty = I.table.y;
+  const seatY = ty + 7;
+  // Callum laughs at his own story, more than once
+  const laughing = Math.floor(time / 2600) % 2 === 0 && Math.floor(time / 180) % 2 === 0 ? 1 : 0;
+  drawSitter(g, tx - 17, seatY, 1, { coat: "#6b6446", coatLit: "#7a7352", legs: "#4b4632", hair: "#8f8a82", cap: "#5e5040", beard: "#9d9890", bob: laughing });
+  drawSitter(g, tx + 45, seatY, -1, { coat: "#e8e3d2", coatLit: "#f2eee0", legs: "#3d5a4a", hair: "#7a3a24", longHair: true });
+  // and the man of the house, on his feet behind the table, ladling
+  drawShepherd(g, tx + 14, ty + 12 - SHEPHERD_H, { tick: idleTick(time) ?? undefined });
+}
+
+/** the table set for three: a pot steaming, the plates, a loaf, a candle, and the bottle Callum brought */
+function drawSupperTable(g: Painter, tx: number, ty: number, time: number) {
+  for (const px of [tx + 3, tx + 29]) {
+    g.px(px, ty - 1, 8, 1, "#d9d6cc");
+    g.px(px + 1, ty - 2, 6, 1, "#ece9df");
+  }
+  // the pot, and the steam off it
+  g.px(tx + 14, ty - 7, 10, 7, "#3a3a38");
+  g.px(tx + 13, ty - 7, 12, 1, "#55554f");
+  g.px(tx + 17, ty - 9, 4, 2, "#55554f");
+  for (let i = 0; i < 3; i++) {
+    const t = ((time / 1400 + i / 3) % 1);
+    g.a(tx + 17 + Math.sin(t * 6 + i) * 2, ty - 11 - t * 14, 2, 2, 220, 220, 210, 0.35 * (1 - t));
+  }
+  g.px(tx + 26, ty - 4, 6, 4, "#b0874a"); // the loaf
+  g.px(tx + 26, ty - 4, 6, 1, "#c99c5c");
+  g.px(tx + 34, ty - 9, 3, 9, "#2f4a2f"); // the bottle
+  g.px(tx + 35, ty - 12, 1, 3, "#2f4a2f");
+  // the candle, and the light it throws over the three of them
+  g.px(tx + 8, ty - 6, 2, 6, "#e8e3d2");
+  const fl = Math.floor(time / 120) % 3;
+  g.px(tx + 8, ty - 9 + (fl === 1 ? 1 : 0), 2, 3, "#ffd27a");
+  g.a(tx - 22, ty - 28, 86, 44, 255, 200, 120, 0.07 + fl * 0.01);
+}
+
+/**
+ * The autumn ceilidh, the two of you. The village hall: bunting across it,
+ * a fiddle and a box on the stage, couples going round the floor, and the
+ * pair of you spinning in the middle of it, to the reel the band is playing.
+ */
+function ceilidhScene(g: Painter, L: WorldLayout, p: number, time: number) {
+  const W = L.W;
+  const H = L.H;
+  const floorY = Math.round(H * 0.74);
+  // the hall: boarded walls, three tall windows on the dark, a floor of planks
+  g.px(0, 0, W, floorY, "#4a3826");
+  for (let x = 0; x < W; x += 9) g.px(x, 0, 1, floorY, "#3e2f20");
+  for (let i = 0; i < 3; i++) {
+    const wx = Math.round(W * (0.32 + i * 0.22));
+    const wy = Math.round(H * 0.12);
+    g.px(wx - 2, wy - 2, 18, Math.round(H * 0.3) + 4, "#6b5433");
+    g.px(wx, wy, 14, Math.round(H * 0.3), "#141c2c");
+    g.a(wx + 3, wy + 4, 2, 2, 220, 225, 240, 0.7); // a star through it
+  }
+  g.px(0, floorY, W, H - floorY, "#7a6040");
+  for (let y = floorY + 4; y < H; y += 5) g.a(0, y, W, 1, 0, 0, 0, 0.12);
+  g.px(0, floorY, W, 1, "#8f744d");
+  // the bunting, two strings of it, lifting a little in the heat of the room
+  const flags = ["#b8433a", "#e0a33c", "#3d6a8a", "#e8e3d2", "#3d5a4a"];
+  for (let row = 0; row < 2; row++) {
+    const by = Math.round(H * (0.06 + row * 0.07));
+    for (let x = 0, i = 0; x < W; x += 12, i++) {
+      const sag = Math.round(Math.sin((x / W) * Math.PI) * 6);
+      g.px(x, by + sag, 12, 1, "#2a2118");
+      const c = flags[(i + row * 2) % flags.length];
+      for (let k = 0; k < 5; k++) g.px(x + 2 + k, by + sag + 1 + k, 7 - k * 2 > 0 ? 7 - k * 2 : 1, 1, c);
+    }
+  }
+  // the lamps, and the warmth of the room
+  for (let i = 0; i < 3; i++) {
+    const lx = Math.round(W * (0.25 + i * 0.3));
+    g.px(lx, 0, 1, Math.round(H * 0.2), "#2a2118");
+    g.px(lx - 3, Math.round(H * 0.2), 7, 4, "#ffd27a");
+    g.a(lx - 20, Math.round(H * 0.2) - 10, 41, 40, 255, 210, 130, 0.08);
+  }
+  g.a(0, 0, W, H, 255, 190, 110, 0.05);
+
+  // the stage, and the band on it
+  const stageW = Math.round(W * 0.22);
+  const stageY = floorY - Math.round(H * 0.06);
+  g.px(0, stageY, stageW, floorY - stageY + 2, "#5b4a30");
+  g.px(0, stageY, stageW, 1, "#7c6242");
+  const figH = Math.max(26, Math.min(46, Math.round(H * 0.2)));
+  const fid = drawBackFigure(g, Math.round(stageW * 0.3), stageY - figH, stageY, { coat: "#2f3a35", coatLit: "#3c4a43", hair: "#3a2b1f" });
+  const bow = Math.sin(time / 90) * 4;
+  g.px(fid.bodyX - 3, stageY - figH + fid.headH + 1, 6, 3, "#8a5a2c"); // the fiddle, under his chin
+  g.px(fid.bodyX - 6 + bow, stageY - figH + fid.headH, 12, 1, "#d9d2bd"); // and the bow going
+  const box = drawBackFigure(g, Math.round(stageW * 0.72), stageY - figH, stageY, { coat: "#5a3a2a", coatLit: "#6b4a38", hair: "#6b4a2c" });
+  const squeeze = Math.round(3 + Math.sin(time / 260) * 2);
+  const boxY = stageY - figH + fid.headH + 3;
+  g.px(box.bodyX - 1 - squeeze, boxY, 4, 8, "#8a2f2a"); // the box, opening and closing
+  g.px(box.bodyX + box.bodyW - 3 + squeeze, boxY, 4, 8, "#8a2f2a");
+  for (let k = 0; k < squeeze * 2 + box.bodyW - 4; k += 2) g.px(box.bodyX + 3 - squeeze + k, boxY + 1, 1, 6, "#e8e3d2");
+
+  // the couples going round, and the two of you in the middle
+  type Fig = { foot: number; paint: () => void };
+  const figs: Fig[] = [];
+  const couple = (cx: number, foot: number, phase: number, a: { coat: string; coatLit: string; hair: string; hat?: string }, b: { coat: string; coatLit: string; hair: string; skirt: string }, lass = false) => {
+    const turn = time / 520 + phase;
+    const r = figH * 0.32;
+    const pa = { x: cx + Math.cos(turn) * r, y: foot + Math.sin(turn) * 3 };
+    const pb = { x: cx - Math.cos(turn) * r, y: foot - Math.sin(turn) * 3 };
+    const hop = Math.floor(time / 210 + phase) % 2;
+    figs.push({ foot: pa.y, paint: () => drawBackFigure(g, Math.round(pa.x), Math.round(pa.y) - figH - hop, Math.round(pa.y) - hop, { ...a, step: hop }) });
+    figs.push({
+      foot: pb.y,
+      paint: () => {
+        const top = Math.round(pb.y) - figH - (1 - hop);
+        const m = drawBackFigure(g, Math.round(pb.x), top, Math.round(pb.y) - (1 - hop), { ...b, sway: Math.sin(turn * 2) * 0.8 });
+        if (lass) drawLassHead(g, m, top);
+        else {
+          // the women face us, as she does: a face under the hair, and two dots for eyes
+          g.px(m.headX + 1, top + 2, m.headW - 2, m.headH - 2, "#c9a583");
+          const eye = Math.max(1, Math.round(m.headH * 0.18));
+          g.px(m.headX + 2, top + Math.round(m.headH * 0.45), eye, eye, "#26201a");
+          g.px(m.headX + m.headW - 2 - eye, top + Math.round(m.headH * 0.45), eye, eye, "#26201a");
+        }
+      },
+    });
+  };
+  couple(W * 0.36, H * 0.84, 0.5, { coat: "#3a3f4a", coatLit: "#4a505c", hair: "#2a2118" }, { coat: "#d9c27a", coatLit: "#e6d28f", hair: "#c9a050", skirt: "#7a3a4a" });
+  couple(W * 0.84, H * 0.83, 2.1, { coat: "#4a3a2a", coatLit: "#5a4a38", hair: "#8f8a82" }, { coat: "#9cb0c4", coatLit: "#b0c2d4", hair: "#3a2b1f", skirt: "#3d4a6a" });
+  couple(W * 0.46, H * 0.96, 4.0, { coat: "#5a4a3a", coatLit: "#6a5a48", hair: "#5a3a24" }, { coat: "#c4a0a8", coatLit: "#d4b0b8", hair: "#e0c890", skirt: "#5a6a3a" });
+  // the two of you, front and centre
+  couple(
+    W * 0.66,
+    H * 0.95,
+    1.3,
+    { coat: "#4a5540", coatLit: "#5a6650", hair: "#8a6b4c", hat: "#2f3327" },
+    { coat: "#e8e3d2", coatLit: "#f2eee0", hair: "#7a3a24", skirt: "#3d5a4a" },
+    true,
+  );
+  figs.sort((a, b) => a.foot - b.foot);
+  for (const f of figs) f.paint();
+
+  const edge = clamp01(Math.max(1 - p / 0.08, (p - 0.92) / 0.08));
+  if (edge > 0) g.a(0, 0, W, H, 0, 0, 0, edge);
+}
+
+/**
+ * A clear night on the corrie, after the wolf. The two of you sitting on the
+ * lip of it with your backs to us, the whole sky over you and the moon he
+ * came by, the glen dark below but for the croft's window. A star goes over
+ * halfway through. The words are DOM text: see updateCaption in main.ts.
+ */
+function starsScene(g: Painter, L: WorldLayout, st: GameState, p: number, time: number) {
+  const W = L.W;
+  const H = L.H;
+  // the sky, darkest at the top, and the Milky Way across it
+  for (let i = 0; i < 8; i++) {
+    const k = i / 7;
+    g.a(0, Math.round((H * 0.7 * i) / 8), W, Math.ceil((H * 0.7) / 8) + 1, Math.round(8 + k * 20), Math.round(12 + k * 26), Math.round(28 + k * 40), 1);
+  }
+  for (let i = 0; i < 260; i++) {
+    const u = hash(i * 1.37);
+    const x = Math.round(u * W);
+    const band = H * 0.08 + u * H * 0.32 + (hash(i * 7.1) - 0.5) * H * 0.12;
+    g.a(x, Math.round(band), 1, 1, 210, 215, 235, 0.25 + hash(i * 3.3) * 0.3);
+  }
+  for (let i = 0; i < 90; i++) {
+    const x = Math.round(hash(i * 9.7) * W);
+    const y = Math.round(hash(i * 4.3) * H * 0.62);
+    const tw = Math.sin(time / (300 + (i % 7) * 60) + i) > 0.2 ? 1 : 0.5;
+    const big = hash(i * 2.9) > 0.88;
+    g.a(x, y, big ? 2 : 1, big ? 2 : 1, 235, 238, 250, 0.9 * tw);
+  }
+  // the moon, full, and the light round it
+  const mx = Math.round(W * 0.78);
+  const my = Math.round(H * 0.16);
+  const mr = Math.max(7, Math.round(H * 0.055));
+  for (const [r, a] of [[mr * 3, 0.05], [mr * 2, 0.08]] as const) {
+    for (let dy = -r; dy <= r; dy++) {
+      const half = Math.round(Math.sqrt(r * r - dy * dy));
+      g.a(mx - half, my + dy, half * 2, 1, 230, 230, 210, a);
+    }
+  }
+  for (let dy = -mr; dy <= mr; dy++) {
+    const half = Math.round(Math.sqrt(mr * mr - dy * dy));
+    g.px(mx - half, my + dy, half * 2, 1, "#ece6cc");
+  }
+  g.a(mx - mr * 0.4, my - mr * 0.3, mr * 0.5, mr * 0.4, 180, 175, 150, 0.4);
+  g.a(mx + mr * 0.2, my + mr * 0.2, mr * 0.35, mr * 0.3, 180, 175, 150, 0.35);
+  // a star going over, halfway through
+  const fall = clamp01((p - 0.48) / 0.08);
+  if (fall > 0 && fall < 1) {
+    const sx = W * (0.2 + fall * 0.3);
+    const sy = H * (0.08 + fall * 0.12);
+    for (let k = 0; k < 10; k++) g.a(sx - k * 2, sy - k * 0.8, 2, 1, 240, 240, 255, (1 - k / 10) * (1 - fall * 0.6));
+  }
+  // the far side of the glen, and the glen floor in the dark
+  for (let x = 0; x < W; x += 2) {
+    const y = Math.round(H * 0.6 - Math.abs(Math.sin(x / 47 + 1)) * H * 0.1 - Math.sin(x / 13) * 2);
+    g.px(x, y, 2, H - y, "#151c26");
+  }
+  g.px(0, Math.round(H * 0.7), W, Math.round(H * 0.3), "#10161c");
+  // the croft, far down, with the light left on in the window, and the lantern if there is one
+  const cx = Math.round(W * 0.3);
+  const cy = Math.round(H * 0.74);
+  g.px(cx, cy, 10, 5, "#262a2c");
+  g.px(cx - 1, cy - 3, 12, 3, "#1e2224");
+  g.px(cx + 6, cy + 1, 2, 2, "#ffd27a");
+  g.a(cx + 2, cy - 3, 10, 9, 255, 200, 110, 0.15);
+  if (owns(st, "lamp")) {
+    g.px(cx + 16, cy + 2, 1, 1, "#ffd27a");
+    g.a(cx + 13, cy - 1, 7, 7, 255, 200, 110, 0.12);
+  }
+  // the lip of the corrie in front, and the two of them sitting on it
+  for (let x = 0; x < W; x += 2) {
+    const y = Math.round(H * 0.86 - Math.sin(x / 29) * 3 - Math.abs(x - W * 0.5) * 0.03);
+    g.px(x, y, 2, H - y, "#0b0f0c");
+  }
+  const lean = p > 0.6 ? 1 : 0; // her head on his shoulder, later on
+  const by = Math.round(H * 0.86) - 1;
+  const hx = Math.round(W * 0.5) - 12;
+  // him: coat and bunnet, from behind
+  g.px(hx, by - 12, 11, 12, "#262c22");
+  g.px(hx + 2, by - 18, 7, 6, "#2a2018");
+  g.px(hx + 1, by - 20, 9, 3, "#1a1d15");
+  // her: a shawl, and her hair down her back
+  const sx = hx + 13 - lean;
+  g.px(sx, by - 11, 10, 11, "#3a3830");
+  g.px(sx + 2, by - 17 + lean, 6, 6, "#3e1d12");
+  g.px(sx + 1, by - 13 + lean, 8, 8, "#3e1d12");
+  // the moonlight catching the top of his bunnet and her hair
+  g.a(hx + 2, by - 20, 6, 1, 220, 220, 200, 0.25);
+  g.a(sx + 2, by - 17 + lean, 5, 1, 230, 200, 190, 0.2);
+
+  const edge = clamp01(Math.max(1 - p / 0.1, (p - 0.9) / 0.1));
+  if (edge > 0) g.a(0, 0, W, H, 0, 0, 0, edge);
+}
+
 /* ================================================================== *
  * the pack
  * ================================================================== */
@@ -2064,6 +2349,17 @@ export const GLEN_ART: ArtPack = {
         saltlick: owns(st, "saltlick"),
       },
     });
+
+    // the long game's evenings: the hall, the corrie, and Callum at your own table
+    if (k === "ceilidh") return ceilidhScene(g, L, p, s.time);
+    if (k === "stars") return starsScene(g, L, st, p, s.time);
+    if (k === "supper") {
+      const I = layoutInterior(g.W, g.H, st);
+      drawInterior(g, I, st, s.time, true, false, undefined, p);
+      const edge = clamp01(Math.max(1 - p / 0.08, (p - 0.92) / 0.08));
+      if (edge > 0) g.a(0, 0, I.W, I.H, 0, 0, 0, edge);
+      return;
+    }
 
     // inside the house: a different room, not a different hill
     if (s.interior) {

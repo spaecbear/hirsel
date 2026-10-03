@@ -133,7 +133,7 @@ describe("married life", () => {
   });
 
   it("keeps the long game's achievements out of what the credits ask for", () => {
-    expect(ACHIEVEMENTS.filter((a) => a.longGame).map((a) => a.id).sort()).toEqual(["dance", "fifty-lambs", "year-wed"]);
+    expect(ACHIEVEMENTS.filter((a) => a.longGame).map((a) => a.id).sort()).toEqual(["dance", "fifty-lambs", "only-one", "year-wed"]);
   });
 
   it("dances with her at home once wed: free, played out, and counted", () => {

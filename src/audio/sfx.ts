@@ -15,6 +15,8 @@ export type SfxName =
   | "pipes"
   | "fiddle"
   | "waltz"
+  | "reel"
+  | "stars"
   | "bark"
   | "build"
   | "pipe"
@@ -151,6 +153,36 @@ export class Sfx {
           });
           break;
         }
+        case "reel": {
+          /*
+           * The band in the hall: a reel in D, four times through, the fiddle
+           * on top and the accordion's bass and chords stamping out the beat
+           * under it. As long as the scene in the hall.
+           */
+          const step = 0.14;
+          const phrase = [74, 69, 66, 69, 74, 76, 78, 76, 74, 71, 67, 71, 74, 73, 71, 69];
+          for (let rep = 0; rep < 4; rep++) {
+            phrase.forEach((n, i) => {
+              const at = t + 0.05 + (rep * phrase.length + i) * step;
+              e.tone1(at, HZ(n), HZ(n), step * 0.9, "sawtooth", 0.06);
+              if (i % 4 === 0) e.noise(at, 0.02, "bandpass", 2400, 3, 0.02);
+            });
+            // bass on the beat, a chord off it: the accordion's left hand
+            for (let b = 0; b < 8; b++) {
+              const at = t + 0.05 + (rep * 16 + b * 2) * step;
+              const root = b < 4 ? 50 : b < 6 ? 43 : 45;
+              e.tone1(at, HZ(root), HZ(root), step * 0.8, "square", 0.04);
+              e.tone1(at + step, HZ(root + 16), HZ(root + 16), step * 0.6, "square", 0.02);
+            }
+          }
+          break;
+        }
+        case "stars": {
+          // a harp, slow, under a clear night: D, A, D, F#, rising and let ring
+          const notes = [50, 57, 62, 66, 69, 74, 69, 66, 62, 57, 62, 66, 69, 78, 74];
+          notes.forEach((n, i) => e.tone1(t + 0.3 + i * 0.55, HZ(n), HZ(n), 1.6, "triangle", 0.06));
+          break;
+        }
         case "pipes":
           e.drone(HZ(50), t, 2.0, 0.1, e.sfxBus);
           [62, 69, 74, 76, 74, 69].forEach((n, i) => e.tone1(t + 0.15 + i * 0.28, HZ(n), HZ(n), 0.3, "sawtooth", 0.1));
@@ -224,6 +256,9 @@ export class Sfx {
       wolflost: "wolf",
       buysheep: "buy",
       dance: "waltz",
+      ceilidh: "reel",
+      supper: "pub",
+      stars: "stars",
     };
     const first = map[anim];
     if (first) this.play(first);

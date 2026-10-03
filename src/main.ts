@@ -801,6 +801,10 @@ function updateCaption(anim: string | null, p: number) {
     if (office > 0.06 && office < 0.6) want = "You handed in your notice.";
     else if (train > 0.15 && train < 0.85) want = "You took the sleeper north.";
     else if (climb > 0.1 && climb < 0.92) want = OPENING_QUOTE;
+  } else if (anim === "stars") {
+    // after the wolf: the only time the game says anything about him out loud
+    if (p > 0.12 && p < 0.44) want = "A clear night on the corrie, and the moon full.";
+    else if (p > 0.6 && p < 0.9) want = "There was only ever the one.";
   }
   document.body.classList.toggle("opening", opening);
   openingTitle.classList.toggle("on", opening && beatAt(p, "crest") > 0.3);

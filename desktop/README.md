@@ -123,6 +123,7 @@ Each needs a 64×64 icon, earned and unearned.
 | `TIPPY` | Tippy | The collie found the warmest spot in the house before you did. | yes |
 | `ARROW` | Arrow | Twice round by the fire, because you came back. | yes |
 | `PELT` | The last wolf in Scotland | You had the reach of him. He is on your back now. | yes |
+| `ONLY_ONE` | Only ever the one | A clear night on the corrie with her, and the moon he came by. | yes |
 | `MAULED` | Caught out late | The high ground was no place to be, and you were told. | yes |
 
 A run that used a code which changes the game earns none of these: see "Cheat codes" in

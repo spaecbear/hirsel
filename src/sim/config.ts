@@ -523,5 +523,8 @@ export const ANIM_MS: Record<string, number> = {
   propose: 7600,
   // a waltz round the kitchen floor: as long as the tune that goes with it
   dance: 8200,
+  ceilidh: 8600, // a reel and a half in the hall
+  supper: 7600, // long enough for the one about the tup and the minister
+  stars: 10000, // the slowest thing in the game, on purpose
   bark: 900,
 };
