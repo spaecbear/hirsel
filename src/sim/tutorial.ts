@@ -124,7 +124,7 @@ export const TUTORIAL: TutorialStep[] = [
      */
     id: "seasons",
     text:
-      "The year turns every twenty-four days, and each season works the hill differently. Spring: the grass comes back fast. " +
+      "Each season lasts twenty-four days, and each works the hill differently. Spring: the grass comes back fast. " +
       "Summer: fleece grows quickest and the flies are at their worst, and it is the only time to cut hay. " +
       "Autumn: wool fetches its best price of the year. Winter: nothing grows, snow buries the grass, and the flock lives on " +
       "what is in the barn. Tap the sky: the season, and the days left in it, are always there.",

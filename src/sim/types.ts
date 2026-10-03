@@ -100,7 +100,10 @@ export type EventId =
   | "ceilidh"
   | "anniversary"
   | "garden"
-  | "her-mother";
+  | "her-mother"
+  | "ceilidh-wed"
+  | "callum-supper"
+  | "clear-night";
 
 export interface PendingEvent {
   id: EventId;
@@ -165,7 +168,15 @@ export type AnimId =
   | "bark"
   /** the day you walked out, played once at the start of a run */
   | "quit"
-  | "propose";
+  | "propose"
+  /** a turn round the floor with her, by the fire, once you are wed */
+  | "dance"
+  /** the autumn ceilidh in the hall, the two of you, once wed */
+  | "ceilidh"
+  /** Callum in for his tea */
+  | "supper"
+  /** a clear full-moon night on the corrie with her, after the wolf */
+  | "stars";
 
 export interface GameState {
   day: number;
@@ -234,6 +245,10 @@ export interface GameState {
     rosettes: number;
     /** Callum has paid back a kindness */
     neighbourGifts: number;
+    /** turns round the floor with her, at home, once you are wed */
+    dances: number;
+    /** clear nights on the corrie with her, under a full moon, after the wolf */
+    starNights: number;
   };
   achievements: string[];
   /** bales in the barn, for the winter: cut in summer or bought at the cart */

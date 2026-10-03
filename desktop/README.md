@@ -113,6 +113,7 @@ Each needs a 64×64 icon, earned and unearned.
 | `FIRST_WINTER` | Through the winter | See the flock through a winter to the spring. |  |
 | `FIRST_LAMB` | On its feet | A lamb born on your own ground, and alive in the morning. |  |
 | `YEAR_WED` | A year wed | Stay on the hill with her, and see a year out. |  |
+| `DANCE` | A turn by the fire | Stay on the hill with her, and ask her to dance. |  |
 | `FIFTY_LAMBS` | Fifty lambs | Fifty lambs born on your own ground. |  |
 | `ROSETTE` | A red rosette | Take a prize at the Highland show, or the trial. |  |
 | `NEIGHBOUR` | Good neighbours | Have a kindness paid back from over the burn. |  |
@@ -122,6 +123,7 @@ Each needs a 64×64 icon, earned and unearned.
 | `TIPPY` | Tippy | The collie found the warmest spot in the house before you did. | yes |
 | `ARROW` | Arrow | Twice round by the fire, because you came back. | yes |
 | `PELT` | The last wolf in Scotland | You had the reach of him. He is on your back now. | yes |
+| `ONLY_ONE` | Only ever the one | A clear night on the corrie with her, and the moon he came by. | yes |
 | `MAULED` | Caught out late | The high ground was no place to be, and you were told. | yes |
 
 A run that used a code which changes the game earns none of these: see "Cheat codes" in

@@ -105,6 +105,8 @@ export class TutorialUi {
 
     this.step = next;
     this.banner.innerHTML = "";
+    // asked to tap the sky, the card moves down out of it rather than sit on top of it
+    this.banner.classList.toggle("low", next.target === "sky");
     this.banner.appendChild(el("p", { class: "tut-text" }, next.text));
 
     const row = el("div", { class: "tut-row" });

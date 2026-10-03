@@ -59,7 +59,7 @@ mouse, the keyboard or a controller.
 - Neighbours, letters and chance visitors that ask something of you
 - Short days, no timers: play in ten minutes or an evening
 - Full controller support, and playable on Steam Deck
-- 28 Steam achievements, some of them secret
+- 30 Steam achievements, some of them secret
 - Steam Cloud saves
 - Original music
 

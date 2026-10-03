@@ -638,6 +638,8 @@ export class WorldUi {
         return "The croft";
       case "kit":
         return "What you have";
+      case "lass":
+        return "Her";
       default:
         return "";
     }
@@ -659,6 +661,20 @@ export class WorldUi {
 
   private rowsFor(id: HotspotId): Row[] {
     switch (id) {
+      case "lass":
+        // free, and good for nothing but itself: the croft was built for this
+        return [
+          {
+            label: "Dance with her",
+            detail: this.game.state.stats.dances
+              ? "Another turn round the kitchen floor. It costs nothing."
+              : "A turn round the kitchen floor, with the fire going. It costs nothing.",
+            tone: "gold",
+            closes: true,
+            disabled: this.busy,
+            onPick: () => this.game.dance(),
+          },
+        ];
       case "flock":
         return this.actionRows(["gather", "shear", "tend"]);
       case "ground":
@@ -1102,6 +1118,8 @@ export class WorldUi {
           return "Out to the hill";
         case "kit":
           return "What you have";
+        case "lass":
+          return "Her";
         default:
           return owns(g, "hearth") ? "" : "Four walls and a draught.";
       }

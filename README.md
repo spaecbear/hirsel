@@ -284,15 +284,33 @@ Married life is a victory lap with a little more in it:
 
 - **Two pairs of hands**: a tap more a day, still inside the cap of six
 - **She lives at the croft**: out by the door on the hill, wandering a little as the flock
-  does, and between you and the fire indoors: the same woman the inn and the proposal draw
+  does, and between you and the fire indoors: the same woman the inn and the proposal draw.
+  She stays put while you work: the day's set pieces used to leave her out, so she vanished
+  for every action and came back after it. There is a second stool at the table, hers
+- **Dance with her**: tap her in the house. A turn round the kitchen floor, hand in hand,
+  three times round to a wee waltz in D written for it (`waltz` in `audio/sfx.ts`), with notes
+  and a heart going up off them. Free, and good for nothing but itself
 - The ask is gone from your sheet; at the inn she is covering the bar and will not take your
   money; the first morning has its own line
 - Three events of its own: **the anniversary** a year on (a day off together, hale for three),
   **her kale patch** (two taps to dig it, and the feed bill is £1 a night lighter for good),
   and **her mother** coming up on the post bus. Every one can be declined for nothing
+- Three evenings of the long game, each a card at dawn and a scene of its own:
+  - **The ceilidh, the two of you**: every autumn on the ceilidh's day. The village hall,
+    bunting, a fiddle and a box on the stage, couples going round, and the pair of you
+    spinning in the middle to a reel (`ceilidhScene`, `reel`)
+  - **Callum to his tea**: once, a while after the wedding. Callum on the near stool in his
+    cap, her on hers, you at the table between with the pot on, a candle and his bottle
+  - **A clear night**: only after the wolf, at a full moon on a clear day, at most once a
+    season. The two of you on the lip of the corrie under the whole sky and the moon he came
+    by, the croft's light far below, a star going over: *There was only ever the one.* It
+    earns a secret, **Only ever the one**. The card says "the top of the hill", never the
+    corrie, by the same rule as every other event
 - The courting events (her afternoon off, the ceilidh) are for before, and stop
-- Two achievements for the long game, **A year wed** and **Fifty lambs**, marked `longGame`
-  and left out of what the credits ask for, since the credits roll at the moment of a win
+- Four achievements for the long game, **A year wed**, **Fifty lambs**, **A turn by the
+  fire** (the dance) and the secret **Only ever the one** (the clear night), marked
+  `longGame` and left out of what the credits ask for, since the credits roll at the moment
+  of a win. The first three are visible on purpose, as a reason to stay on the hill
 
 ### Finishing a run
 
@@ -425,8 +443,16 @@ Things that are easy to break by accident:
 - **The sword, the wolf and the summon conditions are never explained in the UI.**
   Not in tooltips, not in achievements (those two are hidden), not in cheat codes. The pelt
   is the exception the player earns: once taken, the shepherd wears it in every scene.
-- **Both wolf warnings stay.** Dawn of the full moon, and the fourth action on the corrie
-  with one tap still in hand.
+- **The last wolf comes to any flock on the High Corrie on a full-moon night**, every full
+  moon until his pelt is taken. Nothing else calls him: no kit, no day's work. Beating him
+  takes the broadsword **and four taps still unspent** at nightfall (`wolfFightTaps`): a man
+  who has worked the day through is too tired for the fight. Four rather than five, so that
+  a day of four or more taps (the boots, or the lantern) can spend one driving the flock up
+  and still be ready, without waiting a whole moon. Lose, with or without the sword, and the
+  flock is cut to `survivorsAfterWolf`.
+- **The wolf is warned of, never named.** Every full-moon dawn says the high ground is no
+  place to be caught out late; a flock on the corrie that day (at dawn, or on being driven
+  up) "will not settle", while there is still a tap to bring them down.
 - **`test/setup.ts` installs a real in-memory `localStorage` for every test run, unconditionally.**
   This machine's Node has a global `localStorage` that exists but is broken: a bare `{}`
   with no methods, downstream of the experimental `--localstorage-file` flag pointing nowhere
@@ -752,7 +778,8 @@ current values, with notes. Change them there rather than hunting for numbers:
 1. opening difficulty at £40 (`startMoney`): now the live default, so this one is under test
 2. crook vs dog overlap; no flag, needs playtest data
 3. survivors after a wolf mauling (`survivorsAfterWolf`, currently 1)
-4. the wolf punishing the two best early purchases, by design, watch it
+4. the wolf comes to any flock on the corrie at a full moon, from the first one on day 5:
+   the dawn warnings are the only defence a new player has, so watch whether they are enough
 5. the pelt ending the fox game: seasons now carry some of the pressure the fox did (the
    winter, the hay and the snow do not care about the pelt)
 6. seasons: built; see **Seasons** above. Season length is still a question (24 days)

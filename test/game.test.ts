@@ -237,44 +237,69 @@ describe("buying stock", () => {
 });
 
 describe("the last wolf", () => {
-  const armed = (sword: boolean) =>
+  // day 5 is a full moon, and the corrie is pasture 2. Six taps in the day.
+  const onTheCorrie = (sword: boolean) =>
     harness({
       at: 2,
       day: 5,
       taps: 6,
-      owned: { boots: true, crook: true, ...(sword ? { sword: true } : {}) },
+      owned: sword ? { sword: true, boots: true, lamp: true } : {},
       flock: [sheep(4), sheep(4), sheep(4), sheep(4)],
     });
+  const spend = (game: Game, n: number) => {
+    for (let i = 0; i < n; i++) game.doAction("pipe");
+  };
 
   it("does not come while the day is still being worked; he comes at night", () => {
-    const { game, played } = armed(true);
-    for (let i = 0; i < 5; i++) game.doAction("pipe");
-    expect(played).not.toContain("wolf"); // five actions on the corrie, and nothing yet
+    const { game, played } = onTheCorrie(true);
+    spend(game, 2);
+    expect(played).not.toContain("wolf");
     game.sleep();
     expect(played).toContain("wolf");
   });
 
-  it("lets you walk off the corrie after the fifth action and get away with it", () => {
-    const { game, state, played } = armed(false);
-    state.taps = 6;
-    for (let i = 0; i < 5; i++) game.doAction("pipe");
-    game.moveTo(0); // down off the high ground before lying down
+  it("comes with no kit at all: the moon and the ground are enough", () => {
+    const { game, state, played } = harness({ at: 2, day: 5, flock: [sheep(4), sheep(4), sheep(4)] });
+    game.sleep();
+    expect(played).toContain("wolflost");
+    expect(state.flock).toHaveLength(OPEN_QUESTIONS.survivorsAfterWolf);
+  });
+
+  it("lets you walk the flock off the corrie before dark and get away with it", () => {
+    const { game, state, played } = onTheCorrie(false);
+    game.moveTo(0);
     game.sleep();
     expect(played).not.toContain("wolflost");
     expect(state.flock).toHaveLength(4);
   });
 
-  it("with the sword you take the pelt and foxes stop mattering", () => {
-    const { game, state } = armed(true);
-    for (let i = 0; i < 5; i++) game.doAction("pipe");
+  it("is beaten with the sword and four taps left: the pelt, and the flock kept", () => {
+    const { game, state } = onTheCorrie(true);
+    spend(game, 6 - BALANCE.wolfFightTaps); // two spent, four in hand
     game.sleep();
     expect(state.owned.pelt).toBe(true);
     expect(state.flock).toHaveLength(4);
   });
 
+  it("is not beaten by a man who has worked the day through, sword or no sword", () => {
+    const { game, state } = onTheCorrie(true);
+    spend(game, 6 - BALANCE.wolfFightTaps + 1); // one too many
+    game.sleep();
+    expect(state.owned.pelt).toBeUndefined();
+    expect(state.flock).toHaveLength(OPEN_QUESTIONS.survivorsAfterWolf);
+    expect(state.log.some((l) => l.t.includes("the day has had the best of you"))).toBe(true);
+  });
+
+  it("can be met after a walk up: four taps in a day of five, one spent driving them up", () => {
+    const { game, state } = harness({ at: 0, day: 5, taps: 5, owned: { sword: true, boots: true, lamp: true }, flock: [sheep(4), sheep(4)] });
+    game.moveTo(2);
+    expect(state.taps).toBe(BALANCE.wolfFightTaps);
+    game.sleep();
+    expect(state.owned.pelt).toBe(true);
+  });
+
   it("without the sword the flock is cut to the survivors, after the animation", () => {
-    const { game, state } = armed(false);
-    for (let i = 0; i < 5; i++) game.doAction("pipe");
+    const { game, state } = onTheCorrie(false);
     game.sleep();
     expect(state.owned.pelt).toBeUndefined();
     expect(state.flock).toHaveLength(OPEN_QUESTIONS.survivorsAfterWolf);
@@ -282,9 +307,8 @@ describe("the last wolf", () => {
   });
 
   it("no fox comes near ground he has walked over", () => {
-    const { game, state, played } = armed(false);
+    const { game, state, played } = onTheCorrie(false);
     game.rng = () => 0; // every fox roll would otherwise hit
-    for (let i = 0; i < 5; i++) game.doAction("pipe");
     game.sleep();
     expect(played).toContain("wolflost");
     expect(played).not.toContain("fox");
@@ -323,12 +347,18 @@ describe("the last wolf", () => {
     expect(played).not.toContain("wolflost");
   });
 
-  it("warns twice, and neither warning says wolf", () => {
-    const { game, state } = armed(false);
-    for (let i = 0; i < 4; i++) game.doAction("pipe");
-    const warned = state.log.find((l) => l.t.includes("Something is watching"));
-    expect(warned).toBeTruthy();
-    expect(state.log.some((l) => /wolf/i.test(l.t))).toBe(false);
+  it("warns at dawn and on driving them up, and neither warning says wolf", () => {
+    // up there already when the full moon dawns
+    const { game, state } = harness({ at: 2, day: 4, flock: [sheep(4), sheep(4)] });
+    game.rng = () => 0.99;
+    game.sleep();
+    expect(state.day).toBe(5);
+    expect(state.log.some((l) => l.day === 5 && l.t.includes("Something is watching"))).toBe(true);
+    // or driven up on the day itself
+    const up = harness({ at: 0, day: 5, taps: 3, flock: [sheep(4), sheep(4)] });
+    up.game.moveTo(2);
+    expect(up.state.log.some((l) => l.t.includes("Something is watching"))).toBe(true);
+    expect([...state.log, ...up.state.log].some((l) => /wolf/i.test(l.t))).toBe(false);
   });
 });
 

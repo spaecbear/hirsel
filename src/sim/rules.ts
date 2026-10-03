@@ -258,24 +258,29 @@ export function canShear(g: GameState): boolean {
 }
 
 /* ---------- the last wolf ---------- */
-/** crook, boots, the high ground, a full moon, and a day worked dark to dark */
+/**
+ * He comes to any flock left on the High Corrie on a full-moon night, every
+ * full moon, until his pelt has been taken. No kit and no day's work calls
+ * him: the moon and the ground are enough, so a flock left up there by a
+ * player not paying attention can be lost.
+ */
 export function wolfSummoned(g: GameState): boolean {
   if (owns(g, "pelt")) return false;
-  if (!(owns(g, "boots") && owns(g, "crook"))) return false;
   if (g.at !== 2) return false;
   if (!isFullMoon(g.day)) return false;
-  if (g.actsToday < BALANCE.wolfActionsNeeded) return false;
   return g.flock.length > 0;
 }
 
-/** the second warning; one tap still in hand, so escape is possible */
+/** the broadsword on the wall, and the day not spent: rested enough to fight him */
+export function wolfBeatable(g: GameState): boolean {
+  return owns(g, "sword") && g.taps >= BALANCE.wolfFightTaps;
+}
+
+/**
+ * The warning: the flock is on his ground on the day of a full moon. Said at
+ * dawn, and on driving them up there, while there is still time to bring
+ * them down again. It never names him or the moon.
+ */
 export function wolfWarningDue(g: GameState): boolean {
-  return (
-    !owns(g, "pelt") &&
-    isFullMoon(g.day) &&
-    g.at === 2 &&
-    g.actsToday === BALANCE.wolfWarnOnAction &&
-    owns(g, "boots") &&
-    owns(g, "crook")
-  );
+  return !owns(g, "pelt") && isFullMoon(g.day) && g.at === 2 && g.flock.length > 0;
 }

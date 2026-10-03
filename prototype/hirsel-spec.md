@@ -216,6 +216,11 @@ thing in the design.
 
 Wolves were hunted out of Scotland around the 1680s. This is the last one.
 
+> **Changed since this spec.** He now comes to any flock left on the High Corrie on a
+> full-moon night, with no kit or action conditions, and is beaten only with the sword and
+> four taps unspent at nightfall. See "Design invariants" in the README; the conditions
+> below are the original design.
+
 **Summon conditions, all simultaneously:**
 
 - Own crook **and** boots (the sword is *not* required to summon)

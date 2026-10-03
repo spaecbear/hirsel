@@ -113,15 +113,15 @@ tests still pass.
 
 ### 1.4 Steam achievements
 
-The 28 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
-four secret ones (`tippy`, `arrow`, `pelt`, `mauled`) stay secret.
+The 30 in `sim/achievements.ts` map one-to-one; Steam supports hidden achievements, so the
+five secret ones (`tippy`, `arrow`, `pelt`, `mauled`, `only-one`) stay secret.
 
-- [ ] Register all 28 in Steamworks with the same ids; hidden flag on the four secret ones,
+- [ ] Register all 30 in Steamworks with the same ids; hidden flag on the five secret ones,
       with their existing `hint` as the post-unlock description
 - [x] `checkAchievements` → `platform.unlockAchievement(id)` for each fresh one
 - [x] On start-up, re-send every locally earned id: covers achievements earned offline
       or before Steam was running
-- [ ] **64×64 icons for each, earned and unearned** (56 images). Pixel art, integer-scaled
+- [ ] **64×64 icons for each, earned and unearned** (60 images). Pixel art, integer-scaled
 - [x] **Cheated runs earn nothing**. Today `SILLER` (+£500) and `1680`
       (summons the wolf) can earn the croft and pelt achievements. Add `cheated: boolean`
       to `GameState`, `hydrate` back-fills it for old saves, set it when any code that
@@ -214,7 +214,7 @@ Decide what happens to the free Vercel build once there is a paid one. Recommend
 | library hero | 3840×1240 |
 | library logo | 1280 wide max, transparent |
 | screenshots | at least 5, 1920×1080 |
-| achievement icons | 64×64 × 56 (see §1.4) |
+| achievement icons | 64×64 × 60 (see §1.4) |
 | trailer | optional but strongly recommended; 30–60s |
 
 The Glen interface in landscape is the screenshot view. Good moments: the three pastures

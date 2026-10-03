@@ -54,6 +54,13 @@ export const ACHIEVEMENTS: Achievement[] = [
     longGame: true,
     won: (g) => g.married !== null && g.day - g.married >= SEASON_DAYS * 4,
   },
+  {
+    id: "dance",
+    name: "A turn by the fire",
+    hint: "Stay on the hill with her, and ask her to dance.",
+    longGame: true,
+    won: (g) => g.stats.dances > 0,
+  },
   { id: "fifty-lambs", name: "Fifty lambs", hint: "Fifty lambs born on your own ground.", longGame: true, won: (g) => g.stats.lambsBorn >= 50 },
   { id: "rosette", name: "A red rosette", hint: "Take a prize at the Highland show, or the trial.", won: (g) => g.stats.rosettes > 0 },
   { id: "neighbour", name: "Good neighbours", hint: "Have a kindness paid back from over the burn.", won: (g) => g.stats.neighbourGifts > 0 },
@@ -93,6 +100,14 @@ export const ACHIEVEMENTS: Achievement[] = [
     hint: "You had the reach of him. He is on your back now.",
     secret: true,
     won: (g) => owns(g, "pelt"),
+  },
+  {
+    id: "only-one",
+    name: "Only ever the one",
+    hint: "A clear night on the corrie with her, and the moon he came by.",
+    secret: true,
+    longGame: true,
+    won: (g) => g.stats.starNights > 0,
   },
   {
     id: "mauled",
