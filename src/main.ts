@@ -882,6 +882,7 @@ const nav = new Nav({
   showKeys: () => {
     firstGesture();
     const already = $("settings").classList.contains("on");
+    settingsUi.show("settings"); // the keys live on the Settings page
     openSettings();
     const keys = document.getElementById("set-keys");
     if (!keys) return;

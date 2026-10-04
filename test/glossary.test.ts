@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { buffGlossary, statusGlossary } from "../src/sim/glossary";
+import { breedGlossary, buffGlossary, groundGlossary, statusGlossary, weatherGlossary } from "../src/sim/glossary";
 import { saveEarned, clearEarned } from "../src/sim/achievements";
-import { BALANCE } from "../src/sim/config";
+import { BALANCE, BREEDS, PASTURES, WEATHER } from "../src/sim/config";
 import { CHEATS, REVEAL_ORDER, revealNextCheat } from "../src/sim/cheats";
 
 /**
@@ -139,5 +139,39 @@ describe("the reward for finishing a run", () => {
     }
     // by the time 1680 arrives the player has finished five runs
     expect(REVEAL_ORDER.indexOf("1680")).toBeGreaterThanOrEqual(5);
+  });
+});
+
+describe("the field guide's weather, ground and breeds", () => {
+  it("has every sky, with what it does to the day from the live numbers", () => {
+    const entries = weatherGlossary();
+    expect(entries.map((e) => e.id).sort()).toEqual(Object.keys(WEATHER).sort());
+    const sun = entries.find((e) => e.id === "sun")!;
+    expect(sun.effect).toContain(`+${Math.round((WEATHER.sun.graze - 1) * 100)}%`);
+    expect(sun.meta).toContain("Shearing");
+    const rain = entries.find((e) => e.id === "rain")!;
+    expect(rain.meta).toContain("No shearing");
+    expect(rain.effect).toContain(`+${Math.round((BALANCE.regenRain - 1) * 100)}%`);
+  });
+
+  it("has the three grounds, low to high, with their grazing and risk", () => {
+    const entries = groundGlossary();
+    expect(entries.map((e) => e.name)).toEqual(PASTURES.map((p) => p.name));
+    entries.forEach((e, i) => {
+      expect(e.meta).toContain(`${Math.round(PASTURES[i].risk * 100)}%`);
+      expect(e.effect).toContain(`${Math.round(PASTURES[i].quality * 100)}%`);
+    });
+  });
+
+  it("has every breed at its price", () => {
+    const entries = breedGlossary();
+    expect(entries.map((e) => e.id).sort()).toEqual(Object.keys(BREEDS).sort());
+    for (const e of entries) expect(e.meta).toContain(`£${BREEDS[e.id as keyof typeof BREEDS].cost}`);
+  });
+
+  it("gives nothing away about the wolf, and keeps to the house style", () => {
+    const text = JSON.stringify([...weatherGlossary(), ...groundGlossary(), ...breedGlossary()]);
+    expect(text).not.toMatch(/wolf|sword/i);
+    expect(text).not.toContain("\u2014");
   });
 });

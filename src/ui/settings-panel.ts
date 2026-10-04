@@ -1,7 +1,16 @@
 import { $, el, toast } from "./dom";
 import { ACHIEVEMENTS, clearEarned, loadEarned } from "../sim/achievements";
 import { CHEATS, findCheat, runCheat, type CheatContext } from "../sim/cheats";
-import { buffGlossary, seasonGlossary, statusGlossary, workGlossary, type GlossaryEntry } from "../sim/glossary";
+import {
+  breedGlossary,
+  buffGlossary,
+  groundGlossary,
+  seasonGlossary,
+  statusGlossary,
+  weatherGlossary,
+  workGlossary,
+  type GlossaryEntry,
+} from "../sim/glossary";
 import { prefersReducedMotion } from "../sim/settings";
 import type { Settings } from "../sim/settings";
 import { DIFFICULTY, SEASON_DAYS } from "../sim/config";
@@ -28,11 +37,55 @@ export interface SettingsApi {
   cheatContext: () => CheatContext;
 }
 
+/**
+ * The menu is three pages behind tabs: the settings themselves, the field
+ * guide, and the achievements. It was one long scroll with the glossary
+ * buried between the keys and the cheat codes, where nobody found it.
+ *
+ * On Steam there is no achievements page: Steam keeps them, in the overlay
+ * and on the store page, and a second list in the game that "Forget
+ * achievements" could clear without touching Steam's was only confusing.
+ */
+export type MenuTab = "settings" | "guide" | "achievements";
+
+const TABS: { id: MenuTab; name: string; title: string }[] = [
+  { id: "settings", name: "Settings", title: "Settings" },
+  { id: "guide", name: "Field guide", title: "Field guide" },
+  { id: "achievements", name: "Achievements", title: "Achievements" },
+];
+
 export function buildSettings(api: SettingsApi) {
   const box = $("settings-body");
+  let tab: MenuTab = "settings";
+  const steam = platform.kind === "steam";
+  const tabs = () => TABS.filter((t) => !(steam && t.id === "achievements"));
+
   const draw = () => {
     const s = api.settings;
     box.innerHTML = "";
+    if (!tabs().some((t) => t.id === tab)) tab = "settings";
+    const heading = document.querySelector("#settings h3");
+    if (heading) heading.textContent = TABS.find((t) => t.id === tab)!.title;
+
+    const bar = el("div", { class: "menu-tabs", role: "tablist" });
+    for (const t of tabs()) {
+      const b = el(
+        "button",
+        { type: "button", role: "tab", class: t.id === tab ? "on" : "", "aria-selected": String(t.id === tab) },
+        t.name,
+      ) as HTMLButtonElement;
+      b.addEventListener("click", () => {
+        if (tab === t.id) return;
+        tab = t.id;
+        draw();
+        box.closest(".box")?.scrollTo(0, 0); // the dialog scrolls, not the body inside it
+        (box.querySelector(".menu-tabs .on") as HTMLElement | null)?.focus({ preventScroll: true });
+      });
+      bar.appendChild(b);
+    }
+    box.appendChild(bar);
+    const pages: Record<MenuTab, HTMLElement[]> = { settings: [], guide: [], achievements: [] };
+    const put = (where: MenuTab, g: HTMLElement) => pages[where].push(g);
 
     /* ---- sound ---- */
     const sound = group("Sound");
@@ -44,7 +97,7 @@ export function buildSettings(api: SettingsApi) {
     sound.appendChild(
       seg("Audio", [["On", !s.muted], ["Muted", s.muted]], (i) => api.apply({ muted: i === 1 })),
     );
-    box.appendChild(sound);
+    put("settings", sound);
 
     /* ---- look ---- */
     const look = group("Look");
@@ -56,7 +109,6 @@ export function buildSettings(api: SettingsApi) {
      * to the controller standard for very little gain. The RETRO code still
      * works there, for anyone who goes looking.
      */
-    const steam = platform.kind === "steam";
     if (!steam) {
       look.appendChild(
         seg("Interface", [["Glen", s.ui === "glen"], ["Retro", s.ui === "retro"]], (i) =>
@@ -109,7 +161,7 @@ export function buildSettings(api: SettingsApi) {
         ),
       );
     }
-    box.appendChild(look);
+    put("settings", look);
 
     /* ---- the scale ---- */
     /*
@@ -150,7 +202,7 @@ export function buildSettings(api: SettingsApi) {
           : "Only a run finished on Hard is given a cheat code.",
       ),
     );
-    box.appendChild(scale);
+    put("settings", scale);
 
     /* ---- the game ---- */
     const game = group("The game");
@@ -174,7 +226,12 @@ export function buildSettings(api: SettingsApi) {
         "Replaying the first day starts a fresh run with the walkthrough: the taps are free that day and the flock starts one short.",
       ),
     );
-    box.appendChild(game);
+    if (steam) {
+      game.appendChild(
+        el("div", { class: "note" }, "Achievements are kept by Steam: Shift+Tab opens the overlay, where they all are."),
+      );
+    }
+    put("settings", game);
 
     /* ---- the window: desktop builds only ---- */
     if (platform.setFullscreen || platform.quit) {
@@ -195,7 +252,7 @@ export function buildSettings(api: SettingsApi) {
         win.appendChild(btns);
         win.appendChild(el("div", { class: "note" }, "With autosave on, the run is kept at the end of every night, so quitting mid-day loses only today."));
       }
-      box.appendChild(win);
+      put("settings", win);
     }
 
     /* ---- the keys: moving, choosing, and the quick ones ---- */
@@ -218,47 +275,57 @@ export function buildSettings(api: SettingsApi) {
         "The quick keys do the thing outright, and only out on the hill. Anything they cannot do today, they say why. A controller: A chooses, B backs out, Start is this menu, View the sky, the right stick walks.",
       ),
     );
-    box.appendChild(keys);
+    put("settings", keys);
 
-    /* ---- buffs & status: what the HUD's terse "tended (3d)" actually means ---- */
-    const gloss = group("Buffs & status");
-    const glossGrid = el("div", { class: "gloss" });
+    /* ---- the field guide: everything the hill's numbers mean, built from the numbers ---- */
     const glossEntry = (e: GlossaryEntry) =>
       el("div", { class: e.secret && e.name === "?????" ? "locked" : "" }, `<b>${e.name}</b><i>${e.meta}</i><span>${e.effect}</span>`);
-    for (const e of buffGlossary()) glossGrid.appendChild(glossEntry(e));
-    for (const e of statusGlossary()) glossGrid.appendChild(glossEntry(e));
-    // the year's own work lives with the year, below
-    for (const e of workGlossary()) if (e.id !== "hay" && e.id !== "lambing") glossGrid.appendChild(glossEntry(e));
-    gloss.appendChild(glossGrid);
-    box.appendChild(gloss);
+    const guide = (title: string, intro: string | null, entries: GlossaryEntry[], mark?: (e: GlossaryEntry, card: HTMLElement) => void) => {
+      const g = group(title);
+      if (intro) g.appendChild(el("div", { class: "note" }, intro));
+      const grid = el("div", { class: "gloss" });
+      for (const e of entries) {
+        const card = glossEntry(e);
+        mark?.(e, card);
+        grid.appendChild(card);
+      }
+      g.appendChild(grid);
+      put("guide", g);
+    };
 
     /*
-     * ---- the year: the four seasons, where the run is in them, and the ----
-     * work that belongs to them. Its own section rather than four more cards
-     * among the buffs: it is the thing a player plans a run around.
+     * The year first: it is the thing a player plans a run around. The
+     * season the run is in is marked, and the year's own work sits with it.
      */
-    const year = group("The year");
     const now = seasonOf(api.today());
-    year.appendChild(
-      el(
-        "div",
-        { class: "note" },
-        `It is ${now.name.toLowerCase()} just now: day ${now.day} of ${SEASON_DAYS}, year ${now.year}. ` +
-          `The season is always in the sky: tap it for the days left and what is in the barn.`,
-      ),
-    );
-    const yearGrid = el("div", { class: "gloss" });
-    for (const e of seasonGlossary()) {
-      const card = glossEntry(e);
-      if (e.id === now.id) {
+    guide(
+      "The year",
+      `It is ${now.name.toLowerCase()} just now: day ${now.day} of ${SEASON_DAYS}, year ${now.year}. ` +
+        `The season is always in the sky: tap it for the days left and what is in the barn.`,
+      [...seasonGlossary(), ...workGlossary().filter((e) => e.id === "hay" || e.id === "lambing")],
+      (e, card) => {
+        if (e.id !== now.id) return;
         card.classList.add("now");
         card.querySelector("b")!.insertAdjacentHTML("beforeend", " <em>now</em>");
-      }
-      yearGrid.appendChild(card);
-    }
-    for (const e of workGlossary()) if (e.id === "hay" || e.id === "lambing") yearGrid.appendChild(glossEntry(e));
-    year.appendChild(yearGrid);
-    box.appendChild(year);
+      },
+    );
+    guide(
+      "The weather",
+      "Tomorrow's sky and the day after's are in the forecast: tap the sky, or press F.",
+      weatherGlossary(),
+    );
+    guide("The ground", "Three pastures, low to high. The flock grazes whichever one they are on.", groundGlossary());
+    guide(
+      "Buffs & status",
+      "What the short notes by the day count mean: how long each lasts and what it does.",
+      [...buffGlossary(), ...statusGlossary()],
+    );
+    guide(
+      "The work",
+      "What the day's work costs as the flock grows.",
+      workGlossary().filter((e) => e.id !== "hay" && e.id !== "lambing"),
+    );
+    guide("The breeds", "What the cart and the dealer sell, and what each is worth to you.", breedGlossary());
 
     /* ---- cheats ---- */
     const cheats = group("Cheat codes");
@@ -311,10 +378,10 @@ export function buildSettings(api: SettingsApi) {
       el("div", { class: "note" }, "Codes stay found between runs. Work them from here rather than typing them again."),
     );
     if (s.inverse) cheats.appendChild(el("div", { class: "note" }, "TOD is on. Enter it again to put the glen back the right way round."));
-    box.appendChild(cheats);
+    put("settings", cheats);
 
     /* ---- achievements ---- */
-    const ach = group("Achievements");
+    const ach = group("Earned so far"); // the page is already called Achievements
     const earned = new Set(loadEarned());
     const grid = el("div", { class: "ach" });
     for (const a of ACHIEVEMENTS) {
@@ -341,10 +408,18 @@ export function buildSettings(api: SettingsApi) {
       ),
     );
     ach.appendChild(wipe);
-    box.appendChild(ach);
+    if (!steam) put("achievements", ach);
+
+    for (const g of pages[tab]) box.appendChild(g);
   };
 
-  return { draw };
+  /** open on a given page: the "?" key wants the keys, which live on Settings */
+  const show = (t: MenuTab) => {
+    tab = t;
+    draw();
+  };
+
+  return { draw, show };
 }
 
 function group(title: string) {
