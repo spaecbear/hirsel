@@ -19,6 +19,7 @@ import { tippyFrame } from "../tippy";
 import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
 import { drawLampLight, drawLampPost } from "../lamppost";
 import { drawOpening } from "../opening";
+import { ANIM_MS } from "../../sim/config";
 import {
   TERRAIN,
   mix,
@@ -663,13 +664,17 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       drawDog(g, sx - 50 + dp * 74, sy + 16 + Math.sin(p * Math.PI * 2) * 4, p * 1.6, 0, 1);
     } else if (k === "move") {
       /*
-       * She covers the ground twice over while he walks it once: out ahead,
-       * back to chivvy the stragglers, out again. She was moving at exactly
-       * his pace before, which made her look tied to his heel rather than
-       * working.
+       * One cast out round the flock and back: away from her place in a wide
+       * arc, and in again to it. She was running three laps back
+       * and forth in a second and a bit, turning on the spot each time with
+       * her legs a blur, which read as a dog gone daft rather than working.
        */
-      const swing = Math.sin(p * Math.PI * 6);
-      drawDog(g, sx - 30 + swing * 26, sy + 16, p * 2, 0, Math.cos(p * Math.PI * 6) < 0 ? -1 : 1);
+      // from her place on the circuit and back to it, so she does not jump when the move ends
+      const arc = Math.sin(ease(p) * Math.PI);
+      const dx = Math.round(L.dogAt.x - arc * 46);
+      const dy = Math.round(L.dogAt.y - arc * 6);
+      // the same trot as on the hill: a foot down every 110ms across the move
+      drawDog(g, dx, dy, (p * ANIM_MS.move) / (110 * 12), 0, p < 0.5 ? -1 : 1);
     } else {
       /*
        * Off the clock she works the outside of the flock, and her circuit
