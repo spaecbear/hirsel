@@ -474,12 +474,80 @@ describe("the pocket watch", () => {
     game.stopRecording();
     expect(state.routine).toHaveLength(2);
 
+    // the next day, as far as the watch is concerned
     state.taps = 6;
     state.at = 0;
     state.buffs = {};
+    state.didToday = {};
     game.runRoutine();
     expect(state.buffs.tended).toBe(BALANCE.tendDays);
     expect(state.at).toBe(1);
+  });
+});
+
+describe("the pocket watch, run twice in a day", () => {
+  /*
+   * Player report: set the watch, run it, run it again, and the whole day's
+   * work played over. The watch did the work without marking it done, so the
+   * second run could not tell. It keeps a day; it does not do it twice.
+   */
+  it("does not do the day's work again", () => {
+    const { game, state } = harness({ taps: 12, owned: { watch: true } });
+    state.routine = [
+      { kind: "act", act: "tend" },
+      { kind: "act", act: "pipe" },
+      { kind: "act", act: "build" },
+    ];
+    state.building = { id: "roof", done: 0 };
+
+    game.runRoutine();
+    expect(state.didToday).toMatchObject({ tend: 1, pipe: 1, build: 1 });
+    expect(state.building?.done).toBe(1);
+    const taps = state.taps;
+
+    game.runRoutine();
+    expect(state.building?.done, "no second day's building").toBe(1);
+    expect(state.didToday).toMatchObject({ tend: 1, pipe: 1, build: 1 });
+    expect(state.taps, "and no taps spent on it").toBe(taps);
+  });
+
+  it("finishes what is left of the day, counting what was done by hand", () => {
+    const { game, state } = harness({ taps: 12, owned: { watch: true } });
+    state.routine = [
+      { kind: "act", act: "tend" },
+      { kind: "act", act: "pipe" },
+    ];
+    game.doAction("tend"); // done by hand already
+    game.runRoutine();
+    expect(state.didToday).toMatchObject({ tend: 1, pipe: 1 });
+  });
+
+  it("does a piece of work as many times as the watch has it", () => {
+    const { game, state } = harness({ taps: 12, owned: { watch: true } });
+    state.routine = [
+      { kind: "act", act: "tend" },
+      { kind: "act", act: "tend" },
+    ];
+    game.runRoutine();
+    game.runRoutine();
+    expect(state.didToday.tend).toBe(2);
+  });
+
+  it("mucks again while the field still wants it", () => {
+    const { game, state } = harness({ taps: 12, owned: { watch: true } });
+    state.routine = [{ kind: "act", act: "muck" }];
+    state.pastures[state.at].grass = 0;
+    game.runRoutine();
+    const once = state.pastures[state.at].grass;
+    expect(state.didToday.muck).toBe(1);
+
+    game.runRoutine();
+    expect(state.didToday.muck, "the ground was still poor").toBe(2);
+    expect(state.pastures[state.at].grass).toBeGreaterThan(once);
+
+    state.pastures[state.at].grass = state.pastures[state.at].cap;
+    game.runRoutine();
+    expect(state.didToday.muck, "but not on a field in good heart").toBe(2);
   });
 });
 

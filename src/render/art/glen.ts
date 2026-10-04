@@ -19,6 +19,7 @@ import { tippyFrame } from "../tippy";
 import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
 import { drawLampLight, drawLampPost } from "../lamppost";
 import { drawOpening } from "../opening";
+import { ANIM_MS } from "../../sim/config";
 import {
   TERRAIN,
   mix,
@@ -663,13 +664,17 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       drawDog(g, sx - 50 + dp * 74, sy + 16 + Math.sin(p * Math.PI * 2) * 4, p * 1.6, 0, 1);
     } else if (k === "move") {
       /*
-       * She covers the ground twice over while he walks it once: out ahead,
-       * back to chivvy the stragglers, out again. She was moving at exactly
-       * his pace before, which made her look tied to his heel rather than
-       * working.
+       * One cast out round the flock and back: away from her place in a wide
+       * arc, and in again to it. She was running three laps back
+       * and forth in a second and a bit, turning on the spot each time with
+       * her legs a blur, which read as a dog gone daft rather than working.
        */
-      const swing = Math.sin(p * Math.PI * 6);
-      drawDog(g, sx - 30 + swing * 26, sy + 16, p * 2, 0, Math.cos(p * Math.PI * 6) < 0 ? -1 : 1);
+      // from her place on the circuit and back to it, so she does not jump when the move ends
+      const arc = Math.sin(ease(p) * Math.PI);
+      const dx = Math.round(L.dogAt.x - arc * 46);
+      const dy = Math.round(L.dogAt.y - arc * 6);
+      // the same trot as on the hill: a foot down every 110ms across the move
+      drawDog(g, dx, dy, (p * ANIM_MS.move) / (110 * 12), 0, p < 0.5 ? -1 : 1);
     } else {
       /*
        * Off the clock she works the outside of the flock, and her circuit
@@ -989,27 +994,56 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       break;
     }
     case "market": {
-      // the cart rolls off to town and comes back heavier in the purse
-      const away = Math.sin(p * Math.PI);
-      const cx = L.cart.x + away * (L.W * 0.8);
+      /*
+       * To town and back, in three moves: he walks over to the cart from
+       * wherever he is standing, goes off with it at its tail and comes back
+       * at its head, then walks back to his spot with the purse heavier. He
+       * used to keep his own height on the screen and slide off sideways
+       * with it, so from the bottom of the field he left along the bottom
+       * edge and the cart went to town on its own.
+       */
+      const fetch = ease(clamp01(p / 0.2));
+      const trip = clamp01((p - 0.2) / 0.65);
+      const home = ease(clamp01((p - 0.85) / 0.15));
+      const away = Math.sin(trip * Math.PI);
+      const cx = Math.round(L.cart.x + away * (L.W * 0.8));
+      // where he walks beside it: at its tail, his boots level with its wheels
+      const atX = L.cart.x - 14;
+      const atY = L.cart.y + 24 - SHEPHERD_H;
+      let hx: number;
+      let hy: number;
+      let facing: 1 | -1;
+      let walking: boolean;
+      if (p < 0.2) {
+        hx = Math.round(sx + (atX - sx) * fetch);
+        hy = Math.round(sy + (atY - sy) * fetch);
+        facing = atX >= sx ? 1 : -1;
+        walking = fetch < 1 && (Math.abs(atX - sx) > 1 || Math.abs(atY - sy) > 1);
+      } else if (p < 0.85) {
+        hx = cx - 14;
+        hy = atY;
+        facing = trip < 0.5 ? 1 : -1;
+        walking = away > 0.02;
+      } else {
+        hx = Math.round(atX + (sx - atX) * home);
+        hy = Math.round(atY + (sy - atY) * home);
+        facing = sx >= atX ? 1 : -1;
+        walking = home < 1 && (Math.abs(atX - sx) > 1 || Math.abs(atY - sy) > 1);
+      }
+      const him = () => drawShepherd(g, hx, hy, { crook: true, walk: walking ? p * 6 : 0, facing });
+      // whoever stands lower on the screen is nearer, and goes in front
+      const nearer = hy + SHEPHERD_H >= L.cart.y + 24;
+      if (!nearer) him();
       g.px(cx, L.cart.y + 6, 30, 10, C.bark);
       g.px(cx + 3, L.cart.y + 16, 8, 8, "#3f3527");
       g.px(cx + 20, L.cart.y + 16, 8, 8, "#3f3527");
-      drawWoolSacks(g, cx + 4, L.cart.y - 2, p < 0.5 ? 40 : 0);
-      // away to town, then back again
-      /*
-       * He goes with it, walking at the horse's head, and comes back with it.
-       * He used to stay behind walking on the spot while the cart went to
-       * town without him.
-       */
-      const hx = Math.round(sx + (cx - L.cart.x));
-      const going = away > 0.02 && away < 0.98;
-      drawShepherd(g, hx, sy, { crook: true, walk: going ? p * 5 : 0, facing: p < 0.5 ? 1 : -1 });
-      // and home with the purse heavier: the coins go up over him once he is back
-      if (p > 0.84) {
-        const t = (p - 0.84) / 0.16;
+      drawWoolSacks(g, cx + 4, L.cart.y - 2, trip < 0.5 ? 40 : 0);
+      if (nearer) him();
+      // and home with the purse heavier: the coins go up over him once he is back at his spot
+      if (p > 0.88 && p < 0.985) {
+        const t = (p - 0.88) / 0.11;
         for (let i = 0; i < 8; i++) {
-          g.px(hx - 16 + i * 6, sy + 4 - Math.sin(t * Math.PI) * (18 + i * 2), 3, 3, C.gorse);
+          g.px(hx - 16 + i * 6, hy + 4 - Math.sin(t * Math.PI) * (18 + i * 2), 3, 3, C.gorse);
         }
       }
       break;

@@ -497,7 +497,7 @@ export const CROFT = [
 export const ANIM_MS: Record<string, number> = {
   gather: 1400,
   shear: 1600,
-  market: 1900,
+  market: 3200, // over to the cart, to town and back with it, and back to his spot
   pipe: 2200,
   music: 2000,
   // the pub and the night are the two set pieces worth sitting in: an £8
