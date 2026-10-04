@@ -106,7 +106,13 @@ export const BALANCE = {
   collieGraze: 1.05,
   fiddleGrowth: 1.25,
   fiddleDays: 3,
-  peltFoxRisk: 0.01,
+  /*
+   * None at all. It was one night in a hundred, which over a long run still
+   * brought a fox in once or twice, against a pelt the game says no fox will
+   * come near. The reward for the hardest thing in the game should be exactly
+   * what it says.
+   */
+  peltFoxRisk: 0,
 
   flystrikeFleece: 11,
   flystrikeChance: 0.3,

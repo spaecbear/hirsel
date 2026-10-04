@@ -195,9 +195,9 @@ describe("fox risk", () => {
     expect(at("steady")).toBeGreaterThan(at("hard"));
   });
 
-  it("is a flat one percent with the pelt, whatever else is true", () => {
+  it("is nothing at all with the pelt, whatever else is true", () => {
     const s = g({ at: 2, forecast: ["mist", "sun", "sun"], owned: { pelt: true } });
-    expect(foxRisk(s)).toBe(0.01);
+    expect(foxRisk(s)).toBe(0);
   });
 });
 

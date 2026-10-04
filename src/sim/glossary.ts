@@ -134,7 +134,7 @@ export function statusGlossary(): GlossaryEntry[] {
       name: peltEarned ? "The last wolf's pelt" : "?????",
       meta: peltEarned ? "Forever, once taken" : "?????",
       effect: peltEarned
-        ? `Fox risk becomes a flat ${Math.round(BALANCE.peltFoxRisk * 100)}%, every night, on any ground. Taken on the High Corrie under a full moon.`
+        ? `${BALANCE.peltFoxRisk > 0 ? `Fox risk becomes a flat ${Math.round(BALANCE.peltFoxRisk * 100)}%` : "No fox comes near the flock"}, every night, on any ground. Taken on the High Corrie under a full moon.`
         : "Something is out there.",
       secret: true,
     },
