@@ -83,6 +83,11 @@ export class AudioEngine {
     if (this.ac && this.ac.state !== "running") void this.ac.resume();
   }
 
+  /** stop the clock and the sound altogether, until resume(): a hidden page, or another copy of the game playing */
+  suspend() {
+    if (this.ac && this.ac.state === "running") void this.ac.suspend();
+  }
+
   setLevels(l: Partial<typeof this.levels>) {
     Object.assign(this.levels, l);
     this.applyLevels();
