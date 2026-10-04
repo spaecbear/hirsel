@@ -568,7 +568,7 @@ function paintShepherdIdle(g: Painter, L: WorldLayout, s: Scene) {
  * shorter than him, standing on the ground rather than behind a bar. `cx` is
  * her centre, `footY` where her feet are.
  */
-function drawHerAtHome(g: Painter, cx: number, footY: number, time: number) {
+export function drawHerAtHome(g: Painter, cx: number, footY: number, time: number) {
   const figH = SHEPHERD_H - 1;
   const top = footY - figH;
   const m = drawBackFigure(g, cx, top, footY, {
@@ -1210,7 +1210,7 @@ function wolfScene(g: Painter, L: WorldLayout, s: Scene, armed: boolean) {
  * like two different fires depending on which room you were standing in.
  * One function, both hearths.
  */
-function drawHearthFire(g: Painter, x: number, y: number, w: number, h: number, time: number) {
+export function drawHearthFire(g: Painter, x: number, y: number, w: number, h: number, time: number) {
   const flick = Math.sin(time / 130) * 2;
   /*
    * The insets are a share of the height, not fixed pixels. Fixed, the pale
