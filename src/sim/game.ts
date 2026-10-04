@@ -242,6 +242,17 @@ export class Game {
     const cost = this.costOf(act);
     if (g.taps < cost || !act.can(g)) return;
     if (g.recording) g.draft.push({ kind: "act", act: id });
+    this.perform(act, id === "ask" ? () => this.win() : undefined);
+  }
+
+  /**
+   * Do one action and pay for it: the same path for a tap and for the watch.
+   * The watch used to run the action itself and skip the bookkeeping, so
+   * nothing it did was marked as done today, and running it a second time
+   * did the whole day's work over again.
+   */
+  private perform(act: ActionDef, then?: () => void) {
+    const g = this.state;
     /*
      * What is being worked on, taken before the work is done. run() finishes
      * the milestone on its last day and clears g.building, so an animation
@@ -251,10 +262,10 @@ export class Game {
     const croft = g.building?.id;
     act.run(this);
     // what was done, recorded at the point of doing it
-    g.didToday[id] = (g.didToday[id] ?? 0) + 1;
-    if (id === "muck" && !g.muckedToday.includes(g.at)) g.muckedToday.push(g.at);
-    this.onAnim(act.anim, id === "ask" ? () => this.win() : undefined, croft ? { croft } : undefined);
-    this.spend(cost);
+    g.didToday[act.id] = (g.didToday[act.id] ?? 0) + 1;
+    if (act.id === "muck" && !g.muckedToday.includes(g.at)) g.muckedToday.push(g.at);
+    this.onAnim(act.anim, then, croft ? { croft } : undefined);
+    this.spend(this.costOf(act));
   }
 
   moveTo(i: number) {
@@ -1025,6 +1036,16 @@ export class Game {
     this.busy = true;
     const run = ++this.routineRun;
     const steps = [...g.routine];
+    /*
+     * The watch keeps a day, it does not do it twice. Each piece of work runs
+     * only as many times today as it is written in the watch, counting what
+     * has already been done by hand or by an earlier run, so running it again
+     * finishes an interrupted day rather than repeating a finished one.
+     * Mucking is the exception: it is about the ground, not the day, and
+     * goes on as long as the field still wants it.
+     */
+    const wanted: Partial<Record<ActionId, number>> = {};
+    for (const e of steps) if (e.kind === "act") wanted[e.act] = (wanted[e.act] ?? 0) + 1;
     const step = () => {
       if (run !== this.routineRun) return; // a later run, or a cancel, owns the day now
       const g2 = this.state;
@@ -1044,11 +1065,12 @@ export class Game {
         return;
       }
       const act = ACTIONS.find((a) => a.id === e.act);
-      // skip anything that cannot be done today
+      // skip anything that cannot be done today, or has been done as often as the watch has it
       if (!act || !act.can(g2) || g2.taps < this.costOf(act)) return step();
-      act.run(this);
-      this.onAnim(act.anim, step);
-      this.spend(this.costOf(act));
+      if (act.id !== "muck" && (g2.didToday[act.id] ?? 0) >= (wanted[act.id] ?? 0)) return step();
+      // asking her is not a turn of work, and it ends the run: the watch leaves it to you
+      if (act.id === "ask") return step();
+      this.perform(act, step);
     };
     step();
   }
