@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DORIAN_D, HARP_FIGURES, HIRSEL_AIR, LONG_ROAD_HOME, MIXOLYDIAN_D, TOD_JIG, sequence } from "../src/audio/tunes";
+import { Score } from "../src/audio/score";
+import type { AudioEngine } from "../src/audio/engine";
 
 const inMode = (scale: number[]) => new Set(scale.map((n) => n % 12));
 
@@ -69,5 +71,30 @@ describe("the tunes", () => {
       at += e.d;
     }
     expect(at).toBe(beats);
+  });
+});
+
+describe("the score's clock", () => {
+  /** an audio engine that does nothing but tell the time */
+  const fakeEngine = () =>
+    new Proxy({ ac: { state: "running" }, now: 0 } as Record<string, unknown>, {
+      get: (t, k) => (k in t ? t[k as string] : () => undefined),
+    }) as unknown as AudioEngine & { now: number };
+
+  it("skips the bars it missed when held back, rather than playing them all at once", () => {
+    const engine = fakeEngine();
+    const score = new Score(engine);
+    const at: number[] = [];
+    (score as unknown as { scheduleBar: (t: number) => void }).scheduleBar = (t: number) => at.push(t);
+    score.pump();
+    expect(at.length).toBeGreaterThan(0);
+    // the timer was held back for ten seconds while the audio ran on
+    at.length = 0;
+    engine.now = 10;
+    score.pump();
+    expect(at.length).toBeGreaterThan(0);
+    expect(Math.min(...at)).toBeGreaterThanOrEqual(10); // nothing scheduled into the past
+    const bar = score.beat * HIRSEL_AIR.beatsPerBar;
+    expect(at.length).toBeLessThanOrEqual(Math.ceil(1.4 / bar) + 1); // only what is due, not the backlog
   });
 });

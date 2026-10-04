@@ -567,26 +567,62 @@ function firstGesture() {
    */
   if (audio.started) {
     audio.resume();
+    claimSound();
     return;
   }
   if (audio.start()) {
     audio.setLevels({ master: settings.master, music: settings.music, sfx: settings.sfx, muted: settings.muted });
     score.start();
     rain.start();
+    claimSound();
   }
 }
+
+/*
+ * One copy of the game makes sound at a time.
+ *
+ * The same game open twice (two tabs, or the home-screen app and a tab) played
+ * two scores over each other, and Sound off in one did nothing to the other,
+ * so it sounded like the music had started twice and would not stop. Whichever
+ * copy was last touched says so on a channel every copy of the game listens
+ * to, and the others go quiet until they are touched in turn.
+ */
+const SOUND_ID = Math.random().toString(36).slice(2);
+const soundChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("hirsel-sound") : null;
+let lastClaim = -Infinity;
+/** another copy took the sound: the next touch here takes it back at once */
+let yielded = false;
+function claimSound() {
+  const now = performance.now();
+  if (!soundChannel || (!yielded && now - lastClaim < 1000)) return; // one word a second is plenty
+  yielded = false;
+  lastClaim = now;
+  soundChannel.postMessage(SOUND_ID);
+}
+soundChannel?.addEventListener("message", (e) => {
+  if (e.data === SOUND_ID) return;
+  yielded = true;
+  audio.suspend();
+});
 for (const evt of ["pointerdown", "keydown", "touchstart"]) {
   addEventListener(evt, firstGesture, { passive: true });
 }
-// coming back to a tab the browser put to sleep, which suspends the context
+// a hidden page goes quiet, and picks up where it was when it is looked at again.
+// It used to be left playing, which is how a forgotten copy of the game kept its
+// music going under the one being played, out of reach of its Sound off.
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) audio.resume();
+  if (document.hidden) {
+    audio.suspend();
+  } else if (audio.started) {
+    audio.resume();
+    claimSound();
+  }
 });
 
 /*
- * On the desktop the sound goes when the window does. A browser tab is left
- * playing because that is what tabs do; a game alt-tabbed away from is
- * expected to go quiet, and a Deck suspended mid-air to stop. There is
+ * On the desktop the sound goes when the window does: a game alt-tabbed away
+ * from is expected to go quiet, and a Deck suspended mid-air to stop. (A
+ * browser tab goes quiet when it is hidden; see visibilitychange below.) There is
  * nothing else to pause: the day only moves when the player moves it, and
  * an animation left running behind the window just finishes.
  */

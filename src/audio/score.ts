@@ -68,19 +68,37 @@ export class Score {
     this.tuneBus = this.engine.ac.createGain();
     this.tuneBus.connect(this.engine.musicBus);
     this.nextBarTime = this.engine.now + 0.25;
-    this.timer = window.setInterval(() => {
-      const ac = this.engine.ac;
-      if (!ac || ac.state === "suspended") return;
-      while (this.nextBarTime < this.engine.now + LOOKAHEAD) {
-        this.scheduleBar(this.nextBarTime, this.bar);
-        this.nextBarTime += this.beat * this.tune.beatsPerBar;
-        this.bar++;
-        if (this.bar >= this.bars.length) {
-          this.bar = 0;
-          this.pass++;
-        }
+    this.timer = window.setInterval(() => this.pump(), 160);
+  }
+
+  /**
+   * Schedule whatever is due in the next LOOKAHEAD seconds.
+   *
+   * If the clock has fallen behind, because the browser held the timer back
+   * while the audio carried on (iOS does this to a busy or hidden page), the
+   * bars it missed are skipped rather than played. Scheduled into the past,
+   * every missed bar sounded at once on top of the next: the tune jumbled
+   * over itself, like a second copy of it starting.
+   */
+  pump() {
+    const ac = this.engine.ac;
+    if (!ac || ac.state === "suspended") return;
+    const barLen = this.beat * this.tune.beatsPerBar;
+    const late = this.engine.now - this.nextBarTime;
+    if (late > 0) {
+      const missed = Math.ceil(late / barLen);
+      this.nextBarTime += missed * barLen;
+      this.bar = (this.bar + missed) % this.bars.length;
+    }
+    while (this.nextBarTime < this.engine.now + LOOKAHEAD) {
+      this.scheduleBar(this.nextBarTime, this.bar);
+      this.nextBarTime += barLen;
+      this.bar++;
+      if (this.bar >= this.bars.length) {
+        this.bar = 0;
+        this.pass++;
       }
-    }, 160);
+    }
   }
 
   stop() {

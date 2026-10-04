@@ -16,6 +16,7 @@ import { drawMoonDisc, moonPos } from "../moon";
 import {
   C,
   SKY,
+  starField,
   drawDog,
   drawDyke,
   drawFox,
@@ -250,11 +251,8 @@ function drawNight(g: Painter, st: GameState, amount: number, time: number, dayO
   g.a(0, 0, W, H, 10, 13, 24, amount * 0.88);
   if (amount < 0.3) return;
   const a = (amount - 0.3) / 0.7;
-  for (let i = 0; i < 40; i++) {
-    const x = (i * 97) % W;
-    const y = (i * 41) % 62;
-    const tw = Math.sin(time / 340 + i) > 0 ? 1 : 0.45;
-    g.a(x, y, 2, 2, 220, 225, 240, a * tw * 0.9);
+  for (const s of starField(W, 62, 40, time)) {
+    g.a(s.x, s.y, 2, 2, 220, 225, 240, a * s.twinkle * 0.9);
   }
   const day = st.day + dayOffset;
   const idx = moonPhase(day);

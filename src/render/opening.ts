@@ -20,7 +20,7 @@
  * which reads OPENING to know when each one shows.
  */
 import { clamp01, ease, type Painter } from "./painter";
-import { drawSheep, drawShepherd, hash } from "./sprites";
+import { drawSheep, drawShepherd, hash, walkGait } from "./sprites";
 
 /** where each beat starts and ends, as a fraction of the scene */
 export const OPENING = {
@@ -141,127 +141,170 @@ function drawClerk(g: Painter, x: number, y: number, o: { walk?: number; facing?
  * 1. the office
  * ------------------------------------------------------------------ */
 
-function office(g: Painter, W: number, H: number, t: number, time: number) {
-  const floorY = Math.round(H * 0.7);
-  // the room: a back wall the colour of nothing in particular, and carpet
-  g.px(0, 0, W, floorY, "#2b3036");
-  g.px(0, floorY, W, H - floorY, "#22262a");
-  for (let y = floorY + 3; y < H; y += 4) g.a(0, y, W, 1, 0, 0, 0, 0.12);
+/**
+ * On a phone held upright the indoor beats would float in a tall empty frame,
+ * so they are shown letterboxed, a band across the middle, like a film.
+ */
+function letterbox(g: Painter, W: number, fullH: number, draw: (H: number) => void) {
+  const H = Math.min(fullH, Math.max(150, Math.round(W * 0.95)));
+  const top = Math.round((fullH - H) / 2);
+  if (top <= 0) return draw(fullH);
+  g.px(0, 0, W, fullH, "#000");
+  g.cx.save();
+  g.cx.beginPath();
+  g.cx.rect(0, top, W, H);
+  g.cx.clip();
+  g.cx.translate(0, top);
+  draw(H);
+  g.cx.restore();
+}
 
-  // the window: the city at dusk, behind the rain
-  const wx = Math.round(W * 0.34);
-  const wy = Math.round(H * 0.07);
-  const ww = Math.round(W * 0.6);
-  const wh = Math.round(floorY * 0.62);
+function office(g: Painter, W: number, fullH: number, t: number, time: number) {
+  letterbox(g, W, fullH, (H) => officeRoom(g, W, H, t, time));
+}
+
+function officeRoom(g: Painter, W: number, H: number, t: number, time: number) {
+  /*
+   * Everything in the room is sized to him, not to the screen. It was laid
+   * out in fractions of the screen, so on a phone, where the screen is tall,
+   * the door came out six times his height and the desk ran to the bottom of
+   * the glass. He is 26 pixels tall wherever he is; the door is half as tall
+   * again, the desk comes to his waist, the screen on it is the size of his
+   * chest. The back wall stands at `wallY`, and his desk is a stride in front
+   * of it, so walking to the door is walking away from us.
+   */
+  const portrait = W < 240;
+  const wallY = Math.round(H * (portrait ? 0.6 : 0.64));
+  const feetY = wallY + 26; // his feet at the desk
+  const cx = Math.round(W * (portrait ? 0.6 : 0.52)); // the middle of his desk
+
+  // the back wall and the carpet
+  g.px(0, 0, W, wallY, "#2b3036");
+  g.px(0, wallY, W, H - wallY, "#22262a");
+  g.px(0, wallY, W, 1, "#3a4048"); // the skirting
+  for (let y = wallY + 4; y < H; y += 4) g.a(0, y, W, 1, 0, 0, 0, 0.12);
+
+  // the window: the city at dusk, behind the rain, sill at shoulder height
+  const wx = Math.round(W * (portrait ? 0.3 : 0.36));
+  const ww = Math.round(W * (portrait ? 0.64 : 0.58));
+  const wb = wallY - 18; // the sill
+  const wy = Math.max(10, wb - Math.round(Math.min(90, ww * 0.42)));
+  const wh = wb - wy;
   sky(g, wx, wy, ww, wh, [22, 28, 42], [74, 64, 78], 6);
   for (let i = 0, x = wx; x < wx + ww; i++) {
-    const bw = 10 + Math.floor(hash(i * 3.7) * 22);
+    const bw = 8 + Math.floor(hash(i * 3.7) * 16);
     const bh = Math.round(wh * (0.25 + hash(i * 9.1) * 0.6));
     const by = wy + wh - bh;
-    g.px(x, by, bw - 1, bh, i % 3 ? "#151a22" : "#1a2029");
+    g.px(x, by, Math.min(bw - 1, wx + ww - x), bh, i % 3 ? "#151a22" : "#1a2029");
     // lit windows, a few going out as the evening goes on
-    for (let yy = by + 3; yy < wy + wh - 2; yy += 4) {
-      for (let xx = x + 2; xx < x + bw - 3; xx += 4) {
+    for (let yy = by + 3; yy < wy + wh - 2; yy += 3) {
+      for (let xx = x + 2; xx < Math.min(x + bw - 2, wx + ww - 1); xx += 3) {
         const h = hash(xx * 1.3 + yy * 7.7);
-        if (h > 0.62 && h - t * 0.15 > 0.62) g.px(xx, yy, 2, 2, h > 0.86 ? "#8fa7bd" : "#d9b866");
+        if (h > 0.62 && h - t * 0.15 > 0.62) g.px(xx, yy, 1, 1, h > 0.86 ? "#8fa7bd" : "#d9b866");
       }
     }
     x += bw;
   }
   // rain running down the glass
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 30; i++) {
     const rx = wx + Math.floor(hash(i * 5.3) * ww);
-    const ry = wy + ((hash(i * 2.1) * wh + time * (0.04 + hash(i) * 0.05)) % wh);
-    g.a(rx, ry, 1, 3, 180, 200, 215, 0.35);
+    const ry = wy + ((hash(i * 2.1) * wh + time * (0.03 + hash(i) * 0.04)) % wh);
+    g.a(rx, ry, 1, 2, 180, 200, 215, 0.35);
   }
-  g.a(wx, wy, ww, wh, 120, 140, 160, 0.06); // the glass itself
-  // the frame and its mullions
+  g.a(wx, wy, ww, wh, 120, 140, 160, 0.06);
   g.px(wx - 2, wy - 2, ww + 4, 2, "#1d2126");
-  g.px(wx - 2, wy + wh, ww + 4, 3, "#1d2126");
+  g.px(wx - 3, wb, ww + 6, 2, "#3d434a"); // the sill
   g.px(wx - 2, wy, 2, wh, "#1d2126");
   g.px(wx + ww, wy, 2, wh, "#1d2126");
-  for (let k = 1; k < 3; k++) g.px(wx + Math.round((ww * k) / 3), wy, 2, wh, "#1d2126");
+  for (let k = 1; k < 3; k++) g.px(wx + Math.round((ww * k) / 3), wy, 1, wh, "#1d2126");
 
   // the strip light, buzzing, and once in a while not quite on
   const flick = hash(Math.floor(time / 70)) > 0.96 ? 0.4 : 1;
-  g.px(Math.round(W * 0.2), 2, Math.round(W * 0.6), 2, "#cfd8d6");
-  for (let i = 1; i <= 3; i++) {
-    g.a(Math.round(W * (0.2 - i * 0.03)), 4, Math.round(W * (0.6 + i * 0.06)), i * 6, 210, 225, 220, 0.025 * flick);
-  }
+  g.px(Math.round(W * 0.25), 3, Math.round(W * 0.5), 2, "#cfd8d6");
+  g.a(Math.round(W * 0.2), 5, Math.round(W * 0.6), 10, 210, 225, 220, 0.03 * flick);
 
-  // the door out, on the left, with its green sign over it
-  const dx = Math.round(W * 0.05);
-  const dw = Math.max(18, Math.round(W * 0.09));
-  const dh = Math.round(floorY * 0.62);
-  const dy = floorY - dh;
+  // a clock over the door, at five to six
+  const dx = Math.round(W * 0.07);
+  const dw = 16;
+  const dh = 40;
+  const dy = wallY - dh;
+  g.px(dx + 4, dy - 18, 9, 9, "#d9d6cc");
+  g.px(dx + 8, dy - 17, 1, 4, "#26201a");
+  g.px(dx + 6, dy - 14, 3, 1, "#26201a");
+  // the door out, on the back wall, with its green sign over it
   const open = ease(clamp01((t - 0.74) / 0.1));
   g.px(dx - 2, dy - 2, dw + 4, dh + 2, "#1d2126");
   g.px(dx, dy, dw, dh, "#0d0f12"); // the dark of the stairwell
-  g.px(dx, dy, Math.round(dw * (1 - open * 0.8)), dh, "#4a3b2c"); // the door, swinging in
-  g.px(dx + Math.round(dw * (1 - open * 0.8)) - 3, dy + dh / 2, 2, 2, "#b5a46a");
-  g.px(dx + dw / 2 - 5, dy - 7, 10, 4, "#1f6b45");
-  g.a(dx + dw / 2 - 8, dy - 9, 16, 8, 60, 200, 120, 0.08);
+  const leaf = Math.round(dw * (1 - open * 0.8));
+  g.px(dx, dy, leaf, dh, "#4a3b2c"); // the door, swinging in
+  g.px(dx + leaf - 3, dy + 20, 2, 2, "#b5a46a");
+  g.px(dx + 3, dy - 6, 10, 3, "#1f6b45");
+  g.a(dx, dy - 8, 16, 7, 60, 200, 120, 0.1);
 
-  // the partitions, and somebody else's screen still on over one
-  const py = floorY - Math.round(H * 0.14);
-  const px0 = Math.round(W * 0.22);
-  g.px(px0, py, W - px0, floorY - py, "#3a424b");
+  // the cubicle walls between his desk and the window, and somebody's screen left on over one
+  const py = wallY - 6;
+  const px0 = Math.round(W * (portrait ? 0.24 : 0.26));
+  g.px(px0, py, W - px0, 16, "#3a424b");
   g.px(px0, py, W - px0, 1, "#4d5762");
-  for (let x = px0; x < W; x += 46) g.px(x, py, 1, floorY - py, "#2f363d");
-  g.a(Math.round(W * 0.8), py - 8, 22, 8, 120, 170, 200, 0.18);
+  for (let x = px0; x < W; x += 34) g.px(x, py, 1, 16, "#2f363d");
+  g.a(Math.round(W * 0.84), py - 6, 14, 6, 120, 170, 200, 0.2);
 
-  // him
-  const sitX = Math.round(W * 0.36);
-  const deskY = Math.round(H * 0.74);
+  // him: at the desk, up, and away to the door
+  const deskTop = feetY - 12;
+  const sitX = cx - 20;
   const rise = ease(clamp01((t - 0.5) / 0.1));
   const walkT = clamp01((t - 0.62) / 0.24);
-  const doorX = dx + dw / 2 - 6;
-  const hx = sitX + (doorX - sitX) * ease(walkT);
-  const hy = deskY - 18 - rise * 6 + walkT * 0;
-  const gone = t > 0.88;
+  const doorX = dx + 2;
+  const gone = t > 0.87;
   const walking = walkT > 0 && walkT < 1;
+  // his chair, behind him
+  g.px(sitX - 1, deskTop - 10, 14, 12, "#1f2328");
+  g.px(sitX + 5, deskTop + 2, 2, 8, "#15181b");
+  if (!gone) {
+    if (walkT > 0) {
+      const e = ease(walkT);
+      const x = Math.round(sitX + (doorX - sitX) * e);
+      const foot = Math.round(feetY + (wallY + 1 - feetY) * e);
+      drawClerk(g, x, foot - 26, { walk: walking ? walkGait(time) : 0, facing: -1 });
+    } else {
+      // seated, and then on his feet
+      drawClerk(g, sitX, Math.round(feetY - 26 + 3 - rise * 3), {});
+    }
+  }
 
-  // the desk, in front of him: monitor, keyboard, a mug, a stack of files
-  const dX = Math.round(W * 0.26);
-  const dW = Math.round(W * 0.42);
-  const behind = () => {
-    if (gone) return;
-    if (walkT > 0) drawClerk(g, Math.round(hx), Math.round(hy + walkT * 6), { walk: walking ? time / 120 : 0, facing: -1 });
-    else drawClerk(g, sitX, Math.round(hy), {});
-  };
-  // he is behind the desk while he sits; once he is up and away he passes in front of it
-  if (walkT < 0.25) behind();
-  g.px(dX, deskY, dW, 4, "#6a5d4c");
-  g.px(dX, deskY, dW, 1, "#7d7060");
-  g.px(dX + 2, deskY + 4, dW - 4, H - deskY - 4, "#4d4438");
-  // the monitor and its spreadsheet, glowing at him
-  const mx = Math.round(W * 0.47);
-  const my = deskY - 22;
-  g.px(mx, my, 30, 20, "#1b1e22");
-  g.px(mx + 2, my + 2, 26, 15, "#a9c9d3");
-  for (let r = 0; r < 5; r++) g.px(mx + 2, my + 4 + r * 3, 26, 1, "#7f9eaa");
-  for (let c = 0; c < 4; c++) g.px(mx + 8 + c * 6, my + 2, 1, 15, "#7f9eaa");
-  g.px(mx + 13, my + 20, 4, 3, "#1b1e22");
-  g.a(mx - 4, my - 3, 38, 26, 150, 200, 220, 0.04);
-  g.px(mx + 2, deskY - 2, 22, 2, "#2a2d31"); // keyboard
-  g.px(dX + 8, deskY - 6, 6, 6, "#c8c2b0"); // the mug
-  g.px(dX + 14, deskY - 4, 2, 3, "#c8c2b0");
-  g.px(dX + dW - 30, deskY - 10, 14, 10, "#7a6a4c"); // files
-  g.px(dX + dW - 30, deskY - 12, 14, 2, "#8a7a5a");
-  // the in-tray, and the envelope travelling to it
-  const tx = dX + dW - 14;
-  g.px(tx, deskY - 4, 12, 4, "#3a3e44");
-  g.px(tx + 1, deskY - 5, 10, 1, "#d9d6cc");
+  // the desk, nearer us than he is: a modesty panel, the screen, the keyboard, a mug, files, the in-tray
+  const dX = cx - 34;
+  const dW = 68;
+  g.a(dX - 2, feetY + 1, dW + 4, 2, 0, 0, 0, 0.25);
+  g.px(dX, deskTop, dW, 3, "#6a5d4c");
+  g.px(dX, deskTop, dW, 1, "#7d7060");
+  g.px(dX + 2, deskTop + 3, dW - 4, feetY - deskTop - 2, "#4d4438");
+  const mx = cx - 4;
+  const my = deskTop - 14;
+  g.px(mx, my, 18, 12, "#1b1e22");
+  g.px(mx + 1, my + 1, 16, 9, "#a9c9d3");
+  for (let r = 0; r < 3; r++) g.px(mx + 1, my + 3 + r * 2, 16, 1, "#7f9eaa");
+  for (let c = 0; c < 3; c++) g.px(mx + 5 + c * 4, my + 1, 1, 9, "#7f9eaa");
+  g.px(mx + 8, my + 12, 2, 2, "#1b1e22");
+  g.a(mx - 3, my - 2, 24, 16, 150, 200, 220, 0.05);
+  g.px(mx + 1, deskTop - 1, 13, 1, "#2a2d31"); // keyboard
+  g.px(dX + 4, deskTop - 4, 4, 4, "#c8c2b0"); // the mug
+  g.px(dX + 8, deskTop - 3, 1, 2, "#c8c2b0");
+  g.px(dX + dW - 22, deskTop - 6, 9, 6, "#7a6a4c"); // files
+  g.px(dX + dW - 22, deskTop - 7, 9, 1, "#8a7a5a");
+  const tx = dX + dW - 11;
+  g.px(tx, deskTop - 3, 9, 3, "#3a3e44"); // the in-tray
+  g.px(tx + 1, deskTop - 4, 7, 1, "#d9d6cc");
+  // the envelope, from his hand to the tray
   const slide = ease(clamp01((t - 0.18) / 0.22));
   if (t > 0.12) {
-    const ex = Math.round(sitX + 10 + (tx + 2 - sitX - 10) * slide);
-    const ey = deskY - 4 - Math.round(Math.sin(slide * Math.PI) * 4) - (slide >= 1 ? 1 : 0);
-    g.px(ex, ey, 9, 5, "#efece2");
-    g.px(ex + 1, ey + 1, 3, 1, "#b9b4a4"); // the flap
-    g.px(ex + 4, ey + 2, 1, 1, "#b9b4a4");
-    g.px(ex + 5, ey + 1, 3, 1, "#b9b4a4");
+    const ex = Math.round(sitX + 10 + (tx + 1 - sitX - 10) * slide);
+    const ey = deskTop - 4 - Math.round(Math.sin(slide * Math.PI) * 3) - (slide >= 1 ? 1 : 0);
+    g.px(ex, ey, 7, 4, "#efece2");
+    g.px(ex + 1, ey + 1, 2, 1, "#b9b4a4"); // the flap
+    g.px(ex + 3, ey + 2, 1, 1, "#b9b4a4");
+    g.px(ex + 4, ey + 1, 2, 1, "#b9b4a4");
   }
-  if (walkT >= 0.25) behind();
   g.wash("#0b0d10", 0.18); // evening in the whole room
   fadeEdges(g, W, H, t, 0.06, 0.08);
 }
@@ -270,7 +313,11 @@ function office(g: Painter, W: number, H: number, t: number, time: number) {
  * 2. the sleeper north
  * ------------------------------------------------------------------ */
 
-function train(g: Painter, W: number, H: number, t: number, time: number) {
+function train(g: Painter, W: number, fullH: number, t: number, time: number) {
+  letterbox(g, W, fullH, (H) => carriage(g, W, H, t, time));
+}
+
+function carriage(g: Painter, W: number, H: number, t: number, time: number) {
   const judder = Math.floor(time / 260) % 2;
   g.px(0, 0, W, H, "#1b1d22");
   const fx = Math.round(W * 0.1);
@@ -411,43 +458,56 @@ function climb(g: Painter, W: number, H: number, t: number, time: number) {
     g.px(sx, sy, sw, 3, "#7a7d74");
     g.px(sx, sy, sw, 1, "#93968c");
   }
-  // a dry-stane dyke running up the hill, with a gap where the path goes through
+  /*
+   * Everything on the hill lies on its near face, below the line of the
+   * brow, and nothing is drawn above it: the dyke and the burn both come
+   * over the brow from the far side and run down towards us, getting
+   * bigger as they come. They used to be drawn straight up and down across
+   * the brow, so half of each stood out against the far hills like a ladder.
+   */
+  // a dry-stane dyke coming down the hill at us, with a gap where the path goes through
   const dykeX = worldW * 0.3 - cam;
-  if (dykeX > -60 && dykeX < W + 60) {
-    for (let k = -50; k < 50; k += 3) {
-      const x = dykeX + k * 0.6;
-      if (Math.abs(k) < 6) continue; // the gap
-      const y = slopeY(x + cam, W, H) + k * 0.9 - 5;
-      g.px(x, y, 4, 5, k % 2 ? "#7c7f76" : "#696c63");
-      g.px(x, y, 4, 1, "#9a9d93");
+  if (dykeX > -80 && dykeX < W + 60) {
+    for (let k = 0; k < 70; k += 2) {
+      if (k < 6) continue; // the gap, at the path
+      const x = Math.round(dykeX - k * 0.7);
+      const y = Math.round(slopeY(dykeX + cam, W, H) + k * 0.9);
+      const sz = 3 + Math.floor(k / 18); // nearer, bigger
+      g.px(x, y - sz, sz + 1, sz, (k / 2) % 2 ? "#7c7f76" : "#696c63");
+      g.px(x, y - sz, sz + 1, 1, "#9a9d93");
     }
+    // and a few stones of it just over the path, before the brow hides it
+    for (let k = -4; k < 0; k += 2) g.px(dykeX + 4, slopeY(dykeX + 4 + cam, W, H) - 2, 3, 2, "#696c63");
   }
-  // a burn coming down, and the stepping stones across it
+  // a burn coming down off the brow, widening, and the stepping stones across it at the path
   const burnX = worldW * 0.62 - cam;
-  if (burnX > -40 && burnX < W + 40) {
-    for (let k = -30; k < 30; k++) {
-      const x = burnX + k * 0.25 + Math.sin(k / 4) * 3;
-      const y = slopeY(x + cam, W, H) + k * 0.9 + 4;
-      g.px(x, y, 4, 2, k % 5 === 0 ? "#a8c4c8" : "#5f8a96");
+  if (burnX > -60 && burnX < W + 40) {
+    const top = slopeY(burnX + cam, W, H);
+    for (let k = 0; k < 80; k++) {
+      const x = Math.round(burnX - k * 0.35 + Math.sin(k / 6) * (2 + k / 20));
+      const y = Math.round(top + 1 + k);
+      const bw = 2 + Math.floor(k / 20);
+      g.px(x, y, bw, 1, "#5f8a96");
+      if ((k + Math.floor(time / 140)) % 7 === 0) g.px(x + 1, y, 1, 1, "#a8c4c8"); // the water running
     }
-    for (let s = 0; s < 3; s++) g.px(burnX - 6 + s * 5, slopeY(burnX + cam, W, H) - 1, 3, 2, "#8a8d84");
+    for (let s = 0; s < 3; s++) g.px(burnX - 5 + s * 4, Math.round(top), 3, 2, "#8a8d84");
   }
-  // three blackface ewes, who have seen men come up the hill before
+  // him: in his coat and bunnet now, crook in hand, taking his time
+  const hx = Math.round(heroX - cam);
+  const hy = Math.round(slopeY(heroX, W, H)) - 26 + 1;
+  drawShepherd(g, hx, hy, {
+    crook: true,
+    walk: stopped ? 0 : walkGait(time) * 0.8, // slower going uphill
+    facing: stopped && t > PAUSE[0] + 0.02 && t < PAUSE[1] - 0.02 ? -1 : 1,
+  });
+
+  // three blackface ewes, below the path and so nearer than he is, who have seen men come up the hill before
   for (let i = 0; i < 3; i++) {
     const sx = worldW * (0.42 + i * 0.13) - cam;
     if (sx < -20 || sx > W + 20) continue;
     const sy = slopeY(sx + cam, W, H) + 10 + i * 6;
     drawSheep(g, sx, sy - 14, { id: 900 + i, fleece: 6, breed: "blackface", age: 50 }, { graze: i !== 1, flip: heroX - cam < sx });
   }
-
-  // him: in his coat and bunnet now, crook in hand, taking his time
-  const hx = Math.round(heroX - cam);
-  const hy = Math.round(slopeY(heroX, W, H)) - 26 + 1;
-  drawShepherd(g, hx, hy, {
-    crook: true,
-    walk: stopped ? 0 : time / 150,
-    facing: stopped && t > PAUSE[0] + 0.02 && t < PAUSE[1] - 0.02 ? -1 : 1,
-  });
 
   // a little haze over everything far off, so the near hill stands out
   g.a(0, 0, W, H * 0.6, 220, 230, 230, 0.05);
@@ -519,17 +579,21 @@ function crest(g: Painter, W: number, H: number, t: number, time: number) {
     g.px(x, y, 2, 1, "#4a5c38");
     if (hash(x * 0.71) > 0.6) g.px(x, y + 2 + Math.floor(hash(x) * 6), 2, 2, hash(x * 3) > 0.5 ? "#6e4a6e" : "#7d6a3c");
   }
-  // he comes up over the brow, and stops, and looks
-  const up = ease(clamp01(t / 0.3));
+  /*
+   * He comes up the last of the slope from where we stand, his back to us,
+   * onto the brow, and stops there with the glen below him and the croft in
+   * it. He used to rise up out of the ground on the far side of the crest,
+   * which is how somebody coming towards you moves, so he looked to be
+   * walking backwards at the camera.
+   */
+  const up = ease(clamp01(t / 0.32));
   const hx = Math.round(W * 0.5 - 6);
-  const hy = Math.round(H * 0.84 - 26 + (1 - up) * 30);
-  drawShepherd(g, hx, hy, { crook: true, back: true, walk: up < 1 ? time / 150 : 0 });
-  // the ground in front of his boots, so he rises out of it rather than through it
-  for (let x = hx - 8; x < hx + 22; x += 2) {
-    const y = Math.round(H * 0.84 - Math.sin(x / 31) * 4 - Math.sin(x / 9) * 1.5 + Math.abs(x - W * 0.5) * 0.04);
-    if (hy + 26 > y + 1) g.px(x, y + 1, 2, hy + 27 - y, "#33422a");
-  }
-
+  const brow = Math.round(H * 0.84 - Math.sin((hx + 6) / 31) * 4);
+  const start = H + 4; // his feet below the bottom of the screen
+  const hy = Math.round(start + (brow + 1 - start) * up) - 26;
+  // a turn of the head to the croft once he is up, as anyone would
+  const look = t > 0.42 && t < 0.62;
+  drawShepherd(g, hx, hy, { crook: true, back: !look, facing: look ? -1 : undefined, walk: up < 1 ? walkGait(time) * 0.8 : 0 });
   // in from the dark at the start, and up into the light at the end
   fadeEdges(g, W, H, t, 0.08, 0);
   const out = clamp01((t - 0.9) / 0.1);
