@@ -1,11 +1,12 @@
 /**
- * Plain-English reference for every buff and status, for Settings.
+ * Plain-English reference for the field guide: buffs and status, the work,
+ * the year, the weather, the ground and the breeds.
  *
  * The numbers are built from BALANCE at call time rather than written out by
  * hand, so a future tuning pass (see the market price and wolf-survivor
  * changes) can't silently leave this appendix describing the wrong game.
  */
-import { BALANCE, SEASON_DAYS, SEASON_ORDER, SEASONS } from "./config";
+import { BALANCE, BREEDS, PASTURES, SEASON_DAYS, SEASON_ORDER, SEASONS, WEATHER } from "./config";
 import { loadEarned } from "./achievements";
 
 export interface GlossaryEntry {
@@ -140,3 +141,53 @@ export function statusGlossary(): GlossaryEntry[] {
   ];
 }
 
+
+/** what each sky does to the day */
+export function weatherGlossary(): GlossaryEntry[] {
+  const regen = { rain: BALANCE.regenRain, sun: BALANCE.regenSun } as Record<string, number>;
+  const notes: Record<string, string> = {
+    sun: "The best day for a clip or a cut of hay.",
+    overcast: "Dry enough to shear, but the fox likes a grey day.",
+    rain: "Wet wool cannot be taken, and wet hay only rots.",
+    mist: "The haar soaks the fleeces and hides the fox.",
+    snow: "Winter only. The grass is buried: they eat hay or nothing, and a night out in it is hard without the byre.",
+  };
+  return Object.values(WEATHER).map((w) => {
+    const parts = [
+      w.graze !== 1 && `fleece growth ${pct(w.graze)}`,
+      w.foxBias !== 1 && `fox risk ${pct(w.foxBias)}`,
+      regen[w.id] && regen[w.id] !== 1 && `grass regrowth ${pct(regen[w.id])}`,
+    ].filter(Boolean);
+    return {
+      id: w.id,
+      name: w.name,
+      meta: w.shear ? "Shearing and hay can be done" : "No shearing, no hay",
+      effect: `${parts.length ? parts.join(", ") + ". " : ""}${notes[w.id] ?? ""}`,
+    };
+  });
+}
+
+/** the three grounds, low to high */
+export function groundGlossary(): GlossaryEntry[] {
+  const notes = [
+    "Flat wet bog by the croft. The safest night, the poorest grass, and quickest to come back.",
+    "Heather and a dyke along the contour. The middle way.",
+    "Stepped rock up high. The best grazing on the hill and the slowest to recover, and the most exposed by night.",
+  ];
+  return PASTURES.map((p, i) => ({
+    id: `ground-${i}`,
+    name: p.name,
+    meta: `${p.regen} grass back a night · base fox risk ${Math.round(p.risk * 100)}%`,
+    effect: `Fleece grows at ${Math.round(p.quality * 100)}% here. ${notes[i] ?? ""} Moving the flock is a tap, and they have to be gathered again on new ground.`,
+  }));
+}
+
+/** the four breeds the cart and the dealer sell */
+export function breedGlossary(): GlossaryEntry[] {
+  return Object.values(BREEDS).map((b) => ({
+    id: b.id,
+    name: b.name,
+    meta: `£${b.cost} · fleece growth ${Math.round(b.growth * 100)}% · wool worth ${Math.round(b.value * 100)}%`,
+    effect: b.note,
+  }));
+}

@@ -180,7 +180,7 @@ something a save has to carry or a player can lose progress over.
 
 **Retro** is the older panelled build: HUD, small scene, tabs, sub-tabs. Kept whole rather
 than deleted: it is the version that was balanced and playtested. Settings → Look → Interface,
-or the `RETRO` code.
+on the web only; the Steam build is the glen alone.
 
 ### Three pastures, three places
 
@@ -563,11 +563,11 @@ no per-buff special case to accidentally get wrong.
 
 ### Cheat codes
 
-Settings → Cheat codes. `RETRO`, `SILLER`, `TOD`, `HIRSEL`, `LANGDAY`, `HAAR`, `1680`.
+Settings → Cheat codes. `SKELP`, `HAAR`, `LANGDAY`, `HIRSEL`, `1680`, `TOD`, `SILLER`, `ZEN`.
 
 A code stays found for good (`cheatsFound` lives in settings, not the save file) and every
 found code becomes a button in that list, so later runs work them from the menu instead of
-retyping. `RETRO` and `TOD` hold state and show `on`/`off`; the rest are one-shots marked `use`.
+retyping. Toggles such as `TOD` hold state and show `on`/`off`; one-shots are marked `use`.
 
 Codes show as `?????` until entered, which is what keeps `1680` from giving the secret away
 to a player who hasn't gone looking for it. It summons the wolf with none of the real
@@ -575,7 +575,7 @@ conditions met, but what happens when he arrives is unchanged, and still decided
 the broadsword is on the wall. The flock is still not cut until the animation has played.
 **A run that uses a code which changes the game earns no achievements**: `SILLER`,
 `HIRSEL`, `LANGDAY`, `HAAR` and `1680` mark it the moment they are used, and `ZEN` the first
-time it saves a tap. `RETRO`, `TOD` and `SKELP` never do. The end screen says so, so it is
+time it saves a tap. `TOD` and `SKELP` never do. The end screen says so, so it is
 never a surprise. `state.cheated` holds it, and `hydrate` back-fills old saves as clean.
 
 `TOD` turns the glen over: you keep foxes, and it is sheep that come off the hill at night.

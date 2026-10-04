@@ -8,6 +8,7 @@ done; what is left is the partner site, the art, and testing on real machines.
 | --- | --- |
 | `store-page.md` | drafts of the store text: short and long description, tags, content survey, requirements, price |
 | `screenshots/` | eight 1920×1080 shots from the game, and `capture.cjs` to take them again |
+| `achievements/icons/` | the 60 achievement icons, 64×64, named by API name; `sheet.png` shows them all |
 | `steampipe/` | the upload: a build template and `upload.sh` around SteamCMD |
 | `../desktop/README.md` | the desktop shell, the achievement table and Steam Input |
 
@@ -68,8 +69,15 @@ For the demo the same, with `Hirsel Demo/saves`. The saves are written atomicall
 ### Achievements
 
 30, listed with their exact API names in `desktop/README.md` (regenerate with
-`npm run achievements` in `desktop/`). Tick **Hidden** on the five secret ones. Each wants
-two 64×64 icons, earned and locked: 60 images, the biggest art job left.
+`npm run achievements` in `desktop/`). Tick **Hidden** on the five secret ones.
+
+The icons are in `achievements/icons/`: `NAME.png` is the earned icon and `NAME_locked.png`
+the locked one, 64×64 each, named by the API name so each pair goes on the row it matches.
+They are drawn with the game's own sprites (`achievements/icons.ts`). The locked ones are
+the same picture greyed, except the five secret ones, which are all the same night hill and
+question mark so the locked icon gives nothing away. To change one, edit `icons.ts`, then
+with `npm run dev` running: `npx -y -p playwright node store/achievements/capture.cjs`.
+`http://localhost:5313/store/achievements/icons.html` shows them all while you work.
 
 ### Steam Input
 
@@ -119,7 +127,7 @@ On a Steam Deck:
 
 ## Not done yet
 
-- Capsule art, the achievement icons, and the executable's icon
+- Capsule art and the executable's icon
 - A trailer
 - A playtest to a first win, to confirm the length and set the price
 - Mac: left out of the launch; it needs an Apple developer account ($99 a year), code

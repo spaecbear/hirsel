@@ -10,7 +10,6 @@ import type { Settings } from "./settings";
 export interface CheatContext {
   game: Game;
   settings: Settings;
-  toggleRetro: () => void;
   toggleInverse: () => void;
   toggleZen: () => void;
   toggleSwift: () => void;
@@ -41,17 +40,6 @@ export interface Cheat {
 }
 
 export const CHEATS: Cheat[] = [
-  {
-    code: "RETRO",
-    name: "Retro",
-    kind: "toggle",
-    isOn: (c) => c.settings.ui === "retro",
-    blurb: "Play the old panelled build instead of the full-screen glen.",
-    apply: (c) => {
-      c.toggleRetro();
-      return "The glen shifts. Old build, new build.";
-    },
-  },
   {
     code: "SILLER",
     changesRun: true,
@@ -167,7 +155,6 @@ export const CHEATS: Cheat[] = [
  * game feels rather than how hard it is; the ones that actually undo the
  * game are the reward for playing it a lot.
  *
- *   RETRO    cosmetic
  *   SKELP    pace only, nothing about the game changes
  *   HAAR     three days of weather, once
  *   LANGDAY  three taps, once
@@ -179,7 +166,7 @@ export const CHEATS: Cheat[] = [
  *   SILLER   money, which skips the part the game is about
  *   ZEN      unlimited days, which skips the rest of it
  */
-export const REVEAL_ORDER = ["RETRO", "SKELP", "HAAR", "LANGDAY", "HIRSEL", "1680", "TOD", "SILLER", "ZEN"];
+export const REVEAL_ORDER = ["SKELP", "HAAR", "LANGDAY", "HIRSEL", "1680", "TOD", "SILLER", "ZEN"];
 
 export function revealNextCheat(found: string[]): Cheat | null {
   const have = new Set(found);

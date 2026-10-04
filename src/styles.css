@@ -1283,6 +1283,47 @@ body.modal {
 .set-group:first-child {
   border-top: 0;
 }
+/*
+ * The menu's pages: Settings, the field guide, and (not on Steam) the
+ * achievements. The bar stays put at the top of the dialog while a long page
+ * scrolls under it, so the guide is never more than a tap away.
+ */
+.menu-tabs {
+  display: flex;
+  position: sticky;
+  top: -24px; /* the dialog's own padding */
+  margin: -4px -4px 4px;
+  padding: 4px;
+  background: var(--peat-2);
+  z-index: 1;
+}
+.menu-tabs button {
+  flex: 1;
+  background: var(--peat);
+  border: 1px solid var(--moss);
+  color: var(--stone);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 4px;
+  min-height: 38px;
+  cursor: pointer;
+}
+.menu-tabs button.on {
+  background: var(--moss);
+  color: var(--gorse);
+  border-color: var(--gorse);
+}
+.menu-tabs + .set-group {
+  border-top: 0;
+}
+@media (max-width: 420px) {
+  .menu-tabs button {
+    letter-spacing: 0.03em;
+    font-size: 9px;
+  }
+}
 .set-group h4 {
   font-size: 9px;
   letter-spacing: 0.2em;
