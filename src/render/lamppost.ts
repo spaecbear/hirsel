@@ -60,3 +60,60 @@ function disc(g: Painter, cx: number, cy: number, r: number, squash: number, red
     if (half > 0) g.a(cx - half, cy + dy, half * 2, 1, red, gr, b, a);
   }
 }
+
+/**
+ * The dark, laid over the field with the lantern's pool left in it.
+ *
+ * The light used to go on after the dark as a warm glow on top, so a sheep or
+ * the man standing right under the lantern stayed as black as the rest of the
+ * hill with a yellow haze over them. The night is laid row by row instead, a
+ * little thinner in each ring towards the lantern, so whatever is under it
+ * shows in its own colours. Stepped rings, not a smooth gradient: the game is
+ * pixels all the way down.
+ */
+export function drawNightWithLamp(
+  g: Painter,
+  W: number,
+  H: number,
+  dark: number,
+  x: number,
+  foot: number,
+  time: number,
+  rgb: [number, number, number] = [10, 13, 24],
+) {
+  const cx = x + 8;
+  const cy = foot - 10;
+  const flicker = 1 + Math.sin(time / 170) * 0.03;
+  // ring half-widths, outermost first, and how much of the dark is left inside each
+  const rings: [number, number][] = [
+    [Math.round(34 * flicker), 0.66],
+    [Math.round(24 * flicker), 0.42],
+    [Math.round(14 * flicker), 0.24],
+  ];
+  const squash = 0.75;
+  const top = cy - Math.ceil(rings[0][0] * squash);
+  const bottom = cy + Math.ceil(rings[0][0] * squash);
+  const [r, gr, b] = rgb;
+  if (top > 0) g.a(0, 0, W, top, r, gr, b, dark);
+  if (bottom + 1 < H) g.a(0, bottom + 1, W, H - bottom - 1, r, gr, b, dark);
+  for (let y = Math.max(0, top); y <= Math.min(H - 1, bottom); y++) {
+    const dy = (y - cy) / squash;
+    const halves = rings.map(([rr]) => Math.round(Math.sqrt(Math.max(0, rr * rr - dy * dy))));
+    // from the outside in: full dark, then each ring's share of it
+    let left = 0;
+    let right = W;
+    let share = 1;
+    for (let k = 0; k < rings.length; k++) {
+      const h = halves[k];
+      if (h <= 0) break;
+      const l = cx - h;
+      const rt = cx + h;
+      g.a(left, y, l - left, 1, r, gr, b, dark * share);
+      g.a(rt, y, right - rt, 1, r, gr, b, dark * share);
+      left = l;
+      right = rt;
+      share = rings[k][1];
+    }
+    g.a(left, y, right - left, 1, r, gr, b, dark * share);
+  }
+}

@@ -17,7 +17,7 @@ import { driftFor, idleTick } from "../wander";
 import { spinNow } from "../dog-spin";
 import { tippyFrame } from "../tippy";
 import { drawHaystack, drawSeasonLand, drawSnowfall } from "../season";
-import { drawLampLight, drawLampPost } from "../lamppost";
+import { drawLampLight, drawLampPost, drawNightWithLamp } from "../lamppost";
 import { drawOpening } from "../opening";
 import { ANIM_MS } from "../../sim/config";
 import {
@@ -341,7 +341,11 @@ function drawCroft(g: Painter, L: WorldLayout, st: GameState, night: number, tim
  * ================================================================== */
 
 function drawCart(g: Painter, L: WorldLayout, st: GameState, time: number) {
-  const { x, y } = L.cart;
+  drawCartAt(g, L.cart.x, L.cart.y, st, st.wool, time);
+}
+
+/** the cart wherever it is: at the gate, or on the road to town and back with its canopy up */
+function drawCartAt(g: Painter, x: number, y: number, st: GameState, wool: number, time: number) {
   // the cart bed and wheels
   g.px(x, y + 6, 30, 10, C.bark);
   g.px(x, y + 6, 30, 2, "#6d5a3c");
@@ -355,7 +359,7 @@ function drawCart(g: Painter, L: WorldLayout, st: GameState, time: number) {
   g.px(x - 1, y - 4, 2, 10, C.bark);
   g.px(x + 29, y - 4, 2, 10, C.bark);
   // whatever wool is waiting to go
-  if (st.wool > 0) drawWoolSacks(g, x + 4, y - 2, st.wool);
+  if (wool > 0) drawWoolSacks(g, x + 4, y - 2, wool);
   // the pony, if he owns one, dozing in the shafts
   if (owns(st, "cart")) {
     const px0 = x + 34;
@@ -402,7 +406,9 @@ function drawWeather(g: Painter, L: WorldLayout, st: GameState, time: number) {
 
 function drawNight(g: Painter, L: WorldLayout, st: GameState, amount: number, time: number) {
   if (amount <= 0) return;
-  g.a(0, 0, L.W, L.H, 10, 13, 24, amount * 0.86);
+  // with the lantern up on its post, its pool is left out of the dark rather than glowed on top of it
+  if (owns(st, "lamp")) drawNightWithLamp(g, L.W, L.H, amount * 0.86, L.lampPost.x, L.lampPost.y, time);
+  else g.a(0, 0, L.W, L.H, 10, 13, 24, amount * 0.86);
   if (amount < 0.28) return;
   const a = (amount - 0.28) / 0.72;
   for (const s of starField(L.W, Math.max(20, L.horizonY), 46, time)) {
@@ -653,6 +659,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
   stack?.paint();
   post?.paint();
   her?.paint();
+  drawWorkedGround(g, L, st, k, p, sy);
   for (const a of sheep) a.paint();
   let dogAfter = false;
 
@@ -928,18 +935,8 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       const reach = ease(p);
       const x0 = Math.round(L.W * 0.08);
       const span = Math.round(L.W * 0.6);
-      const row = sy + 24; // the ground his boots are on
       const hx = x0 + Math.round(span * reach);
-      // the spread behind him: dark where it has just gone down, green coming through the oldest
-      for (let r = 0; r < 3; r++) {
-        for (let x = x0 + r * 2; x < hx - 2 - r * 3; x += 3) {
-          const k = hash(x * 0.37 + r * 11.3);
-          const age = (hx - x) / Math.max(1, span);
-          const green = age > 0.25 && k < age * 1.2;
-          if (onBurn(st, L, x, row + r * 4, 4)) continue;
-          g.px(x, row + r * 4 + Math.round(k * 2), 2 + Math.round(k * 2), 2, green ? "#5f7a43" : k > 0.5 ? "#4a3a24" : "#3f3324");
-        }
-      }
+      // the spread behind him is on the ground, drawn under the flock: see drawWorkedGround
       drawShepherd(g, hx, sy, { walk: p * 3, facing: 1 });
       // the barrow ahead of him: a wheel bumping over the tussocks, the tray, and the muck in it going down
       const bx = hx + 13;
@@ -972,12 +969,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       const x0 = Math.round(L.W * 0.08);
       const span = Math.round(L.W * 0.6);
       const row = sy + 24;
-      for (let r = 0; r < 3; r++) {
-        const len = Math.round(span * clamp01(reach * 1.2 - r * 0.15));
-        for (let x = 0; x < len; x += 4) {
-          if (!onBurn(st, L, x0 + x, row + r * 5, 3)) g.px(x0 + x, row + r * 5, 3, 2, x % 8 ? "#c9a95a" : "#b08f45");
-        }
-      }
+      // the swathes are on the ground, drawn under the flock: see drawWorkedGround
       const hx = x0 + Math.round(span * reach);
       drawShepherd(g, hx, sy, { walk: p * 3, facing: 1 });
       // the scythe: a long snath and a blade that sweeps
@@ -1034,10 +1026,8 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       // whoever stands lower on the screen is nearer, and goes in front
       const nearer = hy + SHEPHERD_H >= L.cart.y + 24;
       if (!nearer) him();
-      g.px(cx, L.cart.y + 6, 30, 10, C.bark);
-      g.px(cx + 3, L.cart.y + 16, 8, 8, "#3f3527");
-      g.px(cx + 20, L.cart.y + 16, 8, 8, "#3f3527");
-      drawWoolSacks(g, cx + 4, L.cart.y - 2, trip < 0.5 ? 40 : 0);
+      // the same cart as at the gate, canopy and pony and all: it used to go to town as a bare box
+      drawCartAt(g, cx, L.cart.y, st, trip < 0.5 ? 40 : 0, s.time);
       if (nearer) him();
       // and home with the purse heavier: the coins go up over him once he is back at his spot
       if (p > 0.88 && p < 0.985) {
@@ -2130,13 +2120,7 @@ function drawDance(g: Painter, I: InteriorLayout, p: number, time: number) {
     paintHim();
     paintHer();
   }
-  // their hands, joined between them while they are close enough to hold
-  const gap = Math.abs(his.x - hers.x);
-  if (into > 0.6 && gap > 3 && gap < 24) {
-    const hx = Math.round(Math.min(his.x, hers.x)) + 2;
-    const hy = Math.round((his.y + hers.y) / 2) - 13;
-    g.px(hx, hy, Math.round(gap) - 3, 1, "#c9a583");
-  }
+  // no joined hands drawn between them: a one-pixel bar at this size read as a stick, not two arms
   // notes, and now and then a heart, going up off them
   if (into > 0.3) {
     for (let i = 0; i < 4; i++) {
@@ -2442,6 +2426,40 @@ function starsScene(g: Painter, L: WorldLayout, st: GameState, p: number, time: 
 /* ================================================================== *
  * the pack
  * ================================================================== */
+
+/**
+ * What a day's work leaves lying on the field: the muck spread behind the
+ * barrow, the hay down in swathes behind the scythe. It is on the ground, so
+ * it goes down before the flock; drawn with the work itself it lay over any
+ * sheep standing in the rows, as if the muck had been spread on their backs.
+ */
+function drawWorkedGround(g: Painter, L: WorldLayout, st: GameState, k: string | null, p: number, sy: number) {
+  if (k !== "muck" && k !== "hay") return;
+  const reach = ease(p);
+  const x0 = Math.round(L.W * 0.08);
+  const span = Math.round(L.W * 0.6);
+  const row = sy + 24;
+  if (k === "muck") {
+    const hx = x0 + Math.round(span * reach);
+    // dark where it has just gone down, green coming through the oldest
+    for (let r = 0; r < 3; r++) {
+      for (let x = x0 + r * 2; x < hx - 2 - r * 3; x += 3) {
+        const h = hash(x * 0.37 + r * 11.3);
+        const age = (hx - x) / Math.max(1, span);
+        const green = age > 0.25 && h < age * 1.2;
+        if (onBurn(st, L, x, row + r * 4, 4)) continue;
+        g.px(x, row + r * 4 + Math.round(h * 2), 2 + Math.round(h * 2), 2, green ? "#5f7a43" : h > 0.5 ? "#4a3a24" : "#3f3324");
+      }
+    }
+    return;
+  }
+  for (let r = 0; r < 3; r++) {
+    const len = Math.round(span * clamp01(reach * 1.2 - r * 0.15));
+    for (let x = 0; x < len; x += 4) {
+      if (!onBurn(st, L, x0 + x, row + r * 5, 3)) g.px(x0 + x, row + r * 5, 3, 2, x % 8 ? "#c9a95a" : "#b08f45");
+    }
+  }
+}
 
 /**
  * True where a run of `w` pixels on row `y` would lie on the burn's water,

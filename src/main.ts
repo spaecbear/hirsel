@@ -266,6 +266,7 @@ function applySettings(patch: Partial<Settings>) {
   Object.assign(settings, patch);
   saveSettings(settings);
   audio.setLevels({ master: settings.master, music: settings.music, sfx: settings.sfx, muted: settings.muted });
+  syncSound();
   animator.reduced = prefersReducedMotion(settings);
   animator.speed = settings.swift ? 2 : 1;
   document.body.classList.toggle("no-motion", animator.reduced);
@@ -571,8 +572,8 @@ function firstGesture() {
    * running context costs nothing.
    */
   if (audio.started) {
-    audio.resume();
     claimSound();
+    syncSound();
     return;
   }
   if (audio.start()) {
@@ -580,7 +581,24 @@ function firstGesture() {
     score.start();
     rain.start();
     claimSound();
+    syncSound();
   }
+}
+
+/*
+ * Whether the sound should be running at all, decided in one place.
+ *
+ * Sound off used to only turn the master volume to nothing and leave the
+ * engine running, and a player reported the music still playing with it off.
+ * Now Sound off stops the engine outright, the way a hidden page or another
+ * copy of the game does, so nothing is playing to be heard; the score skips
+ * the bars it missed when it comes back on.
+ */
+function syncSound() {
+  if (!audio.started) return;
+  const quiet = settings.muted || document.hidden || yielded || (platform.kind === "steam" && !document.hasFocus());
+  if (quiet) audio.suspend();
+  else audio.resume();
 }
 
 /*
@@ -607,7 +625,7 @@ function claimSound() {
 soundChannel?.addEventListener("message", (e) => {
   if (e.data === SOUND_ID) return;
   yielded = true;
-  audio.suspend();
+  syncSound();
 });
 for (const evt of ["pointerdown", "keydown", "touchstart"]) {
   addEventListener(evt, firstGesture, { passive: true });
@@ -616,12 +634,8 @@ for (const evt of ["pointerdown", "keydown", "touchstart"]) {
 // It used to be left playing, which is how a forgotten copy of the game kept its
 // music going under the one being played, out of reach of its Sound off.
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    audio.suspend();
-  } else if (audio.started) {
-    audio.resume();
-    claimSound();
-  }
+  if (!document.hidden && audio.started) claimSound();
+  syncSound();
 });
 
 /*
@@ -632,8 +646,8 @@ document.addEventListener("visibilitychange", () => {
  * an animation left running behind the window just finishes.
  */
 if (platform.kind === "steam") {
-  addEventListener("blur", () => audio.setLevels({ muted: true }));
-  addEventListener("focus", () => audio.setLevels({ muted: settings.muted }));
+  addEventListener("blur", () => syncSound());
+  addEventListener("focus", () => syncSound());
 }
 
 /* ---------- night bookkeeping the UI owns ---------- */
