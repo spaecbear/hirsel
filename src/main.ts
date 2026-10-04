@@ -40,6 +40,12 @@ import { OPENING, OPENING_QUOTE } from "./render/opening";
 
 /* ---------- state ---------- */
 const settings: Settings = loadSettings();
+/*
+ * Steam has no way into the old panelled build: there was once a code for it,
+ * and Settings only offers the switch on the web. A setting carried over from
+ * that code must not leave a player on an interface they cannot leave.
+ */
+if (platform.kind === "steam" && settings.ui === "retro") settings.ui = "glen";
 const packs: Record<string, ArtPack> = { glen: GLEN_ART, retro: HIRSEL_ART };
 
 let game = new Game();
@@ -337,7 +343,6 @@ const settingsUi = buildSettings({
   cheatContext: () => ({
     game,
     settings,
-    toggleRetro: () => applySettings({ ui: settings.ui === "retro" ? "glen" : "retro" }),
     toggleInverse: () => applySettings({ inverse: !settings.inverse }),
     toggleZen: () => applySettings({ zen: !settings.zen }),
     toggleSwift: () => applySettings({ swift: !settings.swift }),

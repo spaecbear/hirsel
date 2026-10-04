@@ -150,7 +150,7 @@ export function clearEarned() {
  *
  * A run that has used a code that changes the game earns nothing: money,
  * beasts or a wolf on demand would otherwise hand over the croft and the pelt.
- * Cosmetic codes (RETRO, TOD) and pace (SKELP) never mark a run.
+ * Cosmetic codes (TOD) and pace (SKELP) never mark a run.
  */
 export function checkAchievements(g: GameState): Achievement[] {
   if (g.cheated) return [];

@@ -137,8 +137,9 @@ describe("the reward for finishing a run", () => {
       order.push(prize.code);
       found = [...found, prize.code];
     }
-    // by the time 1680 arrives the player has finished five runs
-    expect(REVEAL_ORDER.indexOf("1680")).toBeGreaterThanOrEqual(5);
+    // it is handed over at the end of the fifth finished run at the earliest
+    // (one code a run, the first run's being REVEAL_ORDER[0])
+    expect(REVEAL_ORDER.indexOf("1680")).toBeGreaterThanOrEqual(4);
   });
 });
 

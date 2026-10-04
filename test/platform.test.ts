@@ -14,7 +14,6 @@ function ctx(game: Game): CheatContext {
   return {
     game,
     settings: { ...DEFAULT_SETTINGS },
-    toggleRetro: noop,
     toggleInverse: noop,
     toggleZen: noop,
     toggleSwift: noop,
@@ -98,7 +97,7 @@ describe("a cheated run", () => {
   });
 
   it("is not marked by cosmetic or pace codes", () => {
-    for (const code of ["RETRO", "TOD", "SKELP"]) {
+    for (const code of ["TOD", "SKELP"]) {
       const game = quietGame();
       runCheat(findCheat(code)!, ctx(game));
       expect(game.state.cheated, code).toBe(false);

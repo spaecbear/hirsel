@@ -106,8 +106,7 @@ export function buildSettings(api: SettingsApi) {
     /*
      * Not on Steam. Retro is the panelled build the balance was first done
      * in, kept whole for the web; on a Deck it is a second interface to hold
-     * to the controller standard for very little gain. The RETRO code still
-     * works there, for anyone who goes looking.
+     * to the controller standard for very little gain.
      */
     if (!steam) {
       look.appendChild(
