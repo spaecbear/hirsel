@@ -383,9 +383,21 @@ export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts =
   }
 
   if (o.back) {
-    // the back of his head: no face, and the bunnet's peak points away
-    px(2, 0, 8, 6, "#8a6b4c"); // hair
-    px(3, 4, 6, 2, "#c9a583"); // his neck below it
+    /*
+     * From behind: the back of the coat with no buttons and a vent up the
+     * tail of it, the scarf a band round his collar, and the back of his
+     * head all hair, with only a sliver of neck. The front's seam and a
+     * broad patch of neck used to show through, and from up the hill it
+     * read as a face, as if he were walking backwards at you.
+     */
+    const coat = KIT.oilskin ? "#2f3a35" : "#4a5540";
+    px(5, 8, 2, KIT.oilskin ? 12 : 9, coat);
+    px(5, KIT.oilskin ? 15 : 13, 1, KIT.oilskin ? 6 : 4, KIT.oilskin ? "#26302c" : "#3b4433"); // the vent
+    // the coat's collar turned up over the scarf: a red band here under the hair read as a mouth
+    px(1, 5, 10, 2, KIT.oilskin ? "#3a4a42" : "#5a6650");
+    px(2, 0, 8, 5, "#8a6b4c"); // hair
+    px(3, 1, 5, 1, "#9a7a58"); // the light on the crown
+    px(4, 5, 4, 1, "#8f7357"); // the back of his neck, just, in the shadow of the collar
     px(2, -3, 9, 4, "#2f3327");
     px(3, -4, 7, 1, "#3a3f31");
   } else if (profile) {

@@ -780,7 +780,6 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       const what = s.payload?.croft ?? st.building?.id ?? "roof";
       const cx0 = L.croft.x;
       const cy0 = L.croft.y;
-      const cw = L.croft.w;
       const swing = Math.sin(p * Math.PI * 12) > 0 ? 0 : 3;
       /** dust and chips coming off whatever he is hitting */
       const dust = (x: number, y: number) => {
@@ -792,51 +791,77 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
 
       if (what === "roof") {
         /*
-         * Slate laid on the croft's own roof, course by course from the eaves
-         * up to the ridge. Drawn above the rect it hung in the air over the
-         * house with a man standing on nothing.
+         * Slate laid over the croft's own thatch, course by course from the
+         * eaves up to the ridge, on the same nine courses `drawCroft` draws,
+         * so the last one down is the finished roof. They were laid six
+         * pixels above it, so the slates hung over the thatch and he stood on
+         * air. He goes up a ladder at the gable and works along the courses.
          */
-        const eave = cy0 + 6; // where the roof meets the wall head
-        const ridge = cy0 - 6;
-        const rows = Math.min(6, Math.floor(p * 7));
+        const rows = Math.min(9, Math.floor(p * 10));
         for (let i = 0; i < rows; i++) {
-          const y = eave - i * 2;
-          const inset = Math.round(i * (cw * 0.06));
-          if (y < ridge) break;
-          g.px(cx0 + 1 + inset, y, cw - 2 - inset * 2, 2, i % 2 ? "#5a606c" : "#4a4e58");
-          g.px(cx0 + 1 + inset, y, cw - 2 - inset * 2, 1, "#6d7484");
+          const w = 58 - i * 6;
+          g.px(cx0 - 3 + i * 3, cy0 + 12 - i, Math.max(2, w), 2, i % 2 ? C.slate : shade(C.slate, 10));
         }
-        // him on the roof, at the courses he has reached
-        const wx = cx0 + Math.round(cw * 0.5);
-        const wy = eave - rows * 2 - SHEPHERD_H + 2;
+        if (rows >= 9) g.px(cx0 - 4, cy0 + 11, 60, 2, "#39404a");
+        // the ladder up the front wall, beside the window (the croft sits at the screen's edge, so not the gable)
+        const lx = cx0 + 47;
+        for (let y = cy0 + 10; y < cy0 + 44; y += 4) g.px(lx, y, 5, 1, "#7a6040");
+        g.px(lx, cy0 + 8, 1, 36, "#6a5238");
+        g.px(lx + 4, cy0 + 8, 1, 36, "#6a5238");
+        // the slates waiting at the foot of it
+        const left = Math.max(0, 4 - Math.floor(p * 4));
+        for (let i = 0; i < left; i++) g.px(cx0 + 20, cy0 + 42 - i * 2, 9, 2, i % 2 ? C.slate : "#6d7484");
+        // him on the roof, standing on the course he has reached and working along it
+        const course = Math.min(8, rows);
+        const along = Math.round(4 + course * 3 + (Math.sin(p * Math.PI * 3) * 0.5 + 0.5) * Math.max(0, 40 - course * 6));
+        const wx = cx0 + along;
+        const wy = cy0 + 12 - course - SHEPHERD_H + 1;
         drawShepherd(g, wx, wy, { arm: swing ? 0 : 3, facing: -1 });
-        g.px(wx - 5, wy + 12 + swing, 5, 2, "#5a606c"); // the slate in his hands
-        dust(wx - 4, wy + 12);
-        // the stack waiting at the gable end
-        g.px(cx0 + cw + 1, cy0 + 18, 7, 5, "#4a4e58");
-        g.px(cx0 + cw + 1, cy0 + 18, 7, 1, "#6d7484");
+        g.px(wx - 5, wy + 12 + swing, 5, 2, C.slate); // the slate in his hands
+        dust(wx - 4, wy + 14);
       } else if (what === "hearth") {
         /*
-         * The hearth is inside, so what you see from the hill is the chimney
-         * going up the gable, course by course, and the first smoke out of it
-         * once it draws.
+         * The hearth is inside, so what you see from the hill is the work
+         * going in at the door: stone carried in from the pile by the gable,
+         * the dust of the work coming out of the old lum, and at the end the
+         * first smoke out of it once the fire draws. It used to build a
+         * second chimney beside the one the croft already has.
          */
-        const stack = Math.min(7, Math.floor(p * 8));
-        const chx = cx0 + cw - 10;
-        for (let i = 0; i < stack; i++) {
-          g.px(chx, cy0 - 2 - i * 2, 7, 2, i % 2 ? "#6a5c48" : "#5c5040");
-          g.px(chx, cy0 - 2 - i * 2, 7, 1, "#7c6e58");
-        }
-        drawShepherd(g, chx - 16, cy0 + 4, { arm: swing ? 0 : 3, facing: 1 });
-        g.px(chx - 6, cy0 - 2 - stack * 2 + swing, 5, 2, "#6a5c48"); // the stone going on
-        dust(chx - 4, cy0 - stack * 2);
-        // his hod of mortar at his feet
-        g.px(chx - 20, cy0 + 22, 6, 4, "#4a3a26");
-        if (p > 0.82) {
+        const doorX = cx0 + 6;
+        const pileX = cx0 + 26; // along the front wall from the door: the croft sits at the screen's edge
+        const ground = cy0 + 44 - SHEPHERD_H;
+        const trips = 3;
+        const trip = Math.min(trips - 1, Math.floor(p * trips));
+        const u = (p * trips) % 1;
+        // the pile, going down a stone a trip
+        const stones = 5 - trip - (u > 0.1 ? 1 : 0);
+        for (let i = 0; i < stones; i++) g.px(pileX + 8 + (i % 3) * 4, cy0 + 41 - Math.floor(i / 3) * 3, 4, 3, i % 2 ? "#6a5c48" : "#7c6e58");
+        if (u < 0.35) {
+          // across to the door with a stone in his arms
+          const k = ease(u / 0.35);
+          const hx = Math.round(pileX + (doorX - pileX) * k);
+          drawShepherd(g, hx, ground, { walk: k < 1 ? p * 9 : 0, facing: -1, arm: 3 });
+          g.px(hx - 1, ground + 10, 5, 4, "#6a5c48");
+        } else if (u < 0.65) {
+          // inside at it: the dust of it puffing out of the lum
           for (let i = 0; i < 4; i++) {
-            const t = ((p - 0.82) / 0.18 + i / 4) % 1;
-            g.a(chx + 2, cy0 - 4 - stack * 2 - t * 18, 2, 2, 220, 214, 204, 0.4 * (1 - t));
+            const t = ((u - 0.35) / 0.3 * 2 + i / 4) % 1;
+            g.a(cx0 + 40 + Math.sin(t * 5 + i) * 2, cy0 - 4 - t * 12, 2, 2, 198, 190, 170, 0.45 * (1 - t));
           }
+        } else {
+          // and back out for the next one
+          const k = ease((u - 0.65) / 0.35);
+          const hx = Math.round(doorX + (pileX - doorX) * k);
+          drawShepherd(g, hx, ground, { walk: k < 1 ? p * 9 : 0, facing: 1 });
+        }
+        // the fire drawing at last: smoke out of the lum and a glow in the window
+        if (p > 0.8) {
+          const f = (p - 0.8) / 0.2;
+          for (let i = 0; i < 5; i++) {
+            const t = (f * 1.5 + i / 5) % 1;
+            g.a(cx0 + 40 + Math.sin(t * 6 + i) * 3, cy0 - 4 - t * 24, 2 + t * 3, 2 + t * 3, 205, 205, 196, 0.45 * (1 - t) * f);
+          }
+          g.a(cx0 + 28, cy0 + 24, 10, 9, 240, 200, 106, 0.5 * f);
         }
       } else if (what === "byre") {
         /*

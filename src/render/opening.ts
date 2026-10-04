@@ -579,17 +579,21 @@ function crest(g: Painter, W: number, H: number, t: number, time: number) {
     g.px(x, y, 2, 1, "#4a5c38");
     if (hash(x * 0.71) > 0.6) g.px(x, y + 2 + Math.floor(hash(x) * 6), 2, 2, hash(x * 3) > 0.5 ? "#6e4a6e" : "#7d6a3c");
   }
-  // he comes up over the brow, and stops, and looks
-  const up = ease(clamp01(t / 0.3));
+  /*
+   * He comes up the last of the slope from where we stand, his back to us,
+   * onto the brow, and stops there with the glen below him and the croft in
+   * it. He used to rise up out of the ground on the far side of the crest,
+   * which is how somebody coming towards you moves, so he looked to be
+   * walking backwards at the camera.
+   */
+  const up = ease(clamp01(t / 0.32));
   const hx = Math.round(W * 0.5 - 6);
-  const hy = Math.round(H * 0.84 - 26 + (1 - up) * 30);
-  drawShepherd(g, hx, hy, { crook: true, back: true, walk: up < 1 ? walkGait(time) * 0.8 : 0 });
-  // the ground in front of his boots, so he rises out of it rather than through it
-  for (let x = hx - 8; x < hx + 22; x += 2) {
-    const y = Math.round(H * 0.84 - Math.sin(x / 31) * 4 - Math.sin(x / 9) * 1.5 + Math.abs(x - W * 0.5) * 0.04);
-    if (hy + 26 > y + 1) g.px(x, y + 1, 2, hy + 27 - y, "#33422a");
-  }
-
+  const brow = Math.round(H * 0.84 - Math.sin((hx + 6) / 31) * 4);
+  const start = H + 4; // his feet below the bottom of the screen
+  const hy = Math.round(start + (brow + 1 - start) * up) - 26;
+  // a turn of the head to the croft once he is up, as anyone would
+  const look = t > 0.42 && t < 0.62;
+  drawShepherd(g, hx, hy, { crook: true, back: !look, facing: look ? -1 : undefined, walk: up < 1 ? walkGait(time) * 0.8 : 0 });
   // in from the dark at the start, and up into the light at the end
   fadeEdges(g, W, H, t, 0.08, 0);
   const out = clamp01((t - 0.9) / 0.1);
