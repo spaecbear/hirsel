@@ -126,6 +126,22 @@ export function drawTerraces(g: Painter, W: number, horizonY: number, groundY: n
  * what is underfoot
  * ------------------------------------------------------------------ */
 
+/** where the burn runs across row `y`: its left edge and its width */
+export function burnAt(W: number, groundY: number, H: number, y: number): [number, number] {
+  const top = groundY + 2;
+  const t = Math.max(0, (y - top) / Math.max(1, H - top));
+  /*
+   * Two meanders of different lengths, so it wanders like water finding its
+   * way rather than running off at an angle. A single sine over a short
+   * field just reads as a diagonal stick.
+   */
+  const wander = Math.sin(t * 5.6) * 0.11 + Math.sin(t * 2.1 + 1.4) * 0.07;
+  const cx = W * (0.28 + wander);
+  // it widens hard as it comes towards you; that is what gives it depth
+  const w = Math.max(2, Math.round(1 + Math.pow(t, 1.4) * 11));
+  return [Math.round(cx - w / 2), w];
+}
+
 /**
  * The burn: a thread of water winding down through the bog, widening as it
  * comes toward you. It is the thing that makes the Low Field read as wet
@@ -136,16 +152,7 @@ export function drawBurn(g: Painter, W: number, groundY: number, H: number, time
   const span = Math.max(1, H - top);
   for (let y = top; y < H; y++) {
     const t = (y - top) / span;
-    /*
-     * Two meanders of different lengths, so it wanders like water finding its
-     * way rather than running off at an angle. A single sine over a short
-     * field just reads as a diagonal stick.
-     */
-    const wander = Math.sin(t * 5.6) * 0.11 + Math.sin(t * 2.1 + 1.4) * 0.07;
-    const cx = W * (0.28 + wander);
-    // it widens hard as it comes towards you; that is what gives it depth
-    const w = Math.max(2, Math.round(1 + Math.pow(t, 1.4) * 11));
-    const x0 = Math.round(cx - w / 2);
+    const [x0, w] = burnAt(W, groundY, H, y);
     g.px(x0 - 1, y, 1, 1, "#3b3324"); // peat-stained banks
     g.px(x0 + w, y, 1, 1, "#3b3324");
     g.px(x0, y, w, 1, C.water);

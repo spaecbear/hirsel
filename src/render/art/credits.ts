@@ -17,7 +17,7 @@
  * as they take.
  */
 import type { Painter } from "../painter";
-import { KIT, drawDog, drawFox, drawSheep, hash, setSpriteState } from "../sprites";
+import { KIT, drawDog, drawFox, drawSheep, foxGait, hash, setSpriteState } from "../sprites";
 import type { Sheep } from "../../sim/types";
 
 /* The sunset, top to bottom. Deep above, and everything warming as it falls
@@ -362,7 +362,7 @@ export function drawCredits(g: Painter, W: number, H: number, time: number) {
       if (peek > 1) {
         // clipped to the lip: draw him, then paint the near ground back over
         // everything below the edge so he is genuinely behind it
-        drawFox(g, fxx, lip - peek, beat.foxOut > 0 ? time / 90 : 0, -1);
+        drawFox(g, fxx, lip - peek, beat.foxOut > 0 ? foxGait(time) : 0, -1);
         for (let x = fxx - 4; x < fxx + 34; x++) {
           const y = nearY(x);
           g.px(x, y, 1, H - y, "#2a2114");

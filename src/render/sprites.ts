@@ -282,6 +282,54 @@ function drawBunnet(px: (dx: number, dy: number, w: number, h: number, c: string
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
 
+/*
+ * Walk cycles off the clock.
+ *
+ * Each sprite flips its legs on sin(run · π · N), where N is its own rate, so
+ * the value passed in sets how often a foot comes down. The loops that ran
+ * off the clock passed time / 200 and the like, which with N of 8 to 16 put
+ * the dog's legs over every single frame and the sheep's every frame and a
+ * half: not a walk but a flicker, and the whole hill looked jittery with it.
+ * These give each animal a step it could actually take.
+ */
+/**
+ * Stars spread evenly over a patch of sky: one to each cell of a grid, at a
+ * steady random spot inside it. They were placed at (i × 97) mod the width,
+ * and the glen's width changes with the window: on a screen whose width
+ * shares a factor with 97's multiples they all fell into a few columns. A
+ * grid cannot cluster, and the jitter inside each cell stops it reading as
+ * one. `twinkle` is 1 or a dimmer value, changing slowly star by star.
+ */
+export function starField(w: number, h: number, count: number, time: number): { x: number; y: number; twinkle: number; big: boolean }[] {
+  const cols = Math.max(1, Math.round(Math.sqrt((count * w) / Math.max(1, h))));
+  const rows = Math.max(1, Math.ceil(count / cols));
+  const cw = w / cols;
+  const ch = h / rows;
+  const out: { x: number; y: number; twinkle: number; big: boolean }[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      out.push({
+        x: Math.floor((c + 0.1 + hash(i * 1.73 + 3) * 0.8) * cw),
+        y: Math.floor((r + 0.1 + hash(i * 2.91 + 7) * 0.8) * ch),
+        twinkle: Math.sin(time / (340 + (i % 5) * 70) + i) > 0 ? 1 : 0.45,
+        big: hash(i * 5.3) > 0.9,
+      });
+    }
+  }
+  return out;
+}
+
+const gait = (time: number, stepMs: number, n: number) => time / (stepMs * n);
+/** an ewe ambling: a foot down every quarter second */
+export const sheepGait = (time: number) => gait(time, 260, 12);
+/** the dog at a trot round the flock */
+export const dogGait = (time: number) => gait(time, 110, 12);
+/** him walking the hill */
+export const walkGait = (time: number) => gait(time, 170, 8);
+/** a fox going flat out */
+export const foxGait = (time: number) => gait(time, 90, 16);
+
 export function drawShepherd(g: Painter, x: number, y: number, o: ShepherdOpts = {}) {
   const step = o.walk ? (Math.sin(o.walk * Math.PI * 8) > 0 ? 1 : 0) : 0;
   const tick = o.tick;

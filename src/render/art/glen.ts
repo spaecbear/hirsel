@@ -23,6 +23,7 @@ import {
   TERRAIN,
   mix,
   drawBurn,
+  burnAt,
   drawCloudCap,
   drawBareGround,
   drawMottle,
@@ -37,6 +38,9 @@ import {
   C,
   SKY,
   drawDog,
+  dogGait,
+  sheepGait,
+  walkGait,
   DOG_FEET,
   SHEEP_FEET,
   drawDogCurled,
@@ -51,6 +55,7 @@ import {
   drawWoolSacks,
   hash,
   isInverse,
+  starField,
   KIT,
   setSpriteState,
   shade,
@@ -179,6 +184,26 @@ function drawBen(g: Painter, L: WorldLayout, st: GameState, time: number) {
 
   // over the moor the cloud sits right down on the tops
   if (st.at === 0) drawCloudCap(g, L.W, base - bulk - 4, time);
+}
+
+/**
+ * The top of the far hills at column x, as `drawBen` draws them, so the night
+ * can keep its stars in the sky. They were scattered down to the horizon line
+ * and so shone through the hills in front of them.
+ */
+function skylineAt(L: WorldLayout, st: GameState, x: number) {
+  if (st.at === 1) {
+    let top = L.horizonY;
+    for (let l = 0; l < 4; l++) {
+      const y = L.horizonY - 4 - l * 7 + Math.round(Math.sin(x / (34 + l * 19) + l * 2.1) * (5 + l * 3) + Math.sin(x / 11) * 1.5);
+      top = Math.min(top, y);
+    }
+    return top;
+  }
+  const bulk = st.at === 2 ? 8 : 14;
+  const top = L.horizonY - Math.round(Math.sin(x / 61) * (bulk * 0.9) + Math.sin(x / 17) * 3 + bulk);
+  // over the moor the cloud sits down on the tops, so the stars stop above it
+  return st.at === 0 ? Math.min(top, L.horizonY - bulk * 2 - 8) : top;
 }
 
 /** the near band between skyline and field */
@@ -379,11 +404,9 @@ function drawNight(g: Painter, L: WorldLayout, st: GameState, amount: number, ti
   g.a(0, 0, L.W, L.H, 10, 13, 24, amount * 0.86);
   if (amount < 0.28) return;
   const a = (amount - 0.28) / 0.72;
-  for (let i = 0; i < 46; i++) {
-    const x = (i * 97) % L.W;
-    const y = (i * 41) % Math.max(20, L.horizonY);
-    const tw = Math.sin(time / 340 + i) > 0 ? 1 : 0.45;
-    g.a(x, y, 2, 2, 220, 225, 240, a * tw * 0.9);
+  for (const s of starField(L.W, Math.max(20, L.horizonY), 46, time)) {
+    if (s.y > skylineAt(L, st, s.x) - 3) continue; // behind the hills, not in front of them
+    g.a(s.x, s.y, s.big ? 2 : 1, s.big ? 2 : 1, 220, 225, 240, a * s.twinkle * 0.9);
   }
   const idx = moonPhase(st.day);
   const pos = moonPos(idx, L.W);
@@ -453,7 +476,7 @@ function flockActors(g: Painter, L: WorldLayout, s: Scene): Actor[] {
     let x = home.x + drift.dx;
     let y = home.y + drift.dy;
     let shorn = false;
-    let run = drift.moving ? s.time / 320 : 0;
+    let run = drift.moving ? sheepGait(s.time) : 0;
     let graze = !drift.moving && Math.sin(s.time / 1400 + i * 2) > 0;
     let flip = drift.flip;
 
@@ -508,7 +531,7 @@ function flockActors(g: Painter, L: WorldLayout, s: Scene): Actor[] {
     const x = Math.round(hx + drift.dx);
     const y = Math.round(hy + drift.dy);
     const facing: 1 | -1 = drift.flip ? -1 : 1;
-    const run = drift.moving ? s.time / 320 : 0;
+    const run = drift.moving ? sheepGait(s.time) : 0;
     out.push({
       feet: y + 13,
       paint: () => (isInverse() ? drawFox(g, x, y + 2, run, facing) : drawRam(g, x, y, run, facing)),
@@ -528,7 +551,7 @@ function paintShepherdIdle(g: Painter, L: WorldLayout, s: Scene) {
   const sx = L.shepherd.x;
   const sy = L.shepherd.y;
   if (s.walking) {
-    drawShepherd(g, sx, sy, { crook: true, walk: s.time / 90, facing: s.facing ?? 1 });
+    drawShepherd(g, sx, sy, { crook: true, walk: walkGait(s.time), facing: s.facing ?? 1 });
     return;
   }
   const tick = idleTick(s.time);
@@ -584,7 +607,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
 
   /** her idle lap, hoisted so it can be sorted in among everything else */
   const paintDog = () =>
-    drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? s.time / 200 : 0, 0, L.dogAt.facing, L.dogAt.wagging ? s.time : 0);
+    drawDog(g, L.dogAt.x, L.dogAt.y, L.dogAt.running ? dogGait(s.time) : 0, 0, L.dogAt.facing, L.dogAt.wagging ? s.time : 0);
 
   /*
    * On a quiet hill the whole cast is painted in depth order: sheep, dog and
@@ -865,14 +888,48 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       break;
     }
     case "muck": {
-      const x = L.W * 0.1 + ease(p) * (L.W * 0.7);
-      drawShepherd(g, sx, sy, { walk: p, facing: 1 });
-      g.px(x, sy + 10, 22, 9, "#5b4a30");
-      g.px(x + 3, sy + 3, 16, 8, "#3f3324");
-      g.px(x + 2, sy + 19, 7, 7, "#3f3527");
-      for (let i = 0; i < 16; i++) {
-        const t = (p * 2 + i / 16) % 1;
-        g.px(x - t * 40 + i * 3, sy + 12 - Math.sin(t * Math.PI) * 14, 3, 3, t < 0.5 ? "#4a3a24" : "#6d8a4b");
+      /*
+       * Mucking the pasture: he walks the field behind the barrow, the way he
+       * walks it behind the scythe for the hay, and the muck lies spread on
+       * the ground he has come over, the first of it already greening. The
+       * barrow used to slide across the field on its own while he stood and
+       * marched on the spot, as if it were being mucked by remote.
+       */
+      const reach = ease(p);
+      const x0 = Math.round(L.W * 0.08);
+      const span = Math.round(L.W * 0.6);
+      const row = sy + 24; // the ground his boots are on
+      const hx = x0 + Math.round(span * reach);
+      // the spread behind him: dark where it has just gone down, green coming through the oldest
+      for (let r = 0; r < 3; r++) {
+        for (let x = x0 + r * 2; x < hx - 2 - r * 3; x += 3) {
+          const k = hash(x * 0.37 + r * 11.3);
+          const age = (hx - x) / Math.max(1, span);
+          const green = age > 0.25 && k < age * 1.2;
+          if (onBurn(st, L, x, row + r * 4, 4)) continue;
+          g.px(x, row + r * 4 + Math.round(k * 2), 2 + Math.round(k * 2), 2, green ? "#5f7a43" : k > 0.5 ? "#4a3a24" : "#3f3324");
+        }
+      }
+      drawShepherd(g, hx, sy, { walk: p * 3, facing: 1 });
+      // the barrow ahead of him: a wheel bumping over the tussocks, the tray, and the muck in it going down
+      const bx = hx + 13;
+      const by = sy + 13;
+      const bump = Math.floor(p * 24) % 2;
+      g.px(bx - 4, by + 3, 7, 2, "#6a5238"); // the handles, back to his hands
+      g.px(bx, by - bump, 17, 6, "#6a5238"); // the tray
+      g.px(bx + 1, by - bump, 15, 1, "#7d6446");
+      g.px(bx + 2, by + 6 - bump, 13, 2, "#54452c");
+      const heap = Math.round((1 - reach) * 4);
+      if (heap > 0) g.px(bx + 3, by - heap - bump, 11, heap, "#3f3324");
+      g.px(bx + 3, by + 8 - bump, 2, 4, "#54452c"); // its leg
+      g.px(bx + 14, by + 6 - bump, 6, 6, "#2a2118"); // the wheel
+      g.px(bx + 16, by + 8 - bump, 2, 2, "#8a7a5c");
+      // a forkful going over the side now and then
+      for (let i = 0; i < 5; i++) {
+        const t = (p * 4 + i / 5) % 1;
+        if (t > 0.6) continue;
+        const u = t / 0.6;
+        g.px(bx + 4 - u * 18 + i * 2, by - 2 - Math.sin(u * Math.PI) * 8 + u * 12, 2, 2, "#4a3a24");
       }
       break;
     }
@@ -887,7 +944,9 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       const row = sy + 24;
       for (let r = 0; r < 3; r++) {
         const len = Math.round(span * clamp01(reach * 1.2 - r * 0.15));
-        for (let x = 0; x < len; x += 4) g.px(x0 + x, row + r * 5, 3, 2, x % 8 ? "#c9a95a" : "#b08f45");
+        for (let x = 0; x < len; x += 4) {
+          if (!onBurn(st, L, x0 + x, row + r * 5, 3)) g.px(x0 + x, row + r * 5, 3, 2, x % 8 ? "#c9a95a" : "#b08f45");
+        }
       }
       const hx = x0 + Math.round(span * reach);
       drawShepherd(g, hx, sy, { walk: p * 3, facing: 1 });
@@ -897,7 +956,7 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       g.px(hx + 4 + Math.round(sweep * 5), sy + 21, 12, 2, "#b9bec2");
       // the stack, rising as the day goes
       const stack = Math.floor(clamp01((p - 0.3) / 0.7) * 5);
-      const stx = x0 + span + 14;
+      const stx = x0 + span + 24;
       for (let i = 0; i < stack; i++) {
         const w = 18 - i * 3;
         g.px(stx - w / 2, row + 8 - i * 4, w, 4, i % 2 ? "#c9a95a" : "#b89448");
@@ -913,11 +972,19 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       g.px(cx + 20, L.cart.y + 16, 8, 8, "#3f3527");
       drawWoolSacks(g, cx + 4, L.cart.y - 2, p < 0.5 ? 40 : 0);
       // away to town, then back again
-      drawShepherd(g, sx, sy, { crook: true, walk: p, facing: p < 0.5 ? 1 : -1 });
-      if (p > 0.6) {
+      /*
+       * He goes with it, walking at the horse's head, and comes back with it.
+       * He used to stay behind walking on the spot while the cart went to
+       * town without him.
+       */
+      const hx = Math.round(sx + (cx - L.cart.x));
+      const going = away > 0.02 && away < 0.98;
+      drawShepherd(g, hx, sy, { crook: true, walk: going ? p * 5 : 0, facing: p < 0.5 ? 1 : -1 });
+      // and home with the purse heavier: the coins go up over him once he is back
+      if (p > 0.84) {
+        const t = (p - 0.84) / 0.16;
         for (let i = 0; i < 8; i++) {
-          const t = (p - 0.6) / 0.4;
-          g.px(sx - 20 + i * 9, sy + 4 - Math.sin(t * Math.PI) * (24 + i * 3), 4, 4, C.gorse);
+          g.px(hx - 16 + i * 6, sy + 4 - Math.sin(t * Math.PI) * (18 + i * 2), 3, 3, C.gorse);
         }
       }
       break;
@@ -932,13 +999,18 @@ function drawActors(g: Painter, L: WorldLayout, s: Scene) {
       drawSheep(g, x, L.shepherd.y + 12 - Math.abs(Math.sin(p * Math.PI * 7)) * 2, { id: -1, fleece: 1, breed, age: 0 }, { run: p });
       break;
     }
-    case "gather":
-      drawShepherd(g, sx, sy + (Math.sin(p * Math.PI * 4) > 0 ? 0 : 1), { crook: true, walk: p });
+    case "gather": {
+      // a few steps out after the dog and back, rather than marching on the spot
+      const out = Math.sin(p * Math.PI);
+      drawShepherd(g, Math.round(sx + out * 14), sy, { crook: true, walk: out > 0.04 && out < 0.98 ? p * 3 : 0, facing: p < 0.5 ? 1 : -1 });
       break;
-    case "move":
-      // driving them onto new ground: he comes in behind the flock
-      drawShepherd(g, sx, sy, { crook: true, walk: p, facing: -1 });
+    }
+    case "move": {
+      // driving them onto new ground: he comes in behind the flock, walking, not stepping in place
+      const step = ease(p);
+      drawShepherd(g, Math.round(sx + 12 - step * 24), sy, { crook: true, walk: p * 3, facing: -1 });
       break;
+    }
     case "sleep":
       drawShepherd(g, sx, sy, {});
       break;
@@ -1732,7 +1804,7 @@ function drawInterior(
         // on her way over, on her feet, facing the fire
         const x = Math.round(dogHome.x + (fireSpot.x - dogHome.x) * e);
         const y = Math.round(dogHome.y + (fireSpot.y - dogHome.y) * e);
-        drawDog(g, x, y, time / 200, 0, -1);
+        drawDog(g, x, y, dogGait(time), 0, -1);
       } else {
         // on the boards in front of the grate, not in it: centred on the
         // hearth she was lying on the flames and hiding them
@@ -1746,7 +1818,7 @@ function drawInterior(
        * and stood still where they did. Only the sheltie turns.
        */
       const spin = owns(st, "collie") ? 0 : spinNow(time);
-      drawDog(g, dogHome.x, dogHome.y, spin ? time / 200 : 0, spin, 1, spin ? 0 : time);
+      drawDog(g, dogHome.x, dogHome.y, spin ? dogGait(time) : 0, spin, 1, spin ? 0 : time);
     }
   }
 
@@ -1988,7 +2060,7 @@ function drawDance(g: Painter, I: InteriorLayout, p: number, time: number) {
   const paintHim = () =>
     drawShepherd(g, Math.round(his.x) - 6, Math.round(his.y) - SHEPHERD_H, {
       facing: his.x < hers.x ? 1 : -1,
-      walk: into > 0.05 ? time / 170 : 0,
+      walk: into > 0.05 ? walkGait(time) : 0,
     });
   const paintHer = () => drawHerAtHome(g, Math.round(hers.x), Math.round(hers.y), time * 2.5);
   // the nearer of them goes in front
@@ -2311,6 +2383,16 @@ function starsScene(g: Painter, L: WorldLayout, st: GameState, p: number, time: 
 /* ================================================================== *
  * the pack
  * ================================================================== */
+
+/**
+ * True where a run of `w` pixels on row `y` would lie on the burn's water,
+ * so the hay swathes and the spread muck go round it rather than over it.
+ */
+function onBurn(st: GameState, L: { W: number; H: number; groundY: number }, x: number, y: number, w: number) {
+  if (st.at !== 0) return false;
+  const [bx0, bw] = burnAt(L.W, L.groundY, L.H, y);
+  return x + w > bx0 - 1 && x < bx0 + bw + 1;
+}
 
 export const GLEN_ART: ArtPack = {
   id: "glen",
