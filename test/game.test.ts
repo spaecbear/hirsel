@@ -290,8 +290,8 @@ describe("the last wolf", () => {
     expect(state.log.some((l) => l.t.includes("the day has had the best of you"))).toBe(true);
   });
 
-  it("can be met after a walk up: four taps in a day of five, one spent driving them up", () => {
-    const { game, state } = harness({ at: 0, day: 5, taps: 5, owned: { sword: true, boots: true, lamp: true }, flock: [sheep(4), sheep(4)] });
+  it("can be met after a walk up: the boots carry them up the hill for nothing on a day of four", () => {
+    const { game, state } = harness({ at: 0, day: 5, taps: 4, owned: { sword: true, boots: true, lamp: true }, flock: [sheep(4), sheep(4)] });
     game.moveTo(2);
     expect(state.taps).toBe(BALANCE.wolfFightTaps);
     game.sleep();

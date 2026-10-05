@@ -36,6 +36,7 @@ import {
   housed,
   isFullMoon,
   isWinter,
+  moveCost,
   season,
   seasonOf,
   owns,
@@ -276,13 +277,14 @@ export class Game {
       this.changed();
       return;
     }
-    if (g.taps <= 0) return;
+    const cost = moveCost(g);
+    if (g.taps < cost) return; // with the boots on it is free, even at the end of the day
     if (g.recording) g.draft.push({ kind: "move", to: i });
     g.at = i;
     g.gatheredToday = false;
     this.say(this.lex.driveUp(g.pastures[i].name), "hi");
     this.onAnim("move");
-    this.spend(1);
+    this.spend(cost);
     if (wolfWarningDue(g)) this.wolfWarning();
   }
 
@@ -329,7 +331,7 @@ export class Game {
   grantTool(id: ToolId) {
     const g = this.state;
     g.owned[id] = true;
-    if (id === "boots" || id === "lamp") g.taps = Math.min(BALANCE.maxTaps, g.taps + 1);
+    if (id === "lamp") g.taps = Math.min(BALANCE.maxTaps, g.taps + 1);
     // a new dog starts her working life today
     if (id === "dog" || id === "collie") {
       g.dogDays = 0;
@@ -1061,7 +1063,7 @@ export class Game {
         g2.gatheredToday = false;
         this.say(`The watch has you on the ${g2.pastures[e.to].name}.`, "hi");
         this.onAnim("move", step);
-        this.spend(1);
+        this.spend(moveCost(g2));
         return;
       }
       const act = ACTIONS.find((a) => a.id === e.act);

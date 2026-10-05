@@ -165,8 +165,8 @@ export const BALANCE = {
    * The last wolf comes down to any flock left on the High Corrie on a
    * full-moon night. He can be beaten only with the broadsword and this
    * many taps still unspent when you lie down: a man who has worked the day
-   * through is too tired for the fight. Four, so that a day of four or more
-   * (the boots, or the lantern) can spend one taking the flock up the hill
+   * through is too tired for the fight. Four, so that a day of four (the
+   * lantern) with the boots on can walk the flock up the hill for nothing
    * and still be ready for him, rather than having to wait a whole moon.
    */
   wolfFightTaps: 4,
@@ -461,7 +461,7 @@ export const PASTURES = [
 export const TOOLS = [
   { id: "crook", name: "Shepherd's crook", cost: 18, what: "Takes a tap off gathering (and off a big flock, which costs two)." },
   { id: "shears", name: "Blade shears", cost: 32, what: "Every fleece comes off a fifth heavier, and you get through more of them in a day." },
-  { id: "boots", name: "Stout boots", cost: 26, what: "One more tap every day." },
+  { id: "boots", name: "Stout boots", cost: 26, what: "Walking them between grounds costs no tap." },
   { id: "dog", name: "Shetland sheepdog", cost: 58, what: "Works the flock in on her own each night, and foxes think twice about her." },
   { id: "collie", name: "Border collie", cost: 58, what: "Works them in on her own and keeps them grazing steadily. Less of a deterrent to a fox, but they do better under her." },
   { id: "tup", name: "A tup", cost: 48, what: "A ram for the ewes. He runs with them through the autumn, and the lambs come in the spring." },

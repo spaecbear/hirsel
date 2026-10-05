@@ -14,6 +14,7 @@ import {
   priceOn,
   readyToShear,
   tapsPerDay,
+  moveCost,
   wolfBeatable,
   wolfSummoned,
   wolfWarningDue,
@@ -73,12 +74,17 @@ describe("market", () => {
 });
 
 describe("taps", () => {
-  it("is three base, one each for boots and lantern, one for hale, capped at six", () => {
+  it("is three base, one for the lantern, one for hale; the boots add none", () => {
     expect(tapsPerDay(g())).toBe(3);
-    expect(tapsPerDay(g({ owned: { boots: true } }))).toBe(4);
-    expect(tapsPerDay(g({ owned: { boots: true, lamp: true } }))).toBe(5);
-    expect(tapsPerDay(g({ owned: { boots: true, lamp: true }, buffs: { hale: 2 } }))).toBe(6);
+    expect(tapsPerDay(g({ owned: { boots: true } }))).toBe(3);
+    expect(tapsPerDay(g({ owned: { lamp: true } }))).toBe(4);
+    expect(tapsPerDay(g({ owned: { boots: true, lamp: true }, buffs: { hale: 2 } }))).toBe(5);
     expect(tapsPerDay(g({ owned: { boots: true, lamp: true }, buffs: { hale: 2 } }))).toBeLessThanOrEqual(BALANCE.maxTaps);
+  });
+
+  it("charges a tap to move the flock, and none with the boots on", () => {
+    expect(moveCost(g())).toBe(1);
+    expect(moveCost(g({ owned: { boots: true } }))).toBe(0);
   });
 });
 

@@ -110,7 +110,7 @@ export const TUTORIAL: TutorialStep[] = [
   },
   {
     id: "tools",
-    text: "The cart sells tools as well as beasts. Tools buy the day back: a crook makes gathering free, boots give you another tap. Watch for them.",
+    text: "The cart sells tools as well as beasts. Tools buy the day back: a crook makes gathering free, boots make moving the flock free. Watch for them.",
     target: "cart",
     readOnly: true,
     done: (_g, seen) => seen.has("tools"),
