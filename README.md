@@ -447,8 +447,8 @@ Things that are easy to break by accident:
   moon until his pelt is taken. Nothing else calls him: no kit, no day's work. Beating him
   takes the broadsword **and four taps still unspent** at nightfall (`wolfFightTaps`): a man
   who has worked the day through is too tired for the fight. Four rather than five, so that
-  a day of four or more taps (the boots, or the lantern) can spend one driving the flock up
-  and still be ready, without waiting a whole moon. Lose, with or without the sword, and the
+  a day of four taps (the lantern) with the boots on, which make moving the flock free, can
+  walk them up and still be ready, without waiting a whole moon. Lose, with or without the sword, and the
   flock is cut to `survivorsAfterWolf`.
 - **The wolf is warned of, never named.** Every full-moon dawn says the high ground is no
   place to be caught out late; a flock on the corrie that day (at dawn, or on being driven

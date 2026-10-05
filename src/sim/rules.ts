@@ -141,12 +141,18 @@ export const here = (g: GameState) => g.pastures[g.at];
 export function tapsPerDay(g: GameState): number {
   const t =
     BALANCE.baseTaps +
-    (owns(g, "boots") ? 1 : 0) +
     (owns(g, "lamp") ? 1 : 0) +
     (buffed(g, "hale") ? 1 : 0) +
     (g.married !== null ? BALANCE.marriedTaps : 0);
   return Math.min(BALANCE.maxTaps, t);
 }
+
+/**
+ * Driving the flock to new ground. Stout boots make it free: the boots used to
+ * be a tap every day, which with the lantern, a pint and her made a six-tap
+ * day; now they are for the walking, and the day stays the length it is.
+ */
+export const moveCost = (g: GameState) => (owns(g, "boots") ? 0 : 1);
 
 export function feedCost(g: GameState): number {
   // her kale patch feeds them a little, once it is dug

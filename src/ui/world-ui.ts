@@ -32,6 +32,7 @@ import {
   isFullMoon,
   isWinter,
   moonName,
+  moveCost,
   nextSeason,
   owns,
   season,
@@ -506,7 +507,7 @@ export class WorldUi {
         return null;
       }
       if (q.move === g.at) return `They are already on the ${p.name}.`;
-      if (g.taps <= 0) return "No taps left in the day to move them.";
+      if (g.taps < moveCost(g)) return "No taps left in the day to move them.";
       this.close();
       this.walk.reset();
       this.game.moveTo(q.move);
@@ -872,9 +873,9 @@ export class WorldUi {
   private pastureRows(): Row[] {
     const g = this.game.state;
     return g.pastures.map((p, i) => ({
-      label: `${p.name}${i === g.at ? " · they are here" : ""}${this.kbd((q) => "move" in q && q.move === i)}`,
+      label: `${p.name}${i === g.at ? " · they are here" : moveCost(g) === 0 ? " · free" : ""}${this.kbd((q) => "move" in q && q.move === i)}`,
       detail: `grass ${Math.round(p.grass)}% · feed ×${p.quality} · fox risk ${Math.round(p.risk * 100)}%`,
-      disabled: i === g.at || g.taps <= 0,
+      disabled: i === g.at || g.taps < moveCost(g),
       onPick: () => {
         this.walk.reset(); // new ground, back to his mark
         this.game.moveTo(i);

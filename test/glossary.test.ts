@@ -63,7 +63,7 @@ describe("the status glossary", () => {
     saveEarned(["pelt"]);
     const pelt = statusGlossary().find((e) => e.id === "pelt")!;
     expect(pelt.name).not.toBe("?????");
-    expect(pelt.effect).toContain(`${Math.round(BALANCE.peltFoxRisk * 100)}%`);
+    expect(pelt.effect).toContain("No fox comes near the flock");
   });
 
   it("never states the summon recipe, even once the pelt is known", () => {

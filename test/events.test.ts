@@ -254,7 +254,7 @@ describe("Callum, and the dealer", () => {
     game.answerEvent("buy");
     expect(g.owned.boots).toBe(true);
     expect(g.money).toBe(79);
-    expect(g.taps).toBe(taps + 1); // the boots do what the cart's boots do
+    expect(g.taps).toBe(taps); // boots are for the walking now, not a longer day
   });
 
   it("never offers a second dog while one is working, the sword, or the watch", () => {

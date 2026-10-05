@@ -9,6 +9,7 @@ done; what is left is the partner site, the art, and testing on real machines.
 | `store-page.md` | drafts of the store text: short and long description, tags, content survey, requirements, price |
 | `screenshots/` | eight 1920×1080 shots from the game, and `capture.cjs` to take them again |
 | `achievements/icons/` | the 60 achievement icons, 64×64, named by API name; `sheet.png` shows them all |
+| `media/` | the capsules, library art, app icon and the trailer (below) |
 | `steampipe/` | the upload: a build template and `upload.sh` around SteamCMD |
 | `../desktop/README.md` | the desktop shell, the achievement table and Steam Input |
 
@@ -84,6 +85,48 @@ with `npm run dev` running: `npx -y -p playwright node store/achievements/captur
 Choose the **Gamepad** template as the default configuration and mark full controller
 support. See `desktop/README.md`.
 
+## The store and library art
+
+All of it is in `media/`, drawn by the game's own renderer from a made-up run (a finished
+croft in summer, the flock with lambs, the dog working), at the game's pixel size and scaled
+up by a whole number so the pixels stay square. The name is a pixel wordmark in the title's
+gorse yellow (`media/pixelfont.ts`).
+
+| file | Steamworks slot | size |
+| --- | --- | --- |
+| `store_header_capsule.png` | Store Assets → Header Capsule | 920×430 |
+| `store_small_capsule.png` | Store Assets → Small Capsule | 462×174 |
+| `store_main_capsule.png` | Store Assets → Main Capsule | 1232×706 |
+| `store_vertical_capsule.png` | Store Assets → Vertical Capsule | 748×896 |
+| `page_background.png` | Store Assets → Page Background (optional) | 1438×810 |
+| `library_capsule.png` | Library Assets → Library Capsule | 600×900 |
+| `library_header.png` | Library Assets → Library Header | 920×430 |
+| `library_hero.png` | Library Assets → Library Hero (no text) | 3840×1240 |
+| `library_logo.png` | Library Assets → Library Logo (transparent) | 1280×720 |
+| `community_icon_184.png` | App Admin → Community Icon | 184×184 |
+| `icon.ico`, `icon_256.png` | App Admin → Client Icon, and the executable | 16 to 256 |
+| `trailer.mp4` | Trailers | 1920×1080, 60s |
+
+The same icon is in `public/` as `icon-192.png` and `icon-512.png`, which the web build and
+the desktop build (electron-builder) both use. Steam asks for the library logo to be placed
+over the hero in the partner site's preview; centred is fine.
+
+**The trailer** is rendered frame by frame from `media/trailer.ts` rather than recorded, so
+every game pixel is a clean 6×6 block at 1080p: the opening, the hill through the year, the
+work, the inn, the fire, the night and a fox, then the name and "Wishlist on Steam". The
+music is the game's own air, "The Hirsel", rendered offline from the same score. It gives
+nothing secret away: no wolf, no sword, nothing after the wedding.
+
+To make any of it again after the art changes, with `npm run dev` running:
+
+```bash
+npx -y -p playwright node store/media/capture.cjs           # the stills and the icon
+FFMPEG=/path/to/ffmpeg npx -y -p playwright node store/media/capture-trailer.cjs   # the trailer
+```
+
+The trailer needs an ffmpeg with libx264. `media.html` and `trailer.html` on the dev server
+show them all while you work.
+
 ## Uploading a build
 
 When the Actions minutes are back: merge the work into `steam`, let CI build, and download
@@ -127,8 +170,6 @@ On a Steam Deck:
 
 ## Not done yet
 
-- Capsule art and the executable's icon
-- A trailer
 - A playtest to a first win, to confirm the length and set the price
 - Mac: left out of the launch; it needs an Apple developer account ($99 a year), code
   signing and notarisation, and a Mac to test on
