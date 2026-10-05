@@ -325,12 +325,12 @@ const ICONS: Record<string, (g: Painter) => void> = {
     g.px(13, 8, 2, 2, "#f0c86a");
     g.px(16, 5, 2, 1, "#f0c86a");
   },
-  "fifty-lambs": (g) => {
+  "twenty-five-lambs": (g) => {
     sky(g, [80, 130, 140], [180, 206, 190]);
     hill(g, 20, "#6d8a4b");
     drawSheep(g, 2, 17, ewe(1, { lamb: true, age: 1, fleece: 1 }));
     drawSheep(g, 17, 15, ewe(2, { lamb: true, age: 1, fleece: 1, breed: "cheviot" }), { flip: true });
-    figures(g, "50", 16 - Math.floor(textW("50") / 2), 3, "#f2eee0");
+    figures(g, "25", 16 - Math.floor(textW("25") / 2), 3, "#f2eee0");
   },
   rosette: (g) => {
     g.px(0, 0, S, S, "#26402e");

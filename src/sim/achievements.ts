@@ -61,7 +61,18 @@ export const ACHIEVEMENTS: Achievement[] = [
     longGame: true,
     won: (g) => g.stats.dances > 0,
   },
-  { id: "fifty-lambs", name: "Fifty lambs", hint: "Fifty lambs born on your own ground.", longGame: true, won: (g) => g.stats.lambsBorn >= 50 },
+  /*
+   * Twenty-five, about two lambings: the spring of the third year with a tup
+   * from the first and a dozen ewes. It was fifty, which took four or five
+   * game years, longer than most players stay on the hill after the wedding.
+   */
+  {
+    id: "twenty-five-lambs",
+    name: "Twenty-five lambs",
+    hint: "Twenty-five lambs born on your own ground.",
+    longGame: true,
+    won: (g) => g.stats.lambsBorn >= 25,
+  },
   { id: "rosette", name: "A red rosette", hint: "Take a prize at the Highland show, or the trial.", won: (g) => g.stats.rosettes > 0 },
   { id: "neighbour", name: "Good neighbours", hint: "Have a kindness paid back from over the burn.", won: (g) => g.stats.neighbourGifts > 0 },
   {

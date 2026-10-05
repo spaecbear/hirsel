@@ -133,7 +133,7 @@ describe("married life", () => {
   });
 
   it("keeps the long game's achievements out of what the credits ask for", () => {
-    expect(ACHIEVEMENTS.filter((a) => a.longGame).map((a) => a.id).sort()).toEqual(["dance", "fifty-lambs", "only-one", "year-wed"]);
+    expect(ACHIEVEMENTS.filter((a) => a.longGame).map((a) => a.id).sort()).toEqual(["dance", "only-one", "twenty-five-lambs", "year-wed"]);
   });
 
   it("dances with her at home once wed: free, played out, and counted", () => {
@@ -163,12 +163,12 @@ describe("married life", () => {
     expect(game.state.stats.dances).toBe(0);
   });
 
-  it("counts fifty lambs for the long game", () => {
-    const a = ACHIEVEMENTS.find((x) => x.id === "fifty-lambs")!;
+  it("counts twenty-five lambs for the long game", () => {
+    const a = ACHIEVEMENTS.find((x) => x.id === "twenty-five-lambs")!;
     const g = newGame();
-    g.stats.lambsBorn = 49;
+    g.stats.lambsBorn = 24;
     expect(a.won(g)).toBe(false);
-    g.stats.lambsBorn = 50;
+    g.stats.lambsBorn = 25;
     expect(a.won(g)).toBe(true);
   });
 });
