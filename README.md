@@ -807,3 +807,77 @@ per-sheep margin over feed has to survive it, not just the average day.
 Raised to **80±34p (46–114p)** (`BALANCE.marketBase` / `marketSwing`). Same simulation: median
 final £63, worst case £21, zero busts. The reasoning is written next to the constants in
 `config.ts` rather than only here, since that's where the next tuning pass will be looking.
+
+### Hard: bold foxes, and the simulation behind it
+
+`scripts/simulate.ts` plays seeded runs with three bots through the real game methods: a
+**careful** player (gathers every night, keeps off the corrie, lays in hay early, keeps a
+reserve), a **newcomer** (forgets to gather, chases the best grass, spends freely, heeds the
+full moon seven times in ten) and a **learner** (the newcomer, but always heeds the moon).
+
+Before: a careful player won Hard in 99 runs of 100 and was never near the edge; the scale
+only made a careful win slower. The wolf decided almost every newcomer loss, and stays as
+it is on purpose: it is the secret boss, and the warnings are clear once you know them.
+Hard's fox dial went from 1 to **1.6**:
+
+| fox dial on Hard | careful wins | careful close calls | learner wins |
+| --- | --- | --- | --- |
+| 1.0 (before) | 99% | 2% | 79% |
+| 1.3 | 98% | 4% | 73% |
+| **1.6** | **93%** | **10%** | **59%** |
+| 2.0 | 82% | 24% | 39% |
+
+A close call is the purse under £15 or the flock down to two. Gentle and Steady are
+unchanged. `BOTS=careful,learner SCALES=hard npx vite-node scripts/simulate.ts 300` reruns it.
+
+### The hard second winter
+
+On Steady and Hard the second winter (`BALANCE.hardWinter`) is a hard one: five days in
+eight drawn as snow instead of three, the feed bill half as dear again, hay off the cart £13
+a lot instead of £9, and a hungry night out in the snow a 40% chance of costing a beast
+instead of 25%. It is warned of at the autumn's six-day warning, by Callum reading the
+rowan berries and the geese, and the winter arrives saying so. The first winter is learnt
+on; by the second a player is saving for the byre and the ring, and one who has not put
+money and hay by should feel it. Gentle keeps an ordinary winter.
+
+| | before | with the hard winter |
+| --- | --- | --- |
+| careful, Steady: wins, close calls | 100%, 1% | 99%, 2% |
+| careful, Hard: wins, close calls | 93%, 10% | 92%, 15% |
+| learner, Steady: wins | 81% | 77% |
+| learner, Hard: wins | 59% | 42% |
+
+A careful player who laid in hay and kept a reserve barely notices it; a loose one feels it.
+
+### Risk for the careful player: sour ground, the hard events, an honest glass
+
+The simulation showed a careful player never in danger, because playing safe cost nothing:
+gather every night, keep to the low field, hold a reserve. Three things now put a price on it.
+
+- **Sour ground** (`BALANCE.sour`). Worms build up in ground grazed night after night. After
+  8 nights in a row on the same pasture fleece grows at 80%, and from 14 nights a beast can
+  sicken and die. The game says when it turns, the pasture menu shows the nights, and moving
+  starts it over. Keeping them on the low field all year now costs something; the flock has
+  to go up onto riskier ground now and then.
+- **The hard events** (Steady and Hard only, like the hard winter): **cragfast**, a ewe
+  stuck on a ledge on the high ground (two taps to fetch her, or leave her and she may come
+  down); **foot rot** after the wet (treat them all for money and two taps, see to the lame
+  ones for a tap and some condition, or leave it, which costs condition and may cost a
+  beast); and **the flood**, the burn coming over the low field by dark (drive them up to the
+  slope, or stay, which halves the grass and may cost a beast). Every answer costs
+  something; the free one is never the safe one.
+- **The glass is wrong about one day in seven** (`forecastMissOneIn`). The day comes up
+  other than forecast, and the game says so. Planning still pays; it is just not certain.
+  It draws its own dice from the seed and the day, so nothing else in a seeded run moves.
+
+| | before | now |
+| --- | --- | --- |
+| careful, Steady: wins, close calls | 99%, 2% | 99%, 3% |
+| careful, Hard: wins, close calls | 92%, 15% | 88%, 18% |
+| newcomer, Gentle: wins | 52% | 53% |
+| learner, Steady: wins | 77% | 76% |
+| learner, Hard: wins | 42% | 29% |
+
+The bots heed the sour-ground warning as often as the full moon's (the newcomer seven times
+in ten, the learner always), as a player reading the hill would. `NO_SOUR=1`,
+`NO_HARD_EVENTS=1` and `NO_GLASS=1` switch each off in the simulator to see what it does.

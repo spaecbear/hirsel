@@ -192,6 +192,35 @@ export const BALANCE = {
    * brought in on a night of snow, out of the weather and out of a fox's reach.
    */
   snowLossChance: 0.25,
+  /*
+   * The second winter is a hard one, on Steady and Hard. The first winter is
+   * learnt on; by the second a player is saving for the byre and the ring,
+   * and one who has not put money and hay by should feel it. More snow, the
+   * feed dearer, hay off the cart dearer, and a hungry night out in the snow
+   * more likely to cost a beast. It is warned of in the autumn before.
+   */
+  hardWinter: {
+    year: 2,
+    weather: ["overcast", "rain", "mist", "snow", "snow", "snow", "snow", "snow"] as WeatherId[],
+    feed: 1.5,
+    hayLotCost: 13,
+    snowLoss: 0.4,
+  },
+  /*
+   * Sour ground. A flock left on the same ground night after night builds up
+   * worms in it, the way a real hill flock does: after `after` nights in a row
+   * they grow fleece at `growth` of the rate, and from `sickAfter` a beast may
+   * sicken and die (`sickChance` a night). Moving them resets it. It is what
+   * the careful player's habit of keeping them on the low field all year costs:
+   * the flock has to go up onto riskier ground now and then.
+   */
+  sour: { after: 8, growth: 0.8, sickAfter: 14, sickChance: 0.08 },
+  /**
+   * The forecast is right most days. About one day in this many, the day
+   * comes up other than it was forecast: the hay day turns to rain, or the
+   * snow comes early. Planning still pays, it is just not certain.
+   */
+  forecastMissOneIn: 7,
   /** the autumn warning comes this many days before the winter does */
   winterWarnDays: 6,
 
@@ -352,25 +381,44 @@ export const SEASON_ORDER: SeasonId[] = ["spring", "summer", "autumn", "winter"]
  */
 export const DIFFICULTY: Record<
   Difficulty,
-  { name: string; blurb: string; fox: number; price: number }
+  {
+    name: string;
+    blurb: string;
+    fox: number;
+    price: number;
+    /**
+     * The glen's harder edges: the second winter is a hard one (BALANCE.hardWinter)
+     * and the hard events come (cragfast, foot rot, the flood). Off on Gentle.
+     */
+    harsh: boolean;
+  }
 > = {
   gentle: {
     name: "Gentle",
     blurb: "A kinder glen. Foxes come seldom and wool sells well.",
     fox: 0.6,
     price: 1.2,
+    harsh: false,
   },
   steady: {
     name: "Steady",
     blurb: "The hill as it is. Room to make a mistake and still eat.",
     fox: 0.8,
     price: 1.1,
+    harsh: true,
   },
   hard: {
     name: "Hard",
-    blurb: "A thin living. Beat it and the glen gives up a secret.",
-    fox: 1,
+    blurb: "A thin living, and bold foxes. Beat it and the glen gives up a secret.",
+    /*
+     * Bold foxes. At 1 a careful player won Hard 99 runs in 100 and was
+     * never once near the edge (scripts/simulate.ts). At 1.6 they still win
+     * about 93 in 100, but one run in ten comes close, and a loose one is a
+     * coin toss. 2.0 tipped into punishing even the careful.
+     */
+    fox: 1.6,
     price: 1,
+    harsh: true,
   },
 };
 

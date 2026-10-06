@@ -5,6 +5,10 @@ import { ACHIEVEMENTS } from "../src/sim/achievements";
 import { hydrate } from "../src/sim/save";
 import { seasonGlossary } from "../src/sim/glossary";
 import {
+  feedCost,
+  hardWinterOn,
+  hayLotCost,
+  weatherBag,
   foxRisk,
   grazing,
   hayNeeded,
@@ -292,5 +296,101 @@ describe("the achievements for it", () => {
     expect(a.won(harness({ day: SEASON_DAYS * 4 }).g)).toBe(false);
     expect(a.won(harness({ day: SEASON_DAYS * 4 + 1 }).g)).toBe(true);
     expect(a.won(harness({ day: SEASON_DAYS * 4 + 1, flock: [] }).g)).toBe(false);
+  });
+});
+
+describe("the hard second winter", () => {
+  const winterDay = (year: number) => (year - 1) * SEASON_DAYS * 4 + SEASON_DAYS * 3 + 5;
+  const on = (difficulty: "gentle" | "steady" | "hard", day: number) =>
+    Object.assign(newGame({ seed: 1, difficulty }), { day });
+
+  it("is the second winter only, and not on Gentle", () => {
+    expect(hardWinterOn(on("steady", winterDay(2)))).toBe(true);
+    expect(hardWinterOn(on("hard", winterDay(2)))).toBe(true);
+    expect(hardWinterOn(on("gentle", winterDay(2)))).toBe(false);
+    expect(hardWinterOn(on("steady", winterDay(1)))).toBe(false);
+    expect(hardWinterOn(on("steady", winterDay(3)))).toBe(false);
+    expect(hardWinterOn(on("steady", winterDay(2) - SEASON_DAYS))).toBe(false); // the autumn before
+  });
+
+  it("snows more, and the feed and the hay cost more", () => {
+    const hard = on("steady", winterDay(2));
+    const first = on("steady", winterDay(1));
+    const snow = (bag: string[]) => bag.filter((w) => w === "snow").length / bag.length;
+    expect(snow(weatherBag(hard, hard.day))).toBeGreaterThan(snow(weatherBag(first, first.day)));
+    expect(hayLotCost(hard)).toBe(BALANCE.hardWinter.hayLotCost);
+    expect(hayLotCost(first)).toBe(BALANCE.hayLotCostWinter);
+    expect(feedCost(hard)).toBe(Math.ceil((hard.flock.length / BALANCE.sheepPerPound) * BALANCE.hardWinter.feed));
+    expect(feedCost(hard)).toBeGreaterThan(feedCost(first));
+  });
+
+  it("is warned of in the autumn before it comes", () => {
+    const game = new Game(Object.assign(newGame({ seed: 2, difficulty: "steady" }), { day: winterDay(2) - 5 - BALANCE.winterWarnDays - 1 }));
+    game.onAnim = (_a, after) => after?.();
+    game.state.money = 9999;
+    game.sleep();
+    expect(game.state.log.some((l) => l.t.includes("hard winter"))).toBe(true);
+  });
+});
+
+describe("sour ground", () => {
+  const settled = () => {
+    const game = new Game(newGame({ seed: 4, difficulty: "steady" }));
+    game.onAnim = (_a, after) => after?.();
+    game.state.money = 9999;
+    return game;
+  };
+
+  it("counts the nights on the same ground, and starts over on fresh ground", () => {
+    const game = settled();
+    game.sleep();
+    game.sleep();
+    expect(game.state.groundNights).toBe(2);
+    game.moveTo(1);
+    expect(game.state.groundNights).toBe(0);
+  });
+
+  it("slows the fleece once it has turned, and says so", () => {
+    const game = settled();
+    const g = game.state;
+    const fresh = grazing(g).growth;
+    g.groundNights = BALANCE.sour.after;
+    expect(grazing(g).growth).toBeCloseTo(fresh * BALANCE.sour.growth);
+    g.groundNights = BALANCE.sour.after - 1;
+    game.sleep();
+    expect(g.log.some((l) => l.t.includes("going sour"))).toBe(true);
+  });
+
+  it("can kill a beast once it has been grazed far too long, and never before", () => {
+    const game = settled();
+    const g = game.state;
+    game.rng = () => 0; // every roll lands
+    g.groundNights = BALANCE.sour.sickAfter - 2;
+    game.sleep();
+    expect(g.stats.wormLosses).toBe(0);
+    g.groundNights = BALANCE.sour.sickAfter;
+    game.sleep();
+    expect(g.stats.wormLosses).toBe(1);
+  });
+});
+
+describe("the forecast", () => {
+  it("is wrong about one day in seven, and says so when it is", () => {
+    const game = new Game(newGame({ seed: 9, difficulty: "gentle" }));
+    game.onAnim = (_a, after) => after?.();
+    let misses = 0;
+    const days = 700;
+    const say = game.say.bind(game);
+    game.say = (t, cls) => {
+      if (t.startsWith("The glass was wrong")) misses++;
+      say(t, cls);
+    };
+    for (let d = 0; d < days; d++) {
+      game.state.money = 9999;
+      game.state.over = null;
+      game.sleep();
+    }
+    expect(misses / days).toBeGreaterThan(0.08);
+    expect(misses / days).toBeLessThan(0.22);
   });
 });

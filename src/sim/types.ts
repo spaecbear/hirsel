@@ -103,7 +103,10 @@ export type EventId =
   | "her-mother"
   | "ceilidh-wed"
   | "callum-supper"
-  | "clear-night";
+  | "clear-night"
+  | "cragfast"
+  | "footrot"
+  | "flood";
 
 export interface PendingEvent {
   id: EventId;
@@ -188,6 +191,8 @@ export interface GameState {
   /** the scale this run is being played at; fixed when the run starts */
   difficulty: Difficulty;
   at: number;
+  /** nights in a row the flock has grazed the ground it is on: sour ground, see BALANCE.sour */
+  groundNights: number;
   pastures: Pasture[];
   owned: Partial<Record<OwnedId, boolean>>;
   buffs: Partial<Record<BuffId, number>>;
@@ -235,6 +240,8 @@ export interface GameState {
     sawTippy: boolean;
     /** beasts lost in the snow, hungry and out on the hill */
     snowLosses: number;
+    /** lost to worms, on ground grazed too long without a move */
+    wormLosses: number;
     /** hay has been cut on a day of sun */
     hayInSun: boolean;
     /** lambs born alive, lost at birth or in the womb, and sold */

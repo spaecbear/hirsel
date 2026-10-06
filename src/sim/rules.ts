@@ -55,6 +55,18 @@ export function seasonOf(day: number): SeasonAt {
 export const season = (g: GameState) => seasonOf(g.day);
 export const isWinter = (g: GameState) => season(g).id === "winter";
 
+/** the second winter, on a scale that has one: see BALANCE.hardWinter */
+export function hardWinterOn(g: GameState, day = g.day): boolean {
+  const s = seasonOf(day);
+  return s.id === "winter" && s.year === BALANCE.hardWinter.year && DIFFICULTY[g.difficulty].harsh;
+}
+
+/** the flock has grazed this ground too long without a move: see BALANCE.sour */
+export const groundSour = (g: GameState) => (g.groundNights ?? 0) >= BALANCE.sour.after;
+
+/** the weather a day is drawn from: its season's, or the hard winter's */
+export const weatherBag = (g: GameState, day: number) => (hardWinterOn(g, day) ? BALANCE.hardWinter.weather : seasonOf(day).weather);
+
 /** the season after the one a day falls in */
 export function nextSeason(day: number): Season {
   const i = SEASON_ORDER.indexOf(seasonOf(day).id);
@@ -89,7 +101,8 @@ export function hayNeeded(g: GameState): number {
 }
 
 /** what a lot of hay costs at the cart today */
-export const hayLotCost = (g: GameState) => (isWinter(g) ? BALANCE.hayLotCostWinter : BALANCE.hayLotCost);
+export const hayLotCost = (g: GameState) =>
+  hardWinterOn(g) ? BALANCE.hardWinter.hayLotCost : isWinter(g) ? BALANCE.hayLotCostWinter : BALANCE.hayLotCost;
 
 /* ---------- lambing ---------- */
 
@@ -156,7 +169,8 @@ export const moveCost = (g: GameState) => (owns(g, "boots") ? 0 : 1);
 
 export function feedCost(g: GameState): number {
   // her kale patch feeds them a little, once it is dug
-  return Math.max(0, Math.ceil(mouths(g) / BALANCE.sheepPerPound) - (g.garden ? BALANCE.gardenFeed : 0));
+  const bill = Math.ceil((mouths(g) / BALANCE.sheepPerPound) * (hardWinterOn(g) ? BALANCE.hardWinter.feed : 1));
+  return Math.max(0, bill - (g.garden ? BALANCE.gardenFeed : 0));
 }
 
 /* ---------- what the work costs ---------- */
@@ -205,7 +219,8 @@ export function grazing(g: GameState) {
     weatherOn(g).graze *
     (buffed(g, "settled flock") ? BALANCE.settledGrowth : 1) *
     (buffed(g, "fiddled") ? BALANCE.fiddleGrowth : 1) *
-    (buffed(g, "tended") ? BALANCE.tendedGrowth : 1);
+    (buffed(g, "tended") ? BALANCE.tendedGrowth : 1) *
+    (groundSour(g) ? BALANCE.sour.growth : 1);
   return { eaten, hayUsed, fed, growth };
 }
 
