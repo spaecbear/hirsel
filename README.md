@@ -829,3 +829,22 @@ Hard's fox dial went from 1 to **1.6**:
 
 A close call is the purse under £15 or the flock down to two. Gentle and Steady are
 unchanged. `BOTS=careful,learner SCALES=hard npx vite-node scripts/simulate.ts 300` reruns it.
+
+### The hard second winter
+
+On Steady and Hard the second winter (`BALANCE.hardWinter`) is a hard one: five days in
+eight drawn as snow instead of three, the feed bill half as dear again, hay off the cart £13
+a lot instead of £9, and a hungry night out in the snow a 40% chance of costing a beast
+instead of 25%. It is warned of at the autumn's six-day warning, by Callum reading the
+rowan berries and the geese, and the winter arrives saying so. The first winter is learnt
+on; by the second a player is saving for the byre and the ring, and one who has not put
+money and hay by should feel it. Gentle keeps an ordinary winter.
+
+| | before | with the hard winter |
+| --- | --- | --- |
+| careful, Steady: wins, close calls | 100%, 1% | 99%, 2% |
+| careful, Hard: wins, close calls | 93%, 10% | 92%, 15% |
+| learner, Steady: wins | 81% | 77% |
+| learner, Hard: wins | 59% | 42% |
+
+A careful player who laid in hay and kept a reserve barely notices it; a loose one feels it.

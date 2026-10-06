@@ -109,7 +109,8 @@ export function seasonGlossary(): GlossaryEntry[] {
       summer: " The only time hay can be cut, on a dry day. Fleece comes on fastest and the flies with it: shear often, and tend a heavy flock. The Highland show is mid-season.",
       autumn: " The wool sales, and the lamb sales: the best price of the year for both. The tup goes in with the ewes. Lay in hay before it ends; the barn is what the winter runs on.",
       winter:
-        " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. Hay is fed out at night. No mucking frozen ground.",
+        " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. Hay is fed out at night. No mucking frozen ground." +
+        ` On Steady and Hard the second winter is a hard one, and warned of in the autumn: more snow, the feed half as dear again, hay £${BALANCE.hardWinter.hayLotCost} a lot, and a hungry night in the snow likelier to cost a beast.`,
     }[id];
     return {
       id,

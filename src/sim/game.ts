@@ -36,6 +36,8 @@ import {
   housed,
   isFullMoon,
   isWinter,
+  hardWinterOn,
+  weatherBag,
   moveCost,
   season,
   seasonOf,
@@ -706,7 +708,12 @@ export class Game {
      */
     if (housed(g) && g.flock.length) {
       this.say(`Snow coming on. You bring the ${this.lex.flock} into the byre for the night.`, "cozy");
-    } else if (w.id === "snow" && g.flock.length && fed < BALANCE.hungryBelow && this.rng() < BALANCE.snowLossChance) {
+    } else if (
+      w.id === "snow" &&
+      g.flock.length &&
+      fed < BALANCE.hungryBelow &&
+      this.rng() < (hardWinterOn(g) ? BALANCE.hardWinter.snowLoss : BALANCE.snowLossChance)
+    ) {
       const lostIndex = Math.floor(this.rng() * g.flock.length);
       g.flock.splice(lostIndex, 1);
       g.stats.snowLosses++;
@@ -797,7 +804,7 @@ export class Game {
       g.forecast.shift();
       // the new day on the end of the forecast is three on from today, and
       // takes its weather from whatever season that day falls in
-      g.forecast.push(pick(this.rng, seasonOf(g.day + 3).weather));
+      g.forecast.push(pick(this.rng, weatherBag(g, g.day + 3)));
       for (const k of Object.keys(g.buffs) as BuffId[]) {
         const v = (g.buffs[k] ?? 0) - 1;
         if (v <= 0) delete g.buffs[k];
@@ -813,7 +820,14 @@ export class Game {
       g.actsToday = 0;
       g.taps = tapsPerDay(g);
       const s = season(g);
-      if (s.day === 1) this.say(s.arrives, "gold");
+      if (s.day === 1) {
+        this.say(
+          hardWinterOn(g)
+            ? "Winter, and a hard one. Snow lying on the tops already, the feed dear at the cart and dearer at the mart. Whatever is in the barn is what they have."
+            : s.arrives,
+          s.id === "winter" && hardWinterOn(g) ? "bad" : "gold",
+        );
+      }
       if (g.married !== null && g.day === g.married + 1) this.say("The first morning with two in the house. The kettle was on before you were up.", "cozy");
       if (s.id === "winter" && s.day === 1) this.tupping();
       this.say(`Day ${g.day}. ${weatherOn(g).name} over the glen.`, "gold");
@@ -825,6 +839,13 @@ export class Game {
             : `The nights are drawing in. Winter in ${s.left + 1} days; ${g.hay} bales in the barn, about ${nights} night${nights === 1 ? "" : "s"} for the ${this.lex.flock}.`,
           "bad",
         );
+        // the second winter is warned of, so the danger is a fair one
+        if (hardWinterOn(g, g.day + s.left + 1)) {
+          this.say(
+            "Callum looks at the berries on the rowan and the geese going over early, and says it will be a hard winter: more snow than last, and the feed dear. Lay in what you can.",
+            "bad",
+          );
+        }
       }
       this.dogYears();
       if (isFullMoon(g.day) && !owns(g, "pelt")) {

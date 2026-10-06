@@ -192,6 +192,20 @@ export const BALANCE = {
    * brought in on a night of snow, out of the weather and out of a fox's reach.
    */
   snowLossChance: 0.25,
+  /*
+   * The second winter is a hard one, on Steady and Hard. The first winter is
+   * learnt on; by the second a player is saving for the byre and the ring,
+   * and one who has not put money and hay by should feel it. More snow, the
+   * feed dearer, hay off the cart dearer, and a hungry night out in the snow
+   * more likely to cost a beast. It is warned of in the autumn before.
+   */
+  hardWinter: {
+    year: 2,
+    weather: ["overcast", "rain", "mist", "snow", "snow", "snow", "snow", "snow"] as WeatherId[],
+    feed: 1.5,
+    hayLotCost: 13,
+    snowLoss: 0.4,
+  },
   /** the autumn warning comes this many days before the winter does */
   winterWarnDays: 6,
 
@@ -352,19 +366,28 @@ export const SEASON_ORDER: SeasonId[] = ["spring", "summer", "autumn", "winter"]
  */
 export const DIFFICULTY: Record<
   Difficulty,
-  { name: string; blurb: string; fox: number; price: number }
+  {
+    name: string;
+    blurb: string;
+    fox: number;
+    price: number;
+    /** whether the second winter is a hard one (see BALANCE.hardWinter) */
+    hardWinter: boolean;
+  }
 > = {
   gentle: {
     name: "Gentle",
     blurb: "A kinder glen. Foxes come seldom and wool sells well.",
     fox: 0.6,
     price: 1.2,
+    hardWinter: false,
   },
   steady: {
     name: "Steady",
     blurb: "The hill as it is. Room to make a mistake and still eat.",
     fox: 0.8,
     price: 1.1,
+    hardWinter: true,
   },
   hard: {
     name: "Hard",
@@ -377,6 +400,7 @@ export const DIFFICULTY: Record<
      */
     fox: 1.6,
     price: 1,
+    hardWinter: true,
   },
 };
 

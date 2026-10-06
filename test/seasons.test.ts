@@ -5,6 +5,10 @@ import { ACHIEVEMENTS } from "../src/sim/achievements";
 import { hydrate } from "../src/sim/save";
 import { seasonGlossary } from "../src/sim/glossary";
 import {
+  feedCost,
+  hardWinterOn,
+  hayLotCost,
+  weatherBag,
   foxRisk,
   grazing,
   hayNeeded,
@@ -292,5 +296,39 @@ describe("the achievements for it", () => {
     expect(a.won(harness({ day: SEASON_DAYS * 4 }).g)).toBe(false);
     expect(a.won(harness({ day: SEASON_DAYS * 4 + 1 }).g)).toBe(true);
     expect(a.won(harness({ day: SEASON_DAYS * 4 + 1, flock: [] }).g)).toBe(false);
+  });
+});
+
+describe("the hard second winter", () => {
+  const winterDay = (year: number) => (year - 1) * SEASON_DAYS * 4 + SEASON_DAYS * 3 + 5;
+  const on = (difficulty: "gentle" | "steady" | "hard", day: number) =>
+    Object.assign(newGame({ seed: 1, difficulty }), { day });
+
+  it("is the second winter only, and not on Gentle", () => {
+    expect(hardWinterOn(on("steady", winterDay(2)))).toBe(true);
+    expect(hardWinterOn(on("hard", winterDay(2)))).toBe(true);
+    expect(hardWinterOn(on("gentle", winterDay(2)))).toBe(false);
+    expect(hardWinterOn(on("steady", winterDay(1)))).toBe(false);
+    expect(hardWinterOn(on("steady", winterDay(3)))).toBe(false);
+    expect(hardWinterOn(on("steady", winterDay(2) - SEASON_DAYS))).toBe(false); // the autumn before
+  });
+
+  it("snows more, and the feed and the hay cost more", () => {
+    const hard = on("steady", winterDay(2));
+    const first = on("steady", winterDay(1));
+    const snow = (bag: string[]) => bag.filter((w) => w === "snow").length / bag.length;
+    expect(snow(weatherBag(hard, hard.day))).toBeGreaterThan(snow(weatherBag(first, first.day)));
+    expect(hayLotCost(hard)).toBe(BALANCE.hardWinter.hayLotCost);
+    expect(hayLotCost(first)).toBe(BALANCE.hayLotCostWinter);
+    expect(feedCost(hard)).toBe(Math.ceil((hard.flock.length / BALANCE.sheepPerPound) * BALANCE.hardWinter.feed));
+    expect(feedCost(hard)).toBeGreaterThan(feedCost(first));
+  });
+
+  it("is warned of in the autumn before it comes", () => {
+    const game = new Game(Object.assign(newGame({ seed: 2, difficulty: "steady" }), { day: winterDay(2) - 5 - BALANCE.winterWarnDays - 1 }));
+    game.onAnim = (_a, after) => after?.();
+    game.state.money = 9999;
+    game.sleep();
+    expect(game.state.log.some((l) => l.t.includes("hard winter"))).toBe(true);
   });
 });
