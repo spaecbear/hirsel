@@ -50,6 +50,8 @@ interface Shot {
   cut?: boolean;
   /** the game's own sound effects, at seconds into the shot */
   sounds?: [number, SfxName][];
+  /** a bed of sound under the whole shot, from `ambience` below: these do not dip the air */
+  bed?: Bed;
 }
 
 const WIDE: Cam = { x: W / 2, y: H / 2, k: 6 };
@@ -153,6 +155,7 @@ export const SHOTS: Shot[] = [
   // the night, and the name over it, the camera coming down out of the stars onto the croft's lit window
   {
     dur: 5.5,
+    bed: "night",
     draw: (g, t, ms) => {
       const cam = hill(NIGHT, (tt) => pan({ x: W / 2, y: 540 / 8, k: 8 }, { x: W / 2, y: H - 540 / 8, k: 8 }, tt), { anim: "sleep", from: 1, to: 1 })(g, t, ms);
       if (t < 0.9) title(g, cam, [{ text: "HIRSEL", k: 3, dy: -14, from: 0.45 }], t);
@@ -160,13 +163,13 @@ export const SHOTS: Shot[] = [
     },
   },
   // the office: the envelope going into the tray, close; then him away out of the door
-  { dur: 4, draw: opening(0.03, 0.15, () => ({ x: 166, y: 126, k: 10 })) },
-  { dur: 3, draw: opening(0.15, 0.22), cut: true },
-  { dur: 3, draw: opening(0.28, 0.4) },
-  { dur: 3.5, draw: opening(0.5, 0.75) },
+  { dur: 4, draw: opening(0.03, 0.15, () => ({ x: 166, y: 126, k: 10 })), bed: "office-desk" },
+  { dur: 3, draw: opening(0.15, 0.22), cut: true, bed: "office-door" },
+  { dur: 3, draw: opening(0.28, 0.4), bed: "train" },
+  { dur: 3.5, draw: opening(0.5, 0.75), bed: "climb" },
   // over the crest, close on his back; then the glen opening out below him
-  { dur: 3, draw: opening(0.82, 0.9, () => ({ x: W / 2, y: H * 0.72, k: 10 })) },
-  { dur: 3.2, draw: opening(0.9, 0.97), cut: true },
+  { dur: 3, draw: opening(0.82, 0.9, () => ({ x: W / 2, y: H * 0.72, k: 10 })), bed: "crest" },
+  { dur: 3.2, draw: opening(0.9, 0.97), cut: true, bed: "glen" },
   // the hill: a slow look along it
   { dur: 4, draw: hill(SUMMER, (t) => pan({ x: 120, y: H / 2 + 10, k: 8 }, { x: 200, y: H / 2 + 10, k: 8 }, t)) },
   // close: on his knees to a ewe
@@ -238,6 +241,97 @@ export const SHOTS: Shot[] = [
     },
   },
 ];
+
+/* ------------------------------------------------------------------ *
+ * the beds: the sound of a place, under a whole shot
+ *
+ * The opening had nothing in it but the air, and felt dead next to the
+ * hill. These are built from the same few things the game's effects are
+ * made of (filtered noise, a tone, a thump) and sit low, under the air.
+ * ------------------------------------------------------------------ */
+
+type Bed = "night" | "office-desk" | "office-door" | "train" | "climb" | "crest" | "glen";
+
+/** how loud the beds sit: measured against the air, which they should be heard under, not lost under */
+const BED = 2.5;
+
+function ambience(e: AudioEngine, bed: Bed, t0: number, dur: number) {
+  const bus = e.sfxBus;
+  const wind = (t: number, d: number, gain: number) => {
+    e.noiseSwell(t, d, "lowpass", 380, 240, 0.7, gain);
+    e.noiseSwell(t + d * 0.3, d * 0.6, "bandpass", 640, 420, 0.9, gain * 0.3);
+  };
+  /** a curlew: the long rising call of the high ground, then its bubbling trill */
+  const curlew = (t: number, gain: number) => {
+    e.tone1(t, 1500, 2300, 0.45, "sine", gain, bus);
+    e.tone1(t + 0.55, 1700, 2500, 0.4, "sine", gain * 0.9, bus);
+    for (let i = 0; i < 7; i++) e.tone1(t + 1.05 + i * 0.07, 2300 + (i % 2) * 260, 2500 + (i % 2) * 200, 0.06, "sine", gain * 0.7, bus);
+  };
+  /** a skylark somewhere overhead: a run of quick high notes */
+  const lark = (t: number, n: number, gain: number) => {
+    for (let i = 0; i < n; i++) {
+      const f = 3000 + ((i * 937) % 1500);
+      e.tone1(t + i * 0.085, f, f + 300, 0.05, "sine", gain, bus);
+    }
+  };
+  switch (bed) {
+    case "night": {
+      wind(t0, dur, 0.1 * BED);
+      // an owl down the glen, twice
+      for (const at of [1.6, 3.3]) {
+        e.tone1(t0 + at, 420, 390, 0.32, "sine", 0.05 * BED, bus);
+        e.tone1(t0 + at + 0.5, 410, 370, 0.5, "sine", 0.045 * BED, bus);
+      }
+      break;
+    }
+    case "office-desk":
+    case "office-door": {
+      e.drone(100, t0, dur, 0.012 * BED, bus); // the strip light
+      // rain on the glass, and the clock
+      for (let t = 0; t < dur; t += 0.06) e.noise(t0 + t + ((t * 977) % 0.05), 0.008, "highpass", 3800 + ((t * 3301) % 2200), 1, 0.012 * BED);
+      for (let t = 0.3; t < dur; t += 1) e.noise(t0 + t, 0.012, "highpass", 2600, 2, 0.05 * BED);
+      if (bed === "office-desk") {
+        // the envelope slid across the desk and into the tray
+        e.noiseSwell(t0 + 0.6, 1.4, "bandpass", 2400, 1600, 1.2, 0.05);
+        e.thump(t0 + 2.2, 0.05, false, bus);
+      } else {
+        // the door: the handle, and shut behind him
+        e.noise(t0 + 1.2, 0.04, "bandpass", 1800, 4, 0.07);
+        e.thump(t0 + 2.6, 0.12, true, bus);
+      }
+      break;
+    }
+    case "train": {
+      // the carriage's rumble, and the wheels over the rail joints: da-dum ... da-dum
+      e.noiseSwell(t0, dur, "lowpass", 220, 160, 0.6, 0.2 * 1.5);
+      for (let t = 0.2; t < dur; t += 0.9) {
+        for (const off of [0, 0.13]) {
+          e.thump(t0 + t + off, 0.11, true, bus);
+          e.noise(t0 + t + off, 0.03, "bandpass", 1100, 3, 0.05);
+        }
+      }
+      break;
+    }
+    case "climb": {
+      wind(t0, dur, 0.12 * BED);
+      // his boots in the heather
+      for (let t = 0.1; t < dur; t += 0.55) e.noise(t0 + t, 0.07, "lowpass", 900, 0.8, 0.07 * BED);
+      curlew(t0 + 0.6, 0.035 * BED);
+      lark(t0 + 2.2, 10, 0.02 * BED);
+      break;
+    }
+    case "crest": {
+      wind(t0, dur, 0.15 * BED);
+      lark(t0 + 0.4, 12, 0.018 * BED);
+      break;
+    }
+    case "glen": {
+      wind(t0, dur, 0.1 * BED);
+      curlew(t0 + 0.8, 0.04 * BED);
+      break;
+    }
+  }
+}
 
 export const DURATION = SHOTS.reduce((a, s) => a + s.dur, 0);
 export const FRAMES = Math.round(DURATION * FPS);
@@ -343,6 +437,12 @@ export async function music(seconds: number): Promise<string> {
     start += shot.dur;
   }
   delete (engine as unknown as { now?: number }).now;
+  // and the beds under their shots
+  let bedAt = 0;
+  for (const shot of SHOTS) {
+    if (shot.bed) ambience(engine, shot.bed, bedAt, shot.dur);
+    bedAt += shot.dur;
+  }
   // the air dips under each effect and comes back after it, so the effect is heard rather than buried
   const duck = engine.musicBus.gain;
   duck.setValueAtTime(MUSIC, 0);
