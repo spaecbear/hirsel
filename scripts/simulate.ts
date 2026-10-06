@@ -4,6 +4,7 @@
  *
  *   npx vite-node scripts/simulate.ts            # 300 runs per bot per scale
  *   npx vite-node scripts/simulate.ts 100        # fewer, faster
+ *   BOTS=careful SCALES=hard npx vite-node scripts/simulate.ts   # a subset
  *
  * Two players:
  *
@@ -213,8 +214,11 @@ const q = (xs: number[], f: number) => {
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 
 console.log(`${RUNS} runs per bot per scale, up to ${MAX_DAYS} days each\n`);
-for (const bot of ["careful", "newcomer", "learner"] as Bot[]) {
-  for (const diff of ["gentle", "steady", "hard"] as Difficulty[]) {
+// BOTS=careful,learner SCALES=hard to run a subset
+const BOTS = (process.env.BOTS?.split(",") ?? ["careful", "newcomer", "learner"]) as Bot[];
+const SCALES = (process.env.SCALES?.split(",") ?? ["gentle", "steady", "hard"]) as Difficulty[];
+for (const bot of BOTS) {
+  for (const diff of SCALES) {
     const rs: Result[] = [];
     for (let i = 0; i < RUNS; i++) rs.push(play(bot, diff, 1000 + i));
     const wins = rs.filter((r) => r.won);

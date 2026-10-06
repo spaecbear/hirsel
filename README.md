@@ -807,3 +807,25 @@ per-sheep margin over feed has to survive it, not just the average day.
 Raised to **80±34p (46–114p)** (`BALANCE.marketBase` / `marketSwing`). Same simulation: median
 final £63, worst case £21, zero busts. The reasoning is written next to the constants in
 `config.ts` rather than only here, since that's where the next tuning pass will be looking.
+
+### Hard: bold foxes, and the simulation behind it
+
+`scripts/simulate.ts` plays seeded runs with three bots through the real game methods: a
+**careful** player (gathers every night, keeps off the corrie, lays in hay early, keeps a
+reserve), a **newcomer** (forgets to gather, chases the best grass, spends freely, heeds the
+full moon seven times in ten) and a **learner** (the newcomer, but always heeds the moon).
+
+Before: a careful player won Hard in 99 runs of 100 and was never near the edge; the scale
+only made a careful win slower. The wolf decided almost every newcomer loss, and stays as
+it is on purpose: it is the secret boss, and the warnings are clear once you know them.
+Hard's fox dial went from 1 to **1.6**:
+
+| fox dial on Hard | careful wins | careful close calls | learner wins |
+| --- | --- | --- | --- |
+| 1.0 (before) | 99% | 2% | 79% |
+| 1.3 | 98% | 4% | 73% |
+| **1.6** | **93%** | **10%** | **59%** |
+| 2.0 | 82% | 24% | 39% |
+
+A close call is the purse under £15 or the flock down to two. Gentle and Steady are
+unchanged. `BOTS=careful,learner SCALES=hard npx vite-node scripts/simulate.ts 300` reruns it.

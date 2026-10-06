@@ -368,8 +368,14 @@ export const DIFFICULTY: Record<
   },
   hard: {
     name: "Hard",
-    blurb: "A thin living. Beat it and the glen gives up a secret.",
-    fox: 1,
+    blurb: "A thin living, and bold foxes. Beat it and the glen gives up a secret.",
+    /*
+     * Bold foxes. At 1 a careful player won Hard 99 runs in 100 and was
+     * never once near the edge (scripts/simulate.ts). At 1.6 they still win
+     * about 93 in 100, but one run in ten comes close, and a loose one is a
+     * coin toss. 2.0 tipped into punishing even the careful.
+     */
+    fox: 1.6,
     price: 1,
   },
 };
