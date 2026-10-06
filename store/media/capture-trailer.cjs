@@ -46,8 +46,10 @@ const OUT = join(__dirname, "trailer.mp4");
     "-framerate", String(FPS), "-i", join(dir, "f%05d.png"),
     "-i", join(dir, "music.wav"),
     "-vf", "scale=1920:1080:flags=neighbor",
-    "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(FPS),
-    "-c:a", "aac", "-b:a", "192k",
+    // High profile at level 4.0, and 48kHz audio: what every phone, browser and Steam's
+    // own player takes. Left to itself x264 picked level 5.0, which some players refuse.
+    "-c:v", "libx264", "-profile:v", "high", "-level:v", "4.0", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", "-r", String(FPS),
+    "-c:a", "aac", "-ar", "48000", "-b:a", "192k",
     "-movflags", "+faststart", "-shortest",
     OUT,
   ], { stdio: "inherit" });
