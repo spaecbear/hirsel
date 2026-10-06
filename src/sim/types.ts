@@ -246,6 +246,9 @@ export interface GameState {
     hayInSun: boolean;
     /** lambs born alive, lost at birth or in the womb, and sold */
     lambsBorn: number;
+    /** lambs born so far this spring, and the most born in any one spring of the run */
+    springLambs: number;
+    bestLambing: number;
     lambsLost: number;
     lambsSold: number;
     /** prizes at the Highland show and the trial */

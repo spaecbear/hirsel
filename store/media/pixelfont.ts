@@ -8,6 +8,13 @@ import type { Painter } from "../../src/render/painter";
 
 const GLYPHS: Record<string, string[]> = {
   A: ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+  B: ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+  C: ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
+  D: ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
+  F: ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
+  K: ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
+  U: ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+  ",": ["00000", "00000", "00000", "00000", "00000", "00100", "01000"],
   E: ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
   H: ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
   I: ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
@@ -21,11 +28,11 @@ const GLYPHS: Record<string, string[]> = {
   W: ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
   " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
 };
-const GAP = 2; // glyph cells between letters
+const GAP = 2; // glyph cells between letters, for the name and the cards; a line of prose sets them closer
 
 /** the size of `text` in game pixels at block size `k` */
-export function textSize(text: string, k: number) {
-  return { w: (text.length * 5 + (text.length - 1) * GAP) * k + 2, h: 7 * k + 3 };
+export function textSize(text: string, k: number, gap = GAP) {
+  return { w: (text.length * 5 + (text.length - 1) * gap) * k + 2, h: 7 * k + 3 };
 }
 
 export interface Ink {
@@ -37,10 +44,10 @@ export interface Ink {
 export const GORSE: Ink = { top: "#f0c86a", mid: "#e0a33c", foot: "#c4862a", shine: "#f8dc96" };
 export const WOOL: Ink = { top: "#f2eee0", mid: "#ddd9c8", foot: "#bdb9a8", shine: "#ffffff" };
 
-export function pixelText(g: Painter, text: string, x: number, y: number, k: number, ink: Ink = GORSE, alpha = 1) {
+export function pixelText(g: Painter, text: string, x: number, y: number, k: number, ink: Ink = GORSE, alpha = 1, gap = GAP) {
   const cells: [number, number][] = [];
   [...text.toUpperCase()].forEach((ch, i) => {
-    (GLYPHS[ch] ?? GLYPHS[" "]).forEach((row, r) => [...row].forEach((b, c) => b === "1" && cells.push([i * (5 + GAP) + c, r])));
+    (GLYPHS[ch] ?? GLYPHS[" "]).forEach((row, r) => [...row].forEach((b, c) => b === "1" && cells.push([i * (5 + gap) + c, r])));
   });
   const at = (cx: number, cy: number) => [x + 1 + cx * k, y + 1 + cy * k] as const;
   const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) as [number, number, number];

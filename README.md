@@ -307,7 +307,7 @@ Married life is a victory lap with a little more in it:
     earns a secret, **Only ever the one**. The card says "the top of the hill", never the
     corrie, by the same rule as every other event
 - The courting events (her afternoon off, the ceilidh) are for before, and stop
-- Four achievements for the long game, **A year wed**, **Twenty-five lambs**, **A turn by the
+- Four achievements for the long game, **A year wed**, **A full lambing**, **A turn by the
   fire** (the dance) and the secret **Only ever the one** (the clear night), marked
   `longGame` and left out of what the credits ask for, since the credits roll at the moment
   of a win. The first three are visible on purpose, as a reason to stay on the hill
@@ -881,3 +881,11 @@ gather every night, keep to the low field, hold a reserve. Three things now put 
 The bots heed the sour-ground warning as often as the full moon's (the newcomer seven times
 in ten, the learner always), as a player reading the hill would. `NO_SOUR=1`,
 `NO_HARD_EVENTS=1` and `NO_GLASS=1` switch each off in the simulator to see what it does.
+
+**Later tuning.** The barn now feeds the flock whenever the ground falls short, in any
+season, not only in winter: a field grazed bare in summer is fed from the barn. Ground
+takes 14 nights to turn sour in winter instead of 8 (worms from 20 instead of 14), since
+the flock is living off the barn then as much as the grass. Hungry nights roughly halved;
+careful on Hard now wins 91% with a close call in 17% of runs, the learner 84% on Steady
+and 34% on Hard. `LAMBS=1` keeps the bots on after the wedding and reports when the long
+game's lambs come; `TRACE=1` prints a run's lambing, buying and selling.

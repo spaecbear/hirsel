@@ -38,6 +38,8 @@ import {
   isFullMoon,
   isWinter,
   hardWinterOn,
+  sickAfter,
+  sourAfter,
   weatherBag,
   moveCost,
   season,
@@ -147,6 +149,8 @@ export function newGame(opts: GameOptions = {}): GameState {
       wormLosses: 0,
       hayInSun: false,
       lambsBorn: 0,
+      springLambs: 0,
+      bestLambing: 0,
       lambsLost: 0,
       lambsSold: 0,
       rosettes: 0,
@@ -784,13 +788,13 @@ export class Game {
 
     // 4b. sour ground: another night on it, a warning when it turns, and worms once it has been too long
     g.groundNights = (g.groundNights ?? 0) + 1;
-    if (g.groundNights === BALANCE.sour.after && g.flock.length) {
+    if (g.groundNights === sourAfter(g) && g.flock.length) {
       this.say(
         `A week and more on the ${p.name} now. The ground is going sour under them; they will do better moved to fresh grass.`,
         "bad",
       );
     }
-    if (g.groundNights >= BALANCE.sour.sickAfter && g.flock.length > 1 && this.rng() < BALANCE.sour.sickChance) {
+    if (g.groundNights >= sickAfter(g) && g.flock.length > 1 && this.rng() < BALANCE.sour.sickChance) {
       g.flock.splice(Math.floor(this.rng() * g.flock.length), 1);
       g.stats.wormLosses++;
       this.say(`One of them dead in the morning, wasted with worms. The ${p.name} has been grazed too long.`, "bad");
@@ -872,6 +876,7 @@ export class Game {
       }
       if (g.married !== null && g.day === g.married + 1) this.say("The first morning with two in the house. The kettle was on before you were up.", "cozy");
       if (s.id === "winter" && s.day === 1) this.tupping();
+      if (s.id === "spring" && s.day === 1) g.stats.springLambs = 0; // a new lambing
       this.say(`Day ${g.day}. ${weatherOn(g).name} over the glen.`, "gold");
       if (s.id === "autumn" && s.left === BALANCE.winterWarnDays) {
         const nights = hayNights(g);
@@ -996,6 +1001,8 @@ export class Game {
       }
     }
     g.stats.lambsBorn += born;
+    g.stats.springLambs += born;
+    g.stats.bestLambing = Math.max(g.stats.bestLambing, g.stats.springLambs);
     g.stats.lambsLost += lost;
     if (born) {
       this.say(

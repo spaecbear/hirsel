@@ -176,7 +176,7 @@ export const BALANCE = {
    *
    * In winter the pastures stop growing, and on a day of snow the grass is
    * under it altogether. What the ground cannot give, the barn does: each
-   * bale stands in for `hayGrass` of grass, fed out at night only in winter.
+   * bale stands in for `hayGrass` of grass, fed out at night whenever the ground falls short, in any season.
    * It comes two ways, the same two everything in the game comes: taps (cut
    * in summer, on a dry day) or money (bought at the cart, dearer once the
    * winter is on you).
@@ -214,7 +214,7 @@ export const BALANCE = {
    * the careful player's habit of keeping them on the low field all year costs:
    * the flock has to go up onto riskier ground now and then.
    */
-  sour: { after: 8, growth: 0.8, sickAfter: 14, sickChance: 0.08 },
+  sour: { after: 8, afterWinter: 14, growth: 0.8, sickAfter: 14, sickChance: 0.08 },
   /**
    * The forecast is right most days. About one day in this many, the day
    * comes up other than it was forecast: the hay day turns to rain, or the

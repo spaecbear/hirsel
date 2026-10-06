@@ -36,6 +36,7 @@ import {
   moveCost,
   readyToShear,
   season,
+  sourAfter,
   weatherOn,
 } from "../src/sim/rules";
 import { makeRng } from "../src/sim/rng";
@@ -52,6 +53,8 @@ const MAX_DAYS = 700;
 type Bot = "careful" | "newcomer" | "learner";
 
 interface Result {
+  fullLambing: number | null;
+  lambsAtWin: number;
   won: boolean;
   lost: string | null;
   day: number;
@@ -71,6 +74,13 @@ interface Result {
 function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
   const game = new Game(newGame({ seed, difficulty }));
   game.onAnim = (_a, after) => after?.();
+  if (process.env.TRACE) {
+    const say = game.say.bind(game);
+    game.say = (t, c) => {
+      if (/has been in with them|born|slipped|grown now|Bought a|Sold/.test(t)) console.log(`  day ${game.state.day} (${game.state.flock.filter((x) => !x.lamb).length} grown): ${t}`);
+      say(t, c);
+    };
+  }
   const g = game.state;
   const rng = makeRng(seed ^ 0x5eed);
   let lowestMoney = g.money;
@@ -90,7 +100,18 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
   };
   const money = () => g.money;
 
-  for (let guard = 0; guard < MAX_DAYS && !g.over; guard++) {
+  // LAMBS=1: stay on after the wedding, to see when the long-game achievements come
+  const keepOn = !!process.env.LAMBS;
+  let fullLambing: number | null = null;
+  let lambsAtWin = 0;
+  let wonOn: number | null = null;
+  for (let guard = 0; guard < MAX_DAYS && (!g.over || (keepOn && g.over.kind === "win")); guard++) {
+    if (g.over?.kind === "win") {
+      wonOn ??= g.day;
+      lambsAtWin = g.stats.lambsBorn;
+      game.stayOn();
+    }
+    if (fullLambing === null && g.stats.bestLambing >= 10) fullLambing = g.day;
     // whatever came to the door: the free default, as most players would
     if (g.event) {
       const choices = game.eventChoices();
@@ -149,7 +170,7 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
       const here = g.pastures[g.at];
       const alt = options.map((i) => g.pastures[i]).sort((a, b) => b.grass - a.grass)[0];
       // and on before the ground goes sour under them
-      const sour = (g.groundNights ?? 0) >= BALANCE.sour.after - 1;
+      const sour = (g.groundNights ?? 0) >= sourAfter(g) - 1;
       if (g.at === 2 || sour || (here.grass < 35 && alt && alt.grass > here.grass + 25)) {
         const to = g.at === 2 ? 0 : g.pastures.indexOf(alt);
         if (g.taps >= moveCost(g)) game.moveTo(to);
@@ -162,7 +183,7 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
        */
       const heeds = isFullMoon(g.day) && rng() < heedRate;
       // the game says when the ground is going sour; they take that hint as often as the moon's
-      const sourHint = (g.groundNights ?? 0) >= BALANCE.sour.after && rng() < heedRate;
+      const sourHint = (g.groundNights ?? 0) >= sourAfter(g) && rng() < heedRate;
       const fresh = [0, 1, 2].filter((i) => i !== g.at && !(heeds && i === 2)).sort((a, b) => g.pastures[b].grass - g.pastures[a].grass)[0];
       if (heeds && g.at === 2 && g.taps >= moveCost(g)) game.moveTo(0);
       else if (sourHint && fresh !== undefined && g.taps >= moveCost(g)) game.moveTo(fresh);
@@ -195,11 +216,13 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
     smallestFlock = Math.min(smallestFlock, g.flock.length);
   }
 
-  const won = g.over?.kind === "win";
+  const won = g.over?.kind === "win" || wonOn !== null;
   return {
+    fullLambing,
+    lambsAtWin: wonOn !== null ? lambsAtWin : g.stats.lambsBorn,
     won,
-    lost: g.over && !won ? g.over.title : g.over ? null : "ran out of days",
-    day: g.day,
+    lost: won ? null : g.over ? g.over.title : "ran out of days",
+    day: wonOn ?? g.day,
     foxLosses: g.stats.foxLosses,
     snowLosses: g.stats.snowLosses,
     strikeLosses: g.stats.strikeLosses,
@@ -252,6 +275,11 @@ for (const bot of BOTS) {
     console.log(`   met the wolf without the sword in ${pct(rs.filter((r) => r.wolfLosses > 0).length, RUNS)} of runs`);
     console.log(`   a close call (purse under £15 or flock down to 2): ${pct(rs.filter((r) => r.closeCall).length, RUNS)} of runs`);
     if (reasons.size) console.log(`   lost to: ${[...reasons].map(([k, v]) => `${k} (${v})`).join(", ")}`);
+    if (process.env.LAMBS) {
+      const l25 = rs.map((r) => r.fullLambing).filter((d): d is number => d !== null);
+      console.log(`   lambs born by the wedding: median ${median(wins.map((r) => r.lambsAtWin))}`);
+      console.log(`   a full lambing (ten in a spring) in ${pct(l25.length, RUNS)} of runs, on day: median ${median(l25)} (year ${Math.ceil(median(l25) / 96)}), middle half ${q(l25, 0.25)}-${q(l25, 0.75)}`);
+    }
     console.log("");
   }
 }

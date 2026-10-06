@@ -36,20 +36,43 @@ export function drawLampPost(g: Painter, x: number, foot: number) {
 }
 
 /**
- * The light, after the dark: nothing by day, and growing with the night. It
- * throws a pool on the grass under it as well as the glow round the glass.
+ * The one pool of light the lantern throws, shared by the dark and the glow
+ * so they are the same shape: centred a little under the glass, wider than
+ * it is tall, in three stepped rings. The dark used to be cut away round one
+ * point and the glow drawn round another, the glass, so the lantern seemed
+ * to throw two lights, a warm one up at the post and a pale one on the grass.
+ */
+export function lampRings(x: number, foot: number, time: number) {
+  const flicker = 1 + Math.sin(time / 170) * 0.03;
+  return {
+    cx: x + 8,
+    cy: foot - 12,
+    squash: 0.75,
+    /** half-widths outermost first, and how much of the night's dark is left inside each */
+    rings: [
+      [Math.round(34 * flicker), 0.66],
+      [Math.round(24 * flicker), 0.42],
+      [Math.round(14 * flicker), 0.24],
+    ] as [number, number][],
+  };
+}
+
+/**
+ * The light, after the dark: nothing by day, and growing with the night. A
+ * warm tint over the same rings the dark was thinned in, and a small halo
+ * round the flame itself.
  */
 export function drawLampLight(g: Painter, x: number, foot: number, night: number, time: number) {
   if (night <= 0) return;
-  const cx = x + 8; // the middle of the glass
-  const cy = foot - POST_H + 8;
+  const { cx, cy, squash, rings } = lampRings(x, foot, time);
   const flicker = 1 + Math.sin(time / 170) * 0.06 + Math.sin(time / 53) * 0.03;
   const n = night * flicker;
-  // a round glow in falling-off rings, and a flattened one on the grass under it
-  for (const [r, a] of [[22, 0.05], [16, 0.07], [11, 0.1], [6, 0.14]] as const) disc(g, cx, cy, r, 1, 244, 196, 104, a * n);
-  for (const [r, a] of [[24, 0.08], [15, 0.1], [8, 0.12]] as const) disc(g, cx, foot, r, 0.25, 240, 190, 90, a * n);
-  // and the flame itself, bright through the glass
-  g.a(cx - 1, cy - 2, 3, 5, 255, 214, 120, Math.min(1, 0.3 + night * 0.7));
+  rings.forEach(([r], k) => disc(g, cx, cy, r, squash, 244, 196, 104, (0.035 + k * 0.03) * n));
+  // and the flame itself, bright through the glass, with a little halo of its own
+  const gx = x + 8;
+  const gy = foot - POST_H + 8;
+  disc(g, gx, gy, 4, 1, 255, 214, 120, 0.25 * n);
+  g.a(gx - 1, gy - 2, 3, 5, 255, 214, 120, Math.min(1, 0.3 + night * 0.7));
 }
 
 /** a filled ellipse, row by row: `squash` flattens it (1 is round) */
@@ -81,16 +104,7 @@ export function drawNightWithLamp(
   time: number,
   rgb: [number, number, number] = [10, 13, 24],
 ) {
-  const cx = x + 8;
-  const cy = foot - 10;
-  const flicker = 1 + Math.sin(time / 170) * 0.03;
-  // ring half-widths, outermost first, and how much of the dark is left inside each
-  const rings: [number, number][] = [
-    [Math.round(34 * flicker), 0.66],
-    [Math.round(24 * flicker), 0.42],
-    [Math.round(14 * flicker), 0.24],
-  ];
-  const squash = 0.75;
+  const { cx, cy, squash, rings } = lampRings(x, foot, time);
   const top = cy - Math.ceil(rings[0][0] * squash);
   const bottom = cy + Math.ceil(rings[0][0] * squash);
   const [r, gr, b] = rgb;

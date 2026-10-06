@@ -86,7 +86,7 @@ export function workGlossary(): GlossaryEntry[] {
       id: "hay",
       name: "Hay",
       meta: `Cut hay (summer, a dry day): ${BALANCE.hayCutBales} bales · the cart, summer to winter: ${BALANCE.hayLot} for £${BALANCE.hayLotCost}, £${BALANCE.hayLotCostWinter} in winter`,
-      effect: `Fed out at night in winter only, when the ground falls short. A bale stands in for ${BALANCE.hayGrass} grass. On a day of snow the grass is buried and hay is all they have.`,
+      effect: `Fed out at night whenever the ground falls short, in any season: a field grazed bare is fed from the barn. A bale stands in for ${BALANCE.hayGrass} grass. On a day of snow the grass is buried and hay is all they have.`,
     },
   ];
 }
@@ -109,7 +109,7 @@ export function seasonGlossary(): GlossaryEntry[] {
       summer: " The only time hay can be cut, on a dry day. Fleece comes on fastest and the flies with it: shear often, and tend a heavy flock. The Highland show is mid-season.",
       autumn: " The wool sales, and the lamb sales: the best price of the year for both. The tup goes in with the ewes. Lay in hay before it ends; the barn is what the winter runs on.",
       winter:
-        " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. Hay is fed out at night. No mucking frozen ground." +
+        " Snow in the weather: the grass is buried, and a hungry night out in it can cost a beast unless the byre is built. The barn carries them. No mucking frozen ground." +
         ` On Steady and Hard the second winter is a hard one, and warned of in the autumn: more snow, the feed half as dear again, hay £${BALANCE.hardWinter.hayLotCost} a lot, and a hungry night in the snow likelier to cost a beast.`,
     }[id];
     return {
@@ -183,8 +183,8 @@ export function groundGlossary(): GlossaryEntry[] {
   })).concat({
     id: "sour",
     name: "Sour ground",
-    meta: `${BALANCE.sour.after} nights in a row on the same ground`,
-    effect: `Worms build up in ground grazed too long: fleece grows at ${Math.round(BALANCE.sour.growth * 100)}% of the rate, and after ${BALANCE.sour.sickAfter} nights a beast can sicken and die. Moving them to fresh ground starts it over.`,
+    meta: `${BALANCE.sour.after} nights in a row on the same ground, ${BALANCE.sour.afterWinter} in winter`,
+    effect: `Worms build up in ground grazed too long: fleece grows at ${Math.round(BALANCE.sour.growth * 100)}% of the rate, and ${BALANCE.sour.sickAfter - BALANCE.sour.after} nights after it turns a beast can sicken and die. Moving them to fresh ground starts it over. It takes longer in winter, with them on the barn as much as the grass.`,
   });
 }
 

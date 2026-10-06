@@ -1,7 +1,7 @@
 /*
- * Render the trailer: every frame from trailer.ts, the music rendered offline,
- * and ffmpeg to put them together as a 1920×1080 H.264 MP4, scaled ×6 with
- * nearest-neighbour so every game pixel is a clean 6×6 block.
+ * Render the trailer: every frame from trailer.ts (already 1920×1080, the
+ * camera having scaled each by a whole number), the music rendered offline,
+ * and ffmpeg to put them together as an H.264 MP4.
  *
  *   npm run dev                                                   # in one terminal
  *   npx -y -p playwright node store/media/capture-trailer.cjs     # in another
@@ -30,7 +30,7 @@ const OUT = join(__dirname, "trailer.mp4");
   await page.waitForFunction(() => window.trailer, null, { timeout: 30000 });
   const { FRAMES, FPS, DURATION } = await page.evaluate(() => ({ FRAMES: window.trailer.FRAMES, FPS: window.trailer.FPS, DURATION: window.trailer.DURATION }));
   console.log(`${FRAMES} frames, ${DURATION.toFixed(1)}s at ${FPS}fps`);
-  const BATCH = 30;
+  const BATCH = 10;
   for (let i = 0; i < FRAMES; i += BATCH) {
     const pngs = await page.evaluate(([a, b]) => Array.from({ length: b - a }, (_, k) => window.trailer.frame(a + k)), [i, Math.min(FRAMES, i + BATCH)]);
     pngs.forEach((d, k) => writeFileSync(join(dir, `f${String(i + k).padStart(5, "0")}.png`), Buffer.from(d.split(",")[1], "base64")));
@@ -46,8 +46,10 @@ const OUT = join(__dirname, "trailer.mp4");
     "-framerate", String(FPS), "-i", join(dir, "f%05d.png"),
     "-i", join(dir, "music.wav"),
     "-vf", "scale=1920:1080:flags=neighbor",
-    "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(FPS),
-    "-c:a", "aac", "-b:a", "192k",
+    // High profile at level 4.0, and 48kHz audio: what every phone, browser and Steam's
+    // own player takes. Left to itself x264 picked level 5.0, which some players refuse.
+    "-c:v", "libx264", "-profile:v", "high", "-level:v", "4.0", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", "-r", String(FPS),
+    "-c:a", "aac", "-ar", "48000", "-b:a", "192k",
     "-movflags", "+faststart", "-shortest",
     OUT,
   ], { stdio: "inherit" });
