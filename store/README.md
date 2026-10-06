@@ -105,7 +105,7 @@ gorse yellow (`media/pixelfont.ts`).
 | `library_logo.png` | Library Assets → Library Logo (transparent) | 1280×720 |
 | `community_icon_184.png` | App Admin → Community Icon | 184×184 |
 | `icon.ico`, `icon_256.png` | App Admin → Client Icon, and the executable | 16 to 256 |
-| `trailer.mp4` | Trailers | 1920×1080, 75s |
+| `trailer.mp4` | Trailers | 1920×1080, 76s |
 
 The same icon is in `public/` as `icon-192.png` and `icon-512.png`, which the web build and
 the desktop build (electron-builder) both use. Steam asks for the library logo to be placed
