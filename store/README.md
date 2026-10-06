@@ -119,7 +119,7 @@ climb and the crest; the hill, then close on him tending a ewe and at his pipe, 
 work, the camera walking with the muck and the hay, the roof going on; the inn, the fire,
 the winter; the dark coming down, a ewe under the lantern, a fox; and two eyes on the
 skyline, blinking once, before the name and "Wishlist on Steam". The music is the game's own
-air, "The Hirsel", rendered offline from the same score. Nothing secret is named.
+air, "The Hirsel", rendered offline from the same score, with the game's own sound effects over it (the shears, the pipe, a bleat, the dog, the fox, the wind, the hammer, the inn, and a sound from the skyline) and the air dipping under each. Nothing secret is named.
 
 To make any of it again after the art changes, with `npm run dev` running:
 

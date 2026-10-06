@@ -24,6 +24,7 @@ import { drawWolfBeast } from "../../src/render/sprites";
 import { driftFor } from "../../src/render/wander";
 import { AudioEngine } from "../../src/audio/engine";
 import { Score } from "../../src/audio/score";
+import { Sfx, type SfxName } from "../../src/audio/sfx";
 import type { AnimId, GameState } from "../../src/sim/types";
 import { glen, run } from "./scene";
 import { GORSE, WOOL, pixelText, textSize } from "./pixelfont";
@@ -47,6 +48,8 @@ interface Shot {
   draw: (g: Painter, t: number, ms: number) => Cam;
   /** a hard cut into this shot, rather than a dip through black */
   cut?: boolean;
+  /** the game's own sound effects, at seconds into the shot */
+  sounds?: [number, SfxName][];
 }
 
 const WIDE: Cam = { x: W / 2, y: H / 2, k: 6 };
@@ -167,11 +170,11 @@ export const SHOTS: Shot[] = [
   // the hill: a slow look along it
   { dur: 4, draw: hill(SUMMER, (t) => pan({ x: 120, y: H / 2 + 10, k: 8 }, { x: 200, y: H / 2 + 10, k: 8 }, t)) },
   // close: on his knees to a ewe
-  { dur: 3.2, draw: hill(SUMMER, () => ({ x: L(SUMMER).shepherd.x + 16, y: L(SUMMER).shepherd.y + 14, k: 12 }), { anim: "tend" }), cut: true },
+  { dur: 3.2, draw: hill(SUMMER, () => ({ x: L(SUMMER).shepherd.x + 16, y: L(SUMMER).shepherd.y + 14, k: 12 }), { anim: "tend" }), cut: true, sounds: [[0.6, "bleat"], [2.1, "bleat"]] },
   // close: the pipe
-  { dur: 3, draw: hill(SLOPE, () => ({ x: L(SLOPE).shepherd.x + 8, y: L(SLOPE).shepherd.y + 10, k: 15 }), { anim: "pipe" }), cut: true },
+  { dur: 3, draw: hill(SLOPE, () => ({ x: L(SLOPE).shepherd.x + 8, y: L(SLOPE).shepherd.y + 10, k: 15 }), { anim: "pipe" }), cut: true, sounds: [[0.3, "pipe"]] },
   // the clip coming off
-  { dur: 2.2, draw: hill(SPRING, () => ({ x: L(SPRING).shepherd.x + 14, y: L(SPRING).shepherd.y + 8, k: 10 }), { anim: "shear" }), cut: true },
+  { dur: 2.2, draw: hill(SPRING, () => ({ x: L(SPRING).shepherd.x + 14, y: L(SPRING).shepherd.y + 8, k: 10 }), { anim: "shear" }), cut: true, sounds: [[0.1, "shears"], [1.1, "shears"]] },
   // the dog at her work, the camera running with her
   {
     dur: 2.6,
@@ -180,6 +183,7 @@ export const SHOTS: Shot[] = [
       return { x: d.x + 10, y: d.y + 4, k: 12 };
     }),
     cut: true,
+    sounds: [[0.7, "bark"]],
   },
   // muck and hay, the camera walking with him
   {
@@ -191,11 +195,12 @@ export const SHOTS: Shot[] = [
     dur: 2.6,
     draw: hill(SLOPE, (t) => ({ x: Math.round(W * 0.08) + Math.round(W * 0.6) * ease(t) + 6, y: L(SLOPE).shepherd.y + 16, k: 8 }), { anim: "hay" }),
     cut: true,
+    sounds: [[0.2, "shears"], [1.3, "shears"]],
   },
-  { dur: 2.6, draw: hill(BUILDING, () => ({ x: L(BUILDING).croft.x + 30, y: L(BUILDING).croft.y + 20, k: 10 }), { anim: "build", payload: { croft: "roof" } }), cut: true },
+  { dur: 2.6, draw: hill(BUILDING, () => ({ x: L(BUILDING).croft.x + 30, y: L(BUILDING).croft.y + 20, k: 10 }), { anim: "build", payload: { croft: "roof" } }), cut: true, sounds: [[0.3, "build"], [1.4, "build"]] },
   // the inn, and the fire at home with the dog at it
   // from once he is in the door: the walk-in opens on the hill, which flashed up between the roof and the bar
-  { dur: 3.2, draw: hill(SUMMER, () => ({ x: W / 2, y: H / 2 + 8, k: 8 }), { anim: "pub", from: 0.25, to: 1 }), cut: true },
+  { dur: 3.2, draw: hill(SUMMER, () => ({ x: W / 2, y: H / 2 + 8, k: 8 }), { anim: "pub", from: 0.25, to: 1 }), cut: true, sounds: [[0, "pub"]] },
   {
     dur: 3,
     draw: hill(NIGHT, () => {
@@ -204,18 +209,19 @@ export const SHOTS: Shot[] = [
     }, { interior: true }),
   },
   // winter, wide
-  { dur: 3, draw: hill(WINTER, (t) => pan({ x: 130, y: H / 2, k: 7 }, { x: 190, y: H / 2, k: 7 }, t)) },
+  { dur: 3, draw: hill(WINTER, (t) => pan({ x: 130, y: H / 2, k: 7 }, { x: 190, y: H / 2, k: 7 }, t)), sounds: [[0.2, "wind"]] },
   // the dark coming down, and a ewe under the lantern
-  { dur: 2.6, draw: hill(NIGHT, () => WIDE, { anim: "sleep", from: 0, to: 1 }) },
+  { dur: 2.6, draw: hill(NIGHT, () => WIDE, { anim: "sleep", from: 0, to: 1 }), sounds: [[0.2, "wind"]] },
   {
     dur: 3.6,
     draw: (g, t) => hill(NIGHT, () => ({ x: lampAt.x + 4, y: lampAt.y - 14, k: 15 }), { anim: "sleep", from: 1, to: 1, shepherdAt: underLamp })(g, t, lampMoment - 1800 + t * 3600),
     cut: true,
+    sounds: [[1.4, "bleat"]],
   },
   // a fox in the night
-  { dur: 2.8, draw: hill(NIGHT, () => WIDE, { anim: "fox" }), cut: true },
+  { dur: 2.8, draw: hill(NIGHT, () => WIDE, { anim: "fox" }), cut: true, sounds: [[0.3, "fox"], [1.2, "bark"]] },
   // and something else, up on the skyline
-  { dur: 4.2, draw: eyes },
+  { dur: 4.2, draw: eyes, sounds: [[1.0, "wolf"]] },
   // the name
   {
     dur: 6,
@@ -306,7 +312,9 @@ export async function music(seconds: number): Promise<string> {
   const engine = new AudioEngine();
   engine.start();
   (window as unknown as { AudioContext: unknown }).AudioContext = real;
-  engine.setLevels({ master: 0.85, music: 0.6, sfx: 0.55, muted: false });
+  // the effects up, as a trailer mixes them: in the game they sit well under the air
+  const MUSIC = 0.6;
+  engine.setLevels({ master: 0.85, music: MUSIC, sfx: 2.4, muted: false });
   const score = new Score(engine);
   score.start();
   score.stop(); // its clock is the real one; the bars are laid down by hand below
@@ -317,6 +325,41 @@ export async function music(seconds: number): Promise<string> {
     s.scheduleBar(t, bar);
     bar = (bar + 1) % s.bars.length;
   }
+  /*
+   * The game's own sound effects over it, each at its moment in its shot.
+   * An effect starts at the engine's clock, which in an offline render is
+   * nowhere yet, so the clock is pointed at the moment for each one.
+   */
+  const sfx = new Sfx(engine);
+  const cues: number[] = [];
+  let start = 0;
+  for (const shot of SHOTS) {
+    for (const [at, name] of shot.sounds ?? []) {
+      const when = start + at;
+      Object.defineProperty(engine, "now", { get: () => when, configurable: true });
+      sfx.play(name);
+      cues.push(when);
+    }
+    start += shot.dur;
+  }
+  delete (engine as unknown as { now?: number }).now;
+  // the air dips under each effect and comes back after it, so the effect is heard rather than buried
+  const duck = engine.musicBus.gain;
+  duck.setValueAtTime(MUSIC, 0);
+  // effects close together share one dip: [down from, back from]
+  const dips: [number, number][] = [];
+  for (const t0 of cues.sort((x, y) => x - y)) {
+    const last = dips[dips.length - 1];
+    if (last && t0 - 0.12 <= last[1] + 0.6) last[1] = t0 + 0.9;
+    else dips.push([t0 - 0.12, t0 + 0.9]);
+  }
+  for (const [down, up] of dips) {
+    duck.setValueAtTime(MUSIC, Math.max(0, down));
+    duck.linearRampToValueAtTime(MUSIC * 0.6, down + 0.17);
+    duck.setValueAtTime(MUSIC * 0.6, up);
+    duck.linearRampToValueAtTime(MUSIC, up + 0.6);
+  }
+
   // and fade it out with the picture
   engine.master.gain.setValueAtTime(0.85, seconds - 2.5);
   engine.master.gain.linearRampToValueAtTime(0, seconds - 0.2);
