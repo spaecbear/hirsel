@@ -5,6 +5,9 @@ import { ACHIEVEMENTS } from "../src/sim/achievements";
 import { hydrate } from "../src/sim/save";
 import { seasonGlossary } from "../src/sim/glossary";
 import {
+  groundSour,
+  sickAfter,
+  sourAfter,
   feedCost,
   hardWinterOn,
   hayLotCost,
@@ -196,9 +199,13 @@ describe("hay", () => {
     expect(g.money).toBe(30);
   });
 
-  it("is only fed out in winter, and only what the ground falls short of", () => {
+  it("is fed out in any season the ground falls short, and only what it falls short of", () => {
+    // a field grazed bare in summer is fed from the barn, the same as one in winter
     const summer = harness({ day: dayOf("summer", 3), flock: flockOf(10), hay: 50, forecast: ["sun", "sun", "sun"] }).g;
     summer.pastures[summer.at].grass = 0;
+    expect(grazing(summer).hayUsed).toBe(4);
+    expect(grazing(summer).fed).toBe(1);
+    summer.pastures[summer.at].grass = 100;
     expect(grazing(summer).hayUsed).toBe(0);
 
     const winter = harness({ day: dayOf("winter", 3), flock: flockOf(10), hay: 50, forecast: ["sun", "sun", "sun"] }).g;
@@ -392,5 +399,18 @@ describe("the forecast", () => {
     }
     expect(misses / days).toBeGreaterThan(0.08);
     expect(misses / days).toBeLessThan(0.22);
+  });
+});
+
+describe("sour ground in winter", () => {
+  it("takes twice as long to turn, with them on the barn", () => {
+    const at = (day: number, nights: number) => Object.assign(newGame({ seed: 3 }), { day, groundNights: nights });
+    const summerDay = SEASON_DAYS + 5;
+    const winterDay = SEASON_DAYS * 3 + 5;
+    expect(groundSour(at(summerDay, BALANCE.sour.after))).toBe(true);
+    expect(groundSour(at(winterDay, BALANCE.sour.after))).toBe(false);
+    expect(groundSour(at(winterDay, BALANCE.sour.afterWinter))).toBe(true);
+    expect(sourAfter(at(winterDay, 0))).toBe(14);
+    expect(sickAfter(at(winterDay, 0))).toBe(14 + BALANCE.sour.sickAfter - BALANCE.sour.after);
   });
 });

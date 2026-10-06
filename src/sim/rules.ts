@@ -61,8 +61,16 @@ export function hardWinterOn(g: GameState, day = g.day): boolean {
   return s.id === "winter" && s.year === BALANCE.hardWinter.year && DIFFICULTY[g.difficulty].harsh;
 }
 
+/**
+ * How many nights on the same ground before it turns, and before a beast can
+ * die of it. Twice as long in winter: they are living off the barn then as
+ * much as the grass, and nobody shifts a flock over frozen ground for nothing.
+ */
+export const sourAfter = (g: GameState) => (isWinter(g) ? BALANCE.sour.afterWinter : BALANCE.sour.after);
+export const sickAfter = (g: GameState) => sourAfter(g) + (BALANCE.sour.sickAfter - BALANCE.sour.after);
+
 /** the flock has grazed this ground too long without a move: see BALANCE.sour */
-export const groundSour = (g: GameState) => (g.groundNights ?? 0) >= BALANCE.sour.after;
+export const groundSour = (g: GameState) => (g.groundNights ?? 0) >= sourAfter(g);
 
 /** the weather a day is drawn from: its season's, or the hard winter's */
 export const weatherBag = (g: GameState, day: number) => (hardWinterOn(g, day) ? BALANCE.hardWinter.weather : seasonOf(day).weather);
@@ -204,9 +212,14 @@ export function grazing(g: GameState) {
   // under snow, or in the byre, there is no grass to be had at all
   const reachable = g.forecast[0] === "snow" ? 0 : p.grass;
   const eaten = Math.min(reachable, want);
-  // in winter the barn makes up what the ground cannot, a whole bale at a time
+  /*
+   * The barn makes up what the ground cannot, a whole bale at a time, in any
+   * season: a field grazed down to nothing in summer is fed hay the same as
+   * one under snow. It used to be winter only, so a bare field in summer went
+   * hungry with the barn full.
+   */
   let hayUsed = 0;
-  if (isWinter(g) && eaten < want && g.hay > 0) {
+  if (eaten < want && g.hay > 0) {
     hayUsed = Math.min(g.hay, Math.ceil((want - eaten) / BALANCE.hayGrass));
   }
   const fed = want === 0 ? 1 : Math.min(1, (eaten + hayUsed * BALANCE.hayGrass) / want);

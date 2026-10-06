@@ -33,6 +33,7 @@ import {
   isWinter,
   moonName,
   moveCost,
+  groundSour,
   nextSeason,
   owns,
   season,
@@ -876,7 +877,7 @@ export class WorldUi {
       label: `${p.name}${i === g.at ? " · they are here" : moveCost(g) === 0 ? " · free" : ""}${this.kbd((q) => "move" in q && q.move === i)}`,
       detail:
         `grass ${Math.round(p.grass)}% · feed ×${p.quality} · fox risk ${Math.round(p.risk * 100)}%` +
-        (i === g.at ? ` · ${g.groundNights} night${g.groundNights === 1 ? "" : "s"} on it${g.groundNights >= BALANCE.sour.after ? ", going sour" : ""}` : ""),
+        (i === g.at ? ` · ${g.groundNights} night${g.groundNights === 1 ? "" : "s"} on it${groundSour(g) ? ", going sour" : ""}` : ""),
       disabled: i === g.at || g.taps < moveCost(g),
       onPick: () => {
         this.walk.reset(); // new ground, back to his mark

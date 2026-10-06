@@ -38,6 +38,8 @@ import {
   isFullMoon,
   isWinter,
   hardWinterOn,
+  sickAfter,
+  sourAfter,
   weatherBag,
   moveCost,
   season,
@@ -784,13 +786,13 @@ export class Game {
 
     // 4b. sour ground: another night on it, a warning when it turns, and worms once it has been too long
     g.groundNights = (g.groundNights ?? 0) + 1;
-    if (g.groundNights === BALANCE.sour.after && g.flock.length) {
+    if (g.groundNights === sourAfter(g) && g.flock.length) {
       this.say(
         `A week and more on the ${p.name} now. The ground is going sour under them; they will do better moved to fresh grass.`,
         "bad",
       );
     }
-    if (g.groundNights >= BALANCE.sour.sickAfter && g.flock.length > 1 && this.rng() < BALANCE.sour.sickChance) {
+    if (g.groundNights >= sickAfter(g) && g.flock.length > 1 && this.rng() < BALANCE.sour.sickChance) {
       g.flock.splice(Math.floor(this.rng() * g.flock.length), 1);
       g.stats.wormLosses++;
       this.say(`One of them dead in the morning, wasted with worms. The ${p.name} has been grazed too long.`, "bad");
