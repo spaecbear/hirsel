@@ -53,7 +53,7 @@ const MAX_DAYS = 700;
 type Bot = "careful" | "newcomer" | "learner";
 
 interface Result {
-  lambs25: number | null;
+  fullLambing: number | null;
   lambsAtWin: number;
   won: boolean;
   lost: string | null;
@@ -102,7 +102,7 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
 
   // LAMBS=1: stay on after the wedding, to see when the long-game achievements come
   const keepOn = !!process.env.LAMBS;
-  let lambs25: number | null = null;
+  let fullLambing: number | null = null;
   let lambsAtWin = 0;
   let wonOn: number | null = null;
   for (let guard = 0; guard < MAX_DAYS && (!g.over || (keepOn && g.over.kind === "win")); guard++) {
@@ -111,7 +111,7 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
       lambsAtWin = g.stats.lambsBorn;
       game.stayOn();
     }
-    if (lambs25 === null && g.stats.lambsBorn >= 25) lambs25 = g.day;
+    if (fullLambing === null && g.stats.bestLambing >= 10) fullLambing = g.day;
     // whatever came to the door: the free default, as most players would
     if (g.event) {
       const choices = game.eventChoices();
@@ -218,7 +218,7 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
 
   const won = g.over?.kind === "win" || wonOn !== null;
   return {
-    lambs25,
+    fullLambing,
     lambsAtWin: wonOn !== null ? lambsAtWin : g.stats.lambsBorn,
     won,
     lost: won ? null : g.over ? g.over.title : "ran out of days",
@@ -276,9 +276,9 @@ for (const bot of BOTS) {
     console.log(`   a close call (purse under £15 or flock down to 2): ${pct(rs.filter((r) => r.closeCall).length, RUNS)} of runs`);
     if (reasons.size) console.log(`   lost to: ${[...reasons].map(([k, v]) => `${k} (${v})`).join(", ")}`);
     if (process.env.LAMBS) {
-      const l25 = rs.map((r) => r.lambs25).filter((d): d is number => d !== null);
+      const l25 = rs.map((r) => r.fullLambing).filter((d): d is number => d !== null);
       console.log(`   lambs born by the wedding: median ${median(wins.map((r) => r.lambsAtWin))}`);
-      console.log(`   25 lambs reached in ${pct(l25.length, RUNS)} of runs, on day: median ${median(l25)} (year ${Math.ceil(median(l25) / 96)}), middle half ${q(l25, 0.25)}-${q(l25, 0.75)}`);
+      console.log(`   a full lambing (ten in a spring) in ${pct(l25.length, RUNS)} of runs, on day: median ${median(l25)} (year ${Math.ceil(median(l25) / 96)}), middle half ${q(l25, 0.25)}-${q(l25, 0.75)}`);
     }
     console.log("");
   }

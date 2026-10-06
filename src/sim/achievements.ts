@@ -62,16 +62,19 @@ export const ACHIEVEMENTS: Achievement[] = [
     won: (g) => g.stats.dances > 0,
   },
   /*
-   * Twenty-five, about two lambings: the spring of the third year with a tup
-   * from the first and a dozen ewes. It was fifty, which took four or five
-   * game years, longer than most players stay on the hill after the wedding.
+   * A lambing to be proud of: ten born in one spring. It rewards a lambing
+   * run well (enough ewes in lamb, fed through the winter, the byre or a dry
+   * spring) rather than time served. It was a count over the whole run, fifty
+   * and then twenty-five, which a careful flock of a dozen only reached in
+   * the fifth year. A careful player gets this in the spring of the third,
+   * the first lambing after the wedding.
    */
   {
-    id: "twenty-five-lambs",
-    name: "Twenty-five lambs",
-    hint: "Twenty-five lambs born on your own ground.",
+    id: "full-lambing",
+    name: "A full lambing",
+    hint: "Ten lambs born on your own ground in a single spring.",
     longGame: true,
-    won: (g) => g.stats.lambsBorn >= 25,
+    won: (g) => g.stats.bestLambing >= 10,
   },
   { id: "rosette", name: "A red rosette", hint: "Take a prize at the Highland show, or the trial.", won: (g) => g.stats.rosettes > 0 },
   { id: "neighbour", name: "Good neighbours", hint: "Have a kindness paid back from over the burn.", won: (g) => g.stats.neighbourGifts > 0 },

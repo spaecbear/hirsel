@@ -149,6 +149,8 @@ export function newGame(opts: GameOptions = {}): GameState {
       wormLosses: 0,
       hayInSun: false,
       lambsBorn: 0,
+      springLambs: 0,
+      bestLambing: 0,
       lambsLost: 0,
       lambsSold: 0,
       rosettes: 0,
@@ -874,6 +876,7 @@ export class Game {
       }
       if (g.married !== null && g.day === g.married + 1) this.say("The first morning with two in the house. The kettle was on before you were up.", "cozy");
       if (s.id === "winter" && s.day === 1) this.tupping();
+      if (s.id === "spring" && s.day === 1) g.stats.springLambs = 0; // a new lambing
       this.say(`Day ${g.day}. ${weatherOn(g).name} over the glen.`, "gold");
       if (s.id === "autumn" && s.left === BALANCE.winterWarnDays) {
         const nights = hayNights(g);
@@ -998,6 +1001,8 @@ export class Game {
       }
     }
     g.stats.lambsBorn += born;
+    g.stats.springLambs += born;
+    g.stats.bestLambing = Math.max(g.stats.bestLambing, g.stats.springLambs);
     g.stats.lambsLost += lost;
     if (born) {
       this.say(

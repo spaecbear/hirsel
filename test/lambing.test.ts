@@ -212,3 +212,29 @@ describe("the words for it", () => {
     expect(ACHIEVEMENTS.find((a) => a.id === "first-lamb")!.secret).toBeFalsy();
   });
 });
+
+describe("a full lambing", () => {
+  it("counts each spring on its own, and keeps the run's best", () => {
+    const g0 = Object.assign(newGame({ seed: 2 }), {
+      day: 1,
+      money: 9999,
+      hay: 500,
+      owned: { byre: true, tup: true },
+      flock: Array.from({ length: 6 }, (_, i) => ({ id: 900 + i, fleece: 4, breed: "blackface" as const, age: 60, inLamb: true })),
+    });
+    const game = new Game(g0);
+    game.onAnim = (_a, after) => after?.();
+    game.rng = () => 0; // every ewe lambs tonight, and every one has twins
+    game.sleep();
+    const g = game.state;
+    expect(g.stats.springLambs).toBe(12);
+    expect(g.stats.bestLambing).toBe(12);
+
+    // round to the first dawn of the next spring: the count starts again, the best is kept
+    g.day = SEASON_DAYS * 4;
+    game.rng = () => 0.99;
+    game.sleep();
+    expect(g.stats.springLambs).toBe(0);
+    expect(g.stats.bestLambing).toBe(12);
+  });
+});
