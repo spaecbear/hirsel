@@ -3,16 +3,25 @@
  * its own music.
  *
  * Screen-recording a pixel game smears it, and the timing wanders. Instead
- * each frame is drawn exactly, at the game's pixel size (320×180, scaled ×6
- * to 1920×1080 by capture-trailer.cjs with nearest-neighbour), from a
- * timeline of shots: the opening, the hill through the year, the work, the
- * inn, the fire, the night, and a card to wishlist it. The music is the
- * game's air, rendered offline from the same score the game plays.
+ * each frame is drawn exactly: the scene at the game's pixel size (320×180),
+ * then a camera over it. The camera only ever scales by whole numbers, ×6 for
+ * the whole frame up to ×20 for a close-up, so every game pixel stays a clean
+ * square block; it pans by whole screen pixels, so a slow pan is smooth. Cuts
+ * go from wide to close the way a film does, rather than zooming.
  *
- * It gives nothing secret away: no wolf, no sword, nothing after the wedding.
+ * The shots: the night and the name; the office and the leaving; the train;
+ * the climb and the glen from the crest; the hill and its work in close-up,
+ * the shepherd on his knees to a ewe, at his pipe, the dog at work; the inn,
+ * the fire, the winter; the dark coming down, a sheep under the lantern, a
+ * fox; and, last, two eyes on the skyline. Then the name, to wishlist it.
+ *
+ * It names nothing secret: the eyes are only eyes.
  */
 import { Painter, clamp01, ease } from "../../src/render/painter";
 import { drawOpening } from "../../src/render/opening";
+import { layoutInterior, layoutWorld } from "../../src/render/layout";
+import { drawWolfBeast } from "../../src/render/sprites";
+import { driftFor } from "../../src/render/wander";
 import { AudioEngine } from "../../src/audio/engine";
 import { Score } from "../../src/audio/score";
 import type { AnimId, GameState } from "../../src/sim/types";
@@ -22,78 +31,201 @@ import { GORSE, WOOL, pixelText, textSize } from "./pixelfont";
 export const W = 320;
 export const H = 180;
 export const FPS = 30;
+const OUT_W = 1920;
+const OUT_H = 1080;
 
+/** where the camera looks: a point in game pixels, and how many screen pixels each one gets */
+interface Cam {
+  x: number;
+  y: number;
+  k: number;
+}
 interface Shot {
   /** seconds */
   dur: number;
-  draw: (g: Painter, t: number, ms: number) => void;
-  /** no dip to black going into this shot */
+  /** the scene at game size, and where the camera is, for `t` 0 to 1 across the shot */
+  draw: (g: Painter, t: number, ms: number) => Cam;
+  /** a hard cut into this shot, rather than a dip through black */
   cut?: boolean;
 }
 
-/** a glen shot: a state, and optionally an animation running across the shot */
-function hill(st: GameState, o: { anim?: AnimId; from?: number; to?: number; interior?: boolean; payload?: { croft?: string } } = {}) {
-  return (g: Painter, t: number, ms: number) => {
-    const p = o.anim ? (o.from ?? 0) + ((o.to ?? 1) - (o.from ?? 0)) * t : 0;
-    g.cx.drawImage(glen(W, H, st, ms, { anim: o.anim ?? null, p, interior: o.interior, payload: o.payload }), 0, 0);
-  };
-}
+const WIDE: Cam = { x: W / 2, y: H / 2, k: 6 };
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const pan = (from: Cam, to: Cam, t: number): Cam => ({ x: lerp(from.x, to.x, ease(t)), y: lerp(from.y, to.y, ease(t)), k: from.k });
 
-function opening(from: number, to: number) {
-  return (g: Painter, t: number, ms: number) => drawOpening(g, W, H, from + (to - from) * t, ms);
-}
-
-/** a card: the night glen, darkened, and lettering fading in */
-function card(lines: { text: string; k: number; ink?: typeof GORSE; at: number }[], st: GameState) {
-  return (g: Painter, t: number, ms: number) => {
-    g.cx.drawImage(glen(W, H, st, ms, { anim: "sleep", p: 1 }), 0, 0);
-    g.a(0, 0, W, H, 6, 8, 14, 0.45);
-    const fade = clamp01(t / 0.25);
-    for (const l of lines) {
-      const { w, h } = textSize(l.text, l.k);
-      pixelText(g, l.text, Math.round((W - w) / 2), Math.round(H * l.at - h / 2), l.k, l.ink ?? GORSE, fade);
-    }
-  };
-}
-
+/* ---- the runs the shots are of ---- */
 const SUMMER = run({ day: 30, at: 0 });
-const SUMMER_SLOPE = run({ day: 32, at: 1, seed: 3 });
+const SLOPE = run({ day: 32, at: 1, seed: 3 });
 const SPRING = run({ day: 6, at: 0, lambs: 4, seed: 5 });
 const WINTER = run({ day: 80, at: 0, weather: "snow", lambs: 0, seed: 7 });
 const NIGHT = run({ day: 40, at: 0, seed: 9 });
+const CORRIE = run({ day: 44, at: 2, seed: 13 });
 const BUILDING = (() => {
   const st = run({ day: 26, at: 0, owned: { roof: false, hearth: false } });
   st.building = { id: "roof", done: 1 };
   return st;
 })();
 
+const L = (st: GameState, ms = 4200, shepherdAt: { x: number; y: number } | null = null) =>
+  layoutWorld(W, H, st, { time: ms, shepherdAt });
+
+/** a glen shot, with an animation running across it and a camera */
+function hill(
+  st: GameState,
+  cam: (t: number, ms: number) => Cam,
+  o: { anim?: AnimId; from?: number; to?: number; interior?: boolean; payload?: { croft?: string }; shepherdAt?: { x: number; y: number } } = {},
+) {
+  return (g: Painter, t: number, ms: number) => {
+    const p = o.anim ? (o.from ?? 0) + ((o.to ?? 1) - (o.from ?? 0)) * t : 0;
+    g.cx.drawImage(glen(W, H, st, ms, { anim: o.anim ?? null, p, interior: o.interior, payload: o.payload, shepherdAt: o.shepherdAt }), 0, 0);
+    return cam(t, ms);
+  };
+}
+
+function opening(from: number, to: number, cam: (t: number) => Cam = () => WIDE) {
+  return (g: Painter, t: number, ms: number) => {
+    drawOpening(g, W, H, from + (to - from) * t, ms);
+    return cam(t);
+  };
+}
+
+/** lettering, centred on wherever the camera is looking, so it sits still on the screen while the scene pans under it */
+function title(g: Painter, cam: Cam, lines: { text: string; k: number; ink?: typeof GORSE; dy: number }[], alpha: number) {
+  for (const l of lines) {
+    const { w, h } = textSize(l.text, l.k);
+    pixelText(g, l.text, Math.round(cam.x - w / 2), Math.round(cam.y + l.dy - h / 2), l.k, l.ink ?? GORSE, alpha);
+  }
+}
+
+/* ---- the lantern: the shepherd under it, and the moment a ewe has drifted closest ---- */
+const lampAt = L(NIGHT).lampPost;
+const underLamp = { x: lampAt.x - 18, y: lampAt.y - 24 };
+const lampMoment = (() => {
+  // the flock drifts towards him; find when one of them is nearest the post
+  let best = { t: 0, d: Infinity };
+  for (let t = 0; t < 400000; t += 400) {
+    const lay = L(NIGHT, t, underLamp);
+    NIGHT.flock.forEach((sh, i) => {
+      const home = lay.flock[i];
+      if (!home) return;
+      const d0 = driftFor(sh.id + 1, t, { dx: lay.shepherd.x - home.x, dy: lay.shepherd.y + 10 - home.y });
+      const d = Math.hypot(home.x + d0.dx + 10 - (lampAt.x + 8), home.y + d0.dy + 8 - (lampAt.y - 4));
+      if (d < best.d) best = { t, d };
+    });
+  }
+  return best.t;
+})();
+
+/* ---- the eyes on the skyline ---- */
+function eyes(g: Painter, t: number, ms: number): Cam {
+  const st = CORRIE;
+  g.cx.drawImage(glen(W, H, st, ms, { anim: "sleep", p: 1 }), 0, 0);
+  const lay = L(st, ms);
+  const ex = Math.round(W * 0.6);
+  const ey = Math.round(lay.horizonY + 4);
+  // they come up out of the dark, hold, blink once, and are gone
+  const come = clamp01((t - 0.2) / 0.3);
+  const blink = t > 0.66 && t < 0.7 ? 0 : 1;
+  const go = 1 - clamp01((t - 0.86) / 0.08);
+  const a = come * blink * go;
+  if (a > 0) {
+    /*
+     * Two separate glints, each with a little glow of its own, low against
+     * the dark of the hill. Drawn as the beast's eye-glow they read as one
+     * lit window: a box of light rather than two eyes.
+     */
+    for (const dx of [0, 5]) {
+      g.a(ex + dx - 1, ey - 1, 4, 3, 255, 196, 70, 0.18 * a);
+      g.a(ex + dx, ey, 2, 1, 255, 214, 96, a);
+      g.a(ex + dx, ey + 1, 2, 1, 214, 150, 40, 0.8 * a);
+    }
+  }
+  return { x: ex + 3, y: ey - 4, k: 20 };
+}
+void drawWolfBeast;
+
 export const SHOTS: Shot[] = [
-  { dur: 3.5, draw: card([{ text: "HIRSEL", k: 4, at: 0.45 }], NIGHT), cut: true },
-  { dur: 5, draw: opening(0.04, 0.22) },
-  { dur: 3, draw: opening(0.27, 0.4) },
-  { dur: 4.5, draw: opening(0.46, 0.78) },
-  { dur: 4, draw: opening(0.82, 0.97) },
-  { dur: 3.5, draw: hill(SUMMER) },
-  { dur: 3, draw: hill(SPRING), cut: true },
-  { dur: 2.2, draw: hill(SUMMER_SLOPE, { anim: "shear" }), cut: true },
-  { dur: 2.6, draw: hill(SUMMER, { anim: "muck" }), cut: true },
-  { dur: 2.6, draw: hill(SUMMER_SLOPE, { anim: "hay" }), cut: true },
-  { dur: 3.2, draw: hill(SUMMER, { anim: "market" }), cut: true },
-  { dur: 2.6, draw: hill(BUILDING, { anim: "build", payload: { croft: "roof" } }), cut: true },
-  { dur: 3.4, draw: hill(SUMMER, { anim: "pub" }) },
-  { dur: 3, draw: hill(NIGHT, { interior: true }) },
-  { dur: 3, draw: hill(WINTER) },
-  { dur: 3, draw: hill(NIGHT, { anim: "sleep", from: 0, to: 1 }) },
-  { dur: 2.8, draw: hill(NIGHT, { anim: "fox" }), cut: true },
+  // the night, and the name over it, the camera coming down out of the stars onto the croft's lit window
+  {
+    dur: 5.5,
+    draw: (g, t, ms) => {
+      const cam = hill(NIGHT, (tt) => pan({ x: W / 2, y: 540 / 8, k: 8 }, { x: W / 2, y: H - 540 / 8, k: 8 }, tt), { anim: "sleep", from: 1, to: 1 })(g, t, ms);
+      title(g, cam, [{ text: "HIRSEL", k: 3, dy: -14 }], clamp01((t - 0.45) / 0.25) * (1 - clamp01((t - 0.9) / 0.1)));
+      return cam;
+    },
+  },
+  // the office: the envelope going into the tray, close; then him away out of the door
+  { dur: 4, draw: opening(0.03, 0.15, () => ({ x: 166, y: 126, k: 10 })) },
+  { dur: 3, draw: opening(0.15, 0.22), cut: true },
+  { dur: 3, draw: opening(0.28, 0.4) },
+  { dur: 3.5, draw: opening(0.5, 0.75) },
+  // over the crest, close on his back; then the glen opening out below him
+  { dur: 3, draw: opening(0.82, 0.9, () => ({ x: W / 2, y: H * 0.72, k: 10 })) },
+  { dur: 3.2, draw: opening(0.9, 0.97), cut: true },
+  // the hill: a slow look along it
+  { dur: 4, draw: hill(SUMMER, (t) => pan({ x: 120, y: H / 2 + 10, k: 8 }, { x: 200, y: H / 2 + 10, k: 8 }, t)) },
+  // close: on his knees to a ewe
+  { dur: 3.2, draw: hill(SUMMER, () => ({ x: L(SUMMER).shepherd.x + 16, y: L(SUMMER).shepherd.y + 14, k: 12 }), { anim: "tend" }), cut: true },
+  // close: the pipe
+  { dur: 3, draw: hill(SLOPE, () => ({ x: L(SLOPE).shepherd.x + 8, y: L(SLOPE).shepherd.y + 10, k: 15 }), { anim: "pipe" }), cut: true },
+  // the clip coming off
+  { dur: 2.2, draw: hill(SPRING, () => ({ x: L(SPRING).shepherd.x + 14, y: L(SPRING).shepherd.y + 8, k: 10 }), { anim: "shear" }), cut: true },
+  // the dog at her work, the camera running with her
+  {
+    dur: 2.6,
+    draw: hill(SUMMER, (_t, ms) => {
+      const d = L(SUMMER, ms).dogAt;
+      return { x: d.x + 10, y: d.y + 4, k: 12 };
+    }),
+    cut: true,
+  },
+  // muck and hay, the camera walking with him
+  {
+    dur: 2.6,
+    draw: hill(SUMMER, (t) => ({ x: Math.round(W * 0.08) + Math.round(W * 0.6) * ease(t) + 16, y: L(SUMMER).shepherd.y + 16, k: 8 }), { anim: "muck" }),
+    cut: true,
+  },
+  {
+    dur: 2.6,
+    draw: hill(SLOPE, (t) => ({ x: Math.round(W * 0.08) + Math.round(W * 0.6) * ease(t) + 6, y: L(SLOPE).shepherd.y + 16, k: 8 }), { anim: "hay" }),
+    cut: true,
+  },
+  { dur: 2.6, draw: hill(BUILDING, () => ({ x: L(BUILDING).croft.x + 30, y: L(BUILDING).croft.y + 20, k: 10 }), { anim: "build", payload: { croft: "roof" } }), cut: true },
+  // the inn, and the fire at home with the dog at it
+  { dur: 3.2, draw: hill(SUMMER, () => ({ x: W / 2, y: H / 2 + 8, k: 8 }), { anim: "pub" }) },
+  {
+    dur: 3,
+    draw: hill(NIGHT, () => {
+      const I = layoutInterior(W, H, NIGHT);
+      return { x: I.dogSpot.x + 12, y: I.dogSpot.y - 6, k: 12 };
+    }, { interior: true }),
+  },
+  // winter, wide
+  { dur: 3, draw: hill(WINTER, (t) => pan({ x: 130, y: H / 2, k: 7 }, { x: 190, y: H / 2, k: 7 }, t)) },
+  // the dark coming down, and a ewe under the lantern
+  { dur: 2.6, draw: hill(NIGHT, () => WIDE, { anim: "sleep", from: 0, to: 1 }) },
+  {
+    dur: 3.6,
+    draw: (g, t) => hill(NIGHT, () => ({ x: lampAt.x + 4, y: lampAt.y - 14, k: 15 }), { anim: "sleep", from: 1, to: 1, shepherdAt: underLamp })(g, t, lampMoment - 1800 + t * 3600),
+    cut: true,
+  },
+  // a fox in the night
+  { dur: 2.8, draw: hill(NIGHT, () => WIDE, { anim: "fox" }), cut: true },
+  // and something else, up on the skyline
+  { dur: 4.2, draw: eyes },
+  // the name
   {
     dur: 4.5,
-    draw: card(
-      [
-        { text: "HIRSEL", k: 4, at: 0.38 },
-        { text: "WISHLIST ON STEAM", k: 1, ink: WOOL, at: 0.62 },
-      ],
-      NIGHT,
-    ),
+    draw: (g, t, ms) => {
+      const cam = hill(NIGHT, () => ({ x: W / 2, y: H / 2, k: 6 }), { anim: "sleep", from: 1, to: 1 })(g, t, ms);
+      g.a(0, 0, W, H, 6, 8, 14, 0.45);
+      const a = clamp01(t / 0.2);
+      title(g, cam, [
+        { text: "HIRSEL", k: 4, dy: -12, ink: GORSE },
+        { text: "WISHLIST ON STEAM", k: 1, ink: WOOL, dy: 22 },
+      ], a);
+      return cam;
+    },
   },
 ];
 
@@ -112,28 +244,45 @@ function at(i: number) {
 
 const DIP = 0.35; // seconds of black either side of a cut that is not hard
 
+/** the frame at full size: the scene, the camera over it at a whole-number scale, and any dip to black */
 export function frame(i: number): HTMLCanvasElement {
-  const c = document.createElement("canvas");
-  c.width = W;
-  c.height = H;
-  const g = new Painter(c.getContext("2d")!, W, H);
+  const src = document.createElement("canvas");
+  src.width = W;
+  src.height = H;
+  const g = new Painter(src.getContext("2d")!, W, H);
   g.px(0, 0, W, H, "#000");
-  const { k, t, secs } = at(i);
-  const shot = SHOTS[k];
-  const ms = (i / FPS) * 1000;
+  const { k: n, t, secs } = at(i);
+  const shot = SHOTS[n];
   g.cx.save();
-  shot.draw(g, t, ms);
+  const cam = shot.draw(g, t, (i / FPS) * 1000);
   g.cx.restore();
-  // dip to black in and out, unless the cut is a hard one
+
+  const out = document.createElement("canvas");
+  out.width = OUT_W;
+  out.height = OUT_H;
+  const cx = out.getContext("2d")!;
+  cx.imageSmoothingEnabled = false;
+  cx.fillStyle = "#000";
+  cx.fillRect(0, 0, OUT_W, OUT_H);
+  // keep the view inside the scene, and land on whole screen pixels
+  const halfW = OUT_W / 2 / cam.k;
+  const halfH = OUT_H / 2 / cam.k;
+  const x = Math.min(W - halfW, Math.max(halfW, cam.x));
+  const y = Math.min(H - halfH, Math.max(halfH, cam.y));
+  cx.drawImage(src, Math.round(OUT_W / 2 - x * cam.k), Math.round(OUT_H / 2 - y * cam.k), W * cam.k, H * cam.k);
+
   const left = shot.dur - secs;
-  const next = SHOTS[k + 1];
+  const next = SHOTS[n + 1];
   let dark = 0;
   if (!shot.cut && secs < DIP) dark = Math.max(dark, 1 - ease(secs / DIP));
   if (next && !next.cut && left < DIP) dark = Math.max(dark, 1 - ease(left / DIP));
-  if (k === 0 && secs < 0.6) dark = Math.max(dark, 1 - secs / 0.6);
-  if (k === SHOTS.length - 1 && left < 0.8) dark = Math.max(dark, 1 - left / 0.8);
-  if (dark > 0) g.a(0, 0, W, H, 0, 0, 0, dark);
-  return c;
+  if (n === 0 && secs < 0.8) dark = Math.max(dark, 1 - secs / 0.8);
+  if (n === SHOTS.length - 1 && left < 0.8) dark = Math.max(dark, 1 - left / 0.8);
+  if (dark > 0) {
+    cx.fillStyle = `rgba(0,0,0,${dark.toFixed(3)})`;
+    cx.fillRect(0, 0, OUT_W, OUT_H);
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ *
@@ -211,15 +360,25 @@ function wav(buf: AudioBuffer): string {
 
 const view = document.getElementById("view") as HTMLCanvasElement | null;
 if (view) {
+  view.width = OUT_W / 2;
+  view.height = OUT_H / 2;
   const vg = view.getContext("2d")!;
   const start = performance.now();
   const tick = () => {
     const i = Math.floor(((performance.now() - start) / 1000) * FPS) % FRAMES;
-    vg.drawImage(frame(i), 0, 0);
+    vg.drawImage(frame(i), 0, 0, OUT_W / 2, OUT_H / 2);
     requestAnimationFrame(tick);
   };
   if (!new URLSearchParams(location.search).has("capture")) requestAnimationFrame(tick);
 }
 Object.assign(window, {
-  trailer: { FRAMES, FPS, DURATION, frame: (i: number) => frame(i).toDataURL("image/png"), music },
+  trailer: {
+    FRAMES,
+    FPS,
+    DURATION,
+    /** the first frame of each shot, for checking one */
+    starts: SHOTS.map((_, n) => Math.round(SHOTS.slice(0, n).reduce((a, x) => a + x.dur, 0) * FPS)),
+    frame: (i: number) => frame(i).toDataURL("image/png"),
+    music,
+  },
 });

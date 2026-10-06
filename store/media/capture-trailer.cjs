@@ -1,7 +1,7 @@
 /*
- * Render the trailer: every frame from trailer.ts, the music rendered offline,
- * and ffmpeg to put them together as a 1920×1080 H.264 MP4, scaled ×6 with
- * nearest-neighbour so every game pixel is a clean 6×6 block.
+ * Render the trailer: every frame from trailer.ts (already 1920×1080, the
+ * camera having scaled each by a whole number), the music rendered offline,
+ * and ffmpeg to put them together as an H.264 MP4.
  *
  *   npm run dev                                                   # in one terminal
  *   npx -y -p playwright node store/media/capture-trailer.cjs     # in another
@@ -30,7 +30,7 @@ const OUT = join(__dirname, "trailer.mp4");
   await page.waitForFunction(() => window.trailer, null, { timeout: 30000 });
   const { FRAMES, FPS, DURATION } = await page.evaluate(() => ({ FRAMES: window.trailer.FRAMES, FPS: window.trailer.FPS, DURATION: window.trailer.DURATION }));
   console.log(`${FRAMES} frames, ${DURATION.toFixed(1)}s at ${FPS}fps`);
-  const BATCH = 30;
+  const BATCH = 10;
   for (let i = 0; i < FRAMES; i += BATCH) {
     const pngs = await page.evaluate(([a, b]) => Array.from({ length: b - a }, (_, k) => window.trailer.frame(a + k)), [i, Math.min(FRAMES, i + BATCH)]);
     pngs.forEach((d, k) => writeFileSync(join(dir, `f${String(i + k).padStart(5, "0")}.png`), Buffer.from(d.split(",")[1], "base64")));

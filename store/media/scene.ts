@@ -32,14 +32,21 @@ export function run(
 }
 
 /** the glen at a logical size, as the game would draw it at that window size */
-export function glen(W: number, H: number, st: GameState, time = 4200, o: { anim?: AnimId | null; p?: number; interior?: boolean; payload?: { croft?: string; breed?: string } } = {}): HTMLCanvasElement {
+export function glen(W: number, H: number, st: GameState, time = 4200, o: {
+    anim?: AnimId | null;
+    p?: number;
+    interior?: boolean;
+    payload?: { croft?: string; breed?: string };
+    /** where he has been sent, as the game's own walk-to sets it */
+    shepherdAt?: { x: number; y: number } | null;
+  } = {},): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = W;
   c.height = H;
   const g = new Painter(c.getContext("2d")!, W, H);
   (g as unknown as { W: number; H: number }).W = W;
   (g as unknown as { W: number; H: number }).H = H;
-  GLEN_ART.draw(g, { state: st, anim: o.anim ?? null, p: o.p ?? 0, time, reduced: false, inverse: false, interior: o.interior, payload: o.payload });
+  GLEN_ART.draw(g, { state: st, anim: o.anim ?? null, p: o.p ?? 0, time, reduced: false, inverse: false, interior: o.interior, payload: o.payload, shepherdAt: o.shepherdAt ?? null });
   return c;
 }
 
