@@ -105,17 +105,21 @@ gorse yellow (`media/pixelfont.ts`).
 | `library_logo.png` | Library Assets → Library Logo (transparent) | 1280×720 |
 | `community_icon_184.png` | App Admin → Community Icon | 184×184 |
 | `icon.ico`, `icon_256.png` | App Admin → Client Icon, and the executable | 16 to 256 |
-| `trailer.mp4` | Trailers | 1920×1080, 60s |
+| `trailer.mp4` | Trailers | 1920×1080, 75s |
 
 The same icon is in `public/` as `icon-192.png` and `icon-512.png`, which the web build and
 the desktop build (electron-builder) both use. Steam asks for the library logo to be placed
 over the hero in the partner site's preview; centred is fine.
 
-**The trailer** is rendered frame by frame from `media/trailer.ts` rather than recorded, so
-every game pixel is a clean 6×6 block at 1080p: the opening, the hill through the year, the
-work, the inn, the fire, the night and a fox, then the name and "Wishlist on Steam". The
-music is the game's own air, "The Hirsel", rendered offline from the same score. It gives
-nothing secret away: no wolf, no sword, nothing after the wedding.
+**The trailer** is rendered frame by frame from `media/trailer.ts` rather than recorded: the
+scene at the game's size with a camera over it that scales only by whole numbers (×6 wide to
+×20 close) and pans by whole screen pixels, so every game pixel stays a clean square. Down
+out of the stars onto the croft and the name; the office and the leaving; the train; the
+climb and the crest; the hill, then close on him tending a ewe and at his pipe, the dog at
+work, the camera walking with the muck and the hay, the roof going on; the inn, the fire,
+the winter; the dark coming down, a ewe under the lantern, a fox; and two eyes on the
+skyline, blinking once, before the name and "Wishlist on Steam". The music is the game's own
+air, "The Hirsel", rendered offline from the same score. Nothing secret is named.
 
 To make any of it again after the art changes, with `npm run dev` running:
 
