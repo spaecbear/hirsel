@@ -114,7 +114,7 @@ Each needs a 64×64 icon, earned and unearned.
 | `FIRST_LAMB` | On its feet | A lamb born on your own ground, and alive in the morning. |  |
 | `YEAR_WED` | A year wed | Stay on the hill with her, and see a year out. |  |
 | `DANCE` | A turn by the fire | Stay on the hill with her, and ask her to dance. |  |
-| `FIFTY_LAMBS` | Fifty lambs | Fifty lambs born on your own ground. |  |
+| `TWENTY_FIVE_LAMBS` | Twenty-five lambs | Twenty-five lambs born on your own ground. |  |
 | `ROSETTE` | A red rosette | Take a prize at the Highland show, or the trial. |  |
 | `NEIGHBOUR` | Good neighbours | Have a kindness paid back from over the burn. |  |
 | `OLD_DOG` | Earned the fire | See a dog through her working life to the fireside. |  |

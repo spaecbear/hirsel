@@ -307,7 +307,7 @@ Married life is a victory lap with a little more in it:
     earns a secret, **Only ever the one**. The card says "the top of the hill", never the
     corrie, by the same rule as every other event
 - The courting events (her afternoon off, the ceilidh) are for before, and stop
-- Four achievements for the long game, **A year wed**, **Fifty lambs**, **A turn by the
+- Four achievements for the long game, **A year wed**, **Twenty-five lambs**, **A turn by the
   fire** (the dance) and the secret **Only ever the one** (the clear night), marked
   `longGame` and left out of what the credits ask for, since the credits roll at the moment
   of a win. The first three are visible on purpose, as a reason to stay on the hill
