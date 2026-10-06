@@ -51,6 +51,18 @@ import type { Animator } from "../render/animator";
 import type { Settings } from "../sim/settings";
 import type { ActionId, BreedId, CroftId, ToolId } from "../sim/types";
 
+/**
+ * The cart is three counters: beasts and hay for the flock, the smith's kit,
+ * and the dealer who buys. One long list had the wool, the stock, the tools
+ * and the sales all scrolled past each other.
+ */
+type CartTab = "flock" | "tools" | "sell";
+const CART_TABS: { id: CartTab; name: string }[] = [
+  { id: "flock", name: "Flock" },
+  { id: "tools", name: "Tools" },
+  { id: "sell", name: "Sell" },
+];
+
 interface Row {
   label: string;
   detail: string;
@@ -72,6 +84,8 @@ interface Row {
    * purpose, not arrived at.
    */
   noLanding?: boolean;
+  /** which tab of a tabbed sheet (the cart's) the row sits under */
+  tab?: CartTab;
   onPick: () => void;
 }
 
@@ -99,6 +113,11 @@ export class WorldUi {
   private onChange: () => void = () => {};
   /** the tutorial watches for things the game state doesn't record */
   onNote: (what: string) => void = () => {};
+  /** the walkthrough's current step, if one is running, so the cart opens on the counter it is about */
+  lesson: () => string | null = () => null;
+  /** the cart's open counter: kept between visits, chosen afresh when there is a reason */
+  private cartTab: CartTab = "sell";
+
   /** the walkthrough locks everything except the thing it is teaching */
   canInteract: (id: HotspotId) => boolean = () => true;
   /** told when a tap was refused, so the prompt can ask for attention */
@@ -400,6 +419,7 @@ export class WorldUi {
     const buttons = () => [...this.sheet.querySelectorAll<HTMLButtonElement>(".sheet-body button")];
     const had = this.sheet.contains(document.activeElement) ? buttons().indexOf(document.activeElement as HTMLButtonElement) : -1;
     const sameSheet = this.active === id;
+    if (id === "cart" && !sameSheet) this.cartTab = this.cartTabFor();
     this.active = id;
     this.sheet.innerHTML = "";
 
@@ -410,8 +430,26 @@ export class WorldUi {
     head.appendChild(close);
     this.sheet.appendChild(head);
 
+    const tabbed = rows.some((r) => r.tab);
+    if (tabbed) {
+      const strip = el("div", { class: "sheet-tabs", role: "tablist" });
+      for (const t of CART_TABS) {
+        const on = t.id === this.cartTab;
+        const tb = el("button", { class: `sheet-tab${on ? " on" : ""}`, type: "button", role: "tab", "aria-selected": String(on) }, t.name) as HTMLButtonElement;
+        tb.addEventListener("click", () => {
+          if (this.cartTab === t.id) return;
+          this.cartTab = t.id;
+          this.open(id);
+          // the tab keeps the selection, so a pad can step along the strip
+          (this.sheet.querySelectorAll<HTMLButtonElement>(".sheet-tab")[CART_TABS.indexOf(t)])?.focus({ preventScroll: true });
+        });
+        strip.appendChild(tb);
+      }
+      this.sheet.appendChild(strip);
+    }
+
     const body = el("div", { class: "sheet-body" });
-    for (const r of rows) {
+    for (const r of tabbed ? rows.filter((r) => r.tab === this.cartTab) : rows) {
       if (r.info) {
         body.appendChild(
           el("div", { class: "sheet-info" }, `<span class="n">${r.label}</span><span class="d">${r.detail}</span>`),
@@ -441,7 +479,7 @@ export class WorldUi {
     this.sheet.appendChild(body);
     this.sheet.classList.add("on");
 
-    if (this.focusSheets) {
+    if (this.focusSheets && !(this.sheet.contains(document.activeElement) && document.activeElement?.classList.contains("sheet-tab"))) {
       const all = buttons();
       const live = all.filter((b) => !b.disabled && !b.dataset.noLanding);
       const again = sameSheet && had >= 0 ? all[Math.min(had, all.length - 1)] : null;
@@ -987,6 +1025,15 @@ export class WorldUi {
     return rows;
   }
 
+  /** the counter the cart opens on: what the walkthrough is teaching, else wool to sell, else where they left it */
+  private cartTabFor(): CartTab {
+    const lesson = this.lesson();
+    if (lesson === "buy") return "flock";
+    if (lesson === "tools") return "tools";
+    if (lesson === "market" || this.game.state.wool > 0) return "sell";
+    return this.cartTab;
+  }
+
   private cartRows(): Row[] {
     const g = this.game.state;
     const lex = this.game.lex;
@@ -1001,6 +1048,7 @@ export class WorldUi {
       disabled: g.taps < cost || !market.can(g),
       tone: "gold",
       closes: true, // the cart rolls off down the road
+      tab: "sell",
       onPick: () => this.game.doAction("market"),
     });
 
@@ -1021,6 +1069,7 @@ export class WorldUi {
           : " · enough put by for a winter") +
         (isWinter(g) ? " · winter price" : ""),
       disabled: g.money < lot,
+      tab: "flock",
       onPick: () => this.game.buyHay(),
     });
 
@@ -1034,6 +1083,7 @@ export class WorldUi {
         label: `Sell a ${lex.breeds[breed]} · £${price}`,
         detail: `${held.length} in the ${lex.flock}. The cart pays under what she cost.`,
         noLanding: true,
+        tab: "sell",
         onPick: () => this.game.sellEwe(worst.id),
       });
     }
@@ -1052,6 +1102,7 @@ export class WorldUi {
             ? "The autumn sales are on: the best price of the year."
             : `Kept, ${lambs.length === 1 ? "she grows" : "they grow"} into the ${lex.flock} by the winter. The autumn sales pay best.`),
         noLanding: true,
+        tab: "sell",
         onPick: () => this.game.sellEwe(one.id),
       });
     }
@@ -1064,6 +1115,7 @@ export class WorldUi {
         detail: `${lex.breedNotes[breed]} · ${lex.fleeceWord} ×${b.growth.toFixed(2)} growth, ×${b.value.toFixed(2)} value`,
         disabled: g.money < b.cost,
         tone: "stock",
+        tab: "flock",
         closes: true, // she walks onto the hill; the sheet was covering her
         onPick: () => this.game.buyEwe(breed),
       });
@@ -1079,6 +1131,7 @@ export class WorldUi {
         rows.push({
           label: t.name,
           detail: "You have a dog. One shepherd, one dog: that is what a hirsel is.",
+          tab: "tools",
           info: true,
           onPick: () => {},
         });
@@ -1098,8 +1151,12 @@ export class WorldUi {
           ? toolWhat(this.lexicon, `${t.id}Locked`, "Not yet.")
           : `${again ? "A young dog for the hill, now the old one has the fire. " : ""}${toolWhat(this.lexicon, t.id, t.what)}`,
         disabled: !!wanting || g.money < t.cost,
+        tab: "tools",
         onPick: () => this.game.buyTool(t.id as ToolId),
       });
+    }
+    if (!rows.some((r) => r.tab === "tools")) {
+      rows.push({ label: "The smith's tray is empty", detail: "You have everything the cart carries.", tab: "tools", info: true, onPick: () => {} });
     }
     return rows;
   }

@@ -39,6 +39,32 @@
   padding: 0;
 }
 
+/*
+ * Scrollbars in the game's own colours. Left alone, Windows and Linux draw
+ * a white system bar down the side of the menu and every long sheet.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--moss) var(--peat);
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--peat);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--moss);
+  border: 2px solid var(--peat);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--stone);
+}
+::-webkit-scrollbar-corner {
+  background: var(--peat);
+}
+
 /* classes like .act set display, which would otherwise beat the hidden attribute */
 [hidden] {
   display: none !important;
@@ -268,6 +294,39 @@ body.mode-retro .glen-chrome {
 .sheet-x:hover {
   border-color: var(--gorse);
   color: var(--gorse);
+}
+/* the cart's three counters, in the same dress as the panel tabs */
+.sheet-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--moss);
+}
+.sheet-tab {
+  flex: 1 1 0;
+  background: none;
+  border: 0;
+  border-right: 2px solid var(--moss);
+  color: var(--stone);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 10px 4px;
+  min-height: 38px;
+  cursor: pointer;
+}
+.sheet-tab:last-child {
+  border-right: 0;
+}
+.sheet-tab:hover {
+  color: var(--wool);
+}
+.sheet-tab.on {
+  color: var(--gorse);
+  background: var(--moss);
+}
+.sheet-tab:focus-visible {
+  outline: 2px solid var(--heather);
+  outline-offset: -2px;
 }
 .sheet-body {
   padding: 10px;

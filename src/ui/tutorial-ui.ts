@@ -73,6 +73,11 @@ export class TutorialUi {
     return this.step.target === "interior-bed" ? null : (this.step.target as HotspotId);
   }
 
+  /** the step being taught, by id, while the walkthrough runs */
+  get lesson(): string | null {
+    return this.active ? (this.step?.id ?? null) : null;
+  }
+
   get pointingAtBed() {
     return this.active && this.step?.target === "interior-bed";
   }
