@@ -58,8 +58,11 @@ export const isWinter = (g: GameState) => season(g).id === "winter";
 /** the second winter, on a scale that has one: see BALANCE.hardWinter */
 export function hardWinterOn(g: GameState, day = g.day): boolean {
   const s = seasonOf(day);
-  return s.id === "winter" && s.year === BALANCE.hardWinter.year && DIFFICULTY[g.difficulty].hardWinter;
+  return s.id === "winter" && s.year === BALANCE.hardWinter.year && DIFFICULTY[g.difficulty].harsh;
 }
+
+/** the flock has grazed this ground too long without a move: see BALANCE.sour */
+export const groundSour = (g: GameState) => (g.groundNights ?? 0) >= BALANCE.sour.after;
 
 /** the weather a day is drawn from: its season's, or the hard winter's */
 export const weatherBag = (g: GameState, day: number) => (hardWinterOn(g, day) ? BALANCE.hardWinter.weather : seasonOf(day).weather);
@@ -216,7 +219,8 @@ export function grazing(g: GameState) {
     weatherOn(g).graze *
     (buffed(g, "settled flock") ? BALANCE.settledGrowth : 1) *
     (buffed(g, "fiddled") ? BALANCE.fiddleGrowth : 1) *
-    (buffed(g, "tended") ? BALANCE.tendedGrowth : 1);
+    (buffed(g, "tended") ? BALANCE.tendedGrowth : 1) *
+    (groundSour(g) ? BALANCE.sour.growth : 1);
   return { eaten, hayUsed, fed, growth };
 }
 

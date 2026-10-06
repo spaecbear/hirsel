@@ -206,6 +206,21 @@ export const BALANCE = {
     hayLotCost: 13,
     snowLoss: 0.4,
   },
+  /*
+   * Sour ground. A flock left on the same ground night after night builds up
+   * worms in it, the way a real hill flock does: after `after` nights in a row
+   * they grow fleece at `growth` of the rate, and from `sickAfter` a beast may
+   * sicken and die (`sickChance` a night). Moving them resets it. It is what
+   * the careful player's habit of keeping them on the low field all year costs:
+   * the flock has to go up onto riskier ground now and then.
+   */
+  sour: { after: 8, growth: 0.8, sickAfter: 14, sickChance: 0.08 },
+  /**
+   * The forecast is right most days. About one day in this many, the day
+   * comes up other than it was forecast: the hay day turns to rain, or the
+   * snow comes early. Planning still pays, it is just not certain.
+   */
+  forecastMissOneIn: 7,
   /** the autumn warning comes this many days before the winter does */
   winterWarnDays: 6,
 
@@ -371,8 +386,11 @@ export const DIFFICULTY: Record<
     blurb: string;
     fox: number;
     price: number;
-    /** whether the second winter is a hard one (see BALANCE.hardWinter) */
-    hardWinter: boolean;
+    /**
+     * The glen's harder edges: the second winter is a hard one (BALANCE.hardWinter)
+     * and the hard events come (cragfast, foot rot, the flood). Off on Gentle.
+     */
+    harsh: boolean;
   }
 > = {
   gentle: {
@@ -380,14 +398,14 @@ export const DIFFICULTY: Record<
     blurb: "A kinder glen. Foxes come seldom and wool sells well.",
     fox: 0.6,
     price: 1.2,
-    hardWinter: false,
+    harsh: false,
   },
   steady: {
     name: "Steady",
     blurb: "The hill as it is. Room to make a mistake and still eat.",
     fox: 0.8,
     price: 1.1,
-    hardWinter: true,
+    harsh: true,
   },
   hard: {
     name: "Hard",
@@ -400,7 +418,7 @@ export const DIFFICULTY: Record<
      */
     fox: 1.6,
     price: 1,
-    hardWinter: true,
+    harsh: true,
   },
 };
 

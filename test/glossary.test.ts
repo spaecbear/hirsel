@@ -156,8 +156,13 @@ describe("the field guide's weather, ground and breeds", () => {
   });
 
   it("has the three grounds, low to high, with their grazing and risk", () => {
-    const entries = groundGlossary();
+    const all = groundGlossary();
+    const entries = all.filter((e) => e.id !== "sour");
     expect(entries.map((e) => e.name)).toEqual(PASTURES.map((p) => p.name));
+    // and what grazing one of them too long does
+    const sour = all.find((e) => e.id === "sour")!;
+    expect(sour.meta).toContain(`${BALANCE.sour.after} nights`);
+    expect(sour.effect).toContain(`${Math.round(BALANCE.sour.growth * 100)}%`);
     entries.forEach((e, i) => {
       expect(e.meta).toContain(`${Math.round(PASTURES[i].risk * 100)}%`);
       expect(e.effect).toContain(`${Math.round(PASTURES[i].quality * 100)}%`);

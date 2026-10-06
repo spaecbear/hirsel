@@ -39,9 +39,14 @@ import {
   weatherOn,
 } from "../src/sim/rules";
 import { makeRng } from "../src/sim/rng";
+import { EVENTS_BALANCE } from "../src/sim/events";
 import type { ActionId, BreedId, Difficulty, GameState, ToolId } from "../src/sim/types";
 
 const RUNS = Number(process.argv[2] ?? 300);
+// switches for finding what a change does: NO_SOUR=1 NO_HARD_EVENTS=1 NO_GLASS=1
+if (process.env.NO_SOUR) Object.assign(BALANCE.sour, { after: 1e9, sickAfter: 1e9 });
+if (process.env.NO_GLASS) BALANCE.forecastMissOneIn = Infinity;
+if (process.env.NO_HARD_EVENTS) Object.assign(EVENTS_BALANCE, { cragfastChance: 0, footrotChance: 0, floodChance: 0 });
 const MAX_DAYS = 700;
 
 type Bot = "careful" | "newcomer" | "learner";
@@ -54,6 +59,7 @@ interface Result {
   snowLosses: number;
   strikeLosses: number;
   wolfLosses: number;
+  wormLosses: number;
   daysHungry: number;
   lowestMoney: number;
   smallestFlock: number;
@@ -87,8 +93,13 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
   for (let guard = 0; guard < MAX_DAYS && !g.over; guard++) {
     // whatever came to the door: the free default, as most players would
     if (g.event) {
-      const fallback = game.eventChoices().find((x) => x.choice.fallback);
-      if (fallback) game.answerEvent(fallback.choice.id);
+      const choices = game.eventChoices();
+      const fallback = choices.find((x) => x.choice.fallback);
+      const hard = ["cragfast", "footrot", "flood"].includes(g.event.id);
+      // the hard ones: a careful player pays to put it right if they can; a newcomer picks one at random
+      const paid = choices.filter((x) => x.ok && !x.choice.fallback);
+      const pickIt = hard && paid.length ? (bot === "careful" ? paid[0] : rng() < 0.5 ? paid[Math.floor(rng() * paid.length)] : fallback) : fallback;
+      if (pickIt) game.answerEvent(pickIt.choice.id);
     }
 
     const s = season(g);
@@ -137,7 +148,9 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
       const options = [0, 1].filter((i) => i !== g.at);
       const here = g.pastures[g.at];
       const alt = options.map((i) => g.pastures[i]).sort((a, b) => b.grass - a.grass)[0];
-      if (g.at === 2 || (here.grass < 35 && alt && alt.grass > here.grass + 25)) {
+      // and on before the ground goes sour under them
+      const sour = (g.groundNights ?? 0) >= BALANCE.sour.after - 1;
+      if (g.at === 2 || sour || (here.grass < 35 && alt && alt.grass > here.grass + 25)) {
         const to = g.at === 2 ? 0 : g.pastures.indexOf(alt);
         if (g.taps >= moveCost(g)) game.moveTo(to);
       }
@@ -148,7 +161,11 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
        * out late; a newcomer takes the hint most of the time, not always.
        */
       const heeds = isFullMoon(g.day) && rng() < heedRate;
+      // the game says when the ground is going sour; they take that hint as often as the moon's
+      const sourHint = (g.groundNights ?? 0) >= BALANCE.sour.after && rng() < heedRate;
+      const fresh = [0, 1, 2].filter((i) => i !== g.at && !(heeds && i === 2)).sort((a, b) => g.pastures[b].grass - g.pastures[a].grass)[0];
       if (heeds && g.at === 2 && g.taps >= moveCost(g)) game.moveTo(0);
+      else if (sourHint && fresh !== undefined && g.taps >= moveCost(g)) game.moveTo(fresh);
       else if (best.i !== g.at && g.pastures[g.at].grass < 50 && !(heeds && best.i === 2) && g.taps >= moveCost(g)) game.moveTo(best.i);
     }
 
@@ -187,6 +204,7 @@ function play(bot: Bot, difficulty: Difficulty, seed: number): Result {
     snowLosses: g.stats.snowLosses,
     strikeLosses: g.stats.strikeLosses,
     wolfLosses,
+    wormLosses: g.stats.wormLosses,
     daysHungry: g.stats.daysHungry,
     lowestMoney,
     smallestFlock,
@@ -229,7 +247,7 @@ for (const bot of BOTS) {
     console.log(`${bot.padEnd(9)} ${diff.padEnd(7)} won ${pct(wins.length, RUNS).padStart(4)}  lost ${pct(losses.length, RUNS).padStart(4)}  unfinished ${pct(RUNS - wins.length - losses.length, RUNS).padStart(4)}`);
     console.log(`   win on day: median ${median(days)}, middle half ${q(days, 0.25)}-${q(days, 0.75)}, fastest ${Math.min(...days)}`);
     console.log(
-      `   per run: ${mean(rs.map((r) => r.foxLosses)).toFixed(1)} to the fox, ${mean(rs.map((r) => r.snowLosses)).toFixed(1)} to snow, ${mean(rs.map((r) => r.strikeLosses)).toFixed(1)} to flystrike, ${mean(rs.map((r) => r.wolfLosses)).toFixed(1)} to the wolf, ${mean(rs.map((r) => r.daysHungry)).toFixed(1)} hungry nights`,
+      `   per run: ${mean(rs.map((r) => r.foxLosses)).toFixed(1)} to the fox, ${mean(rs.map((r) => r.snowLosses)).toFixed(1)} to snow, ${mean(rs.map((r) => r.strikeLosses)).toFixed(1)} to flystrike, ${mean(rs.map((r) => r.wolfLosses)).toFixed(1)} to the wolf, ${mean(rs.map((r) => r.wormLosses)).toFixed(1)} to worms, ${mean(rs.map((r) => r.daysHungry)).toFixed(1)} hungry nights`,
     );
     console.log(`   met the wolf without the sword in ${pct(rs.filter((r) => r.wolfLosses > 0).length, RUNS)} of runs`);
     console.log(`   a close call (purse under £15 or flock down to 2): ${pct(rs.filter((r) => r.closeCall).length, RUNS)} of runs`);

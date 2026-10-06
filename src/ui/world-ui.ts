@@ -874,7 +874,9 @@ export class WorldUi {
     const g = this.game.state;
     return g.pastures.map((p, i) => ({
       label: `${p.name}${i === g.at ? " · they are here" : moveCost(g) === 0 ? " · free" : ""}${this.kbd((q) => "move" in q && q.move === i)}`,
-      detail: `grass ${Math.round(p.grass)}% · feed ×${p.quality} · fox risk ${Math.round(p.risk * 100)}%`,
+      detail:
+        `grass ${Math.round(p.grass)}% · feed ×${p.quality} · fox risk ${Math.round(p.risk * 100)}%` +
+        (i === g.at ? ` · ${g.groundNights} night${g.groundNights === 1 ? "" : "s"} on it${g.groundNights >= BALANCE.sour.after ? ", going sour" : ""}` : ""),
       disabled: i === g.at || g.taps < moveCost(g),
       onPick: () => {
         this.walk.reset(); // new ground, back to his mark

@@ -335,3 +335,37 @@ describe("the long game's evenings", () => {
   });
 });
 
+
+describe("the hard ones: cragfast, foot rot, the flood", () => {
+  it("never come on Gentle", () => {
+    for (const id of ["cragfast", "footrot", "flood"] as const) {
+      const ev = EVENTS.find((e) => e.id === id)!;
+      const g = harness({ day: 60, forecast: ["rain", "rain", "rain"], flock: Array.from({ length: 8 }, () => ewe()) }).g;
+      g.difficulty = "gentle";
+      expect(ev.due(g, () => 0), id).toBeNull();
+      g.difficulty = "steady";
+      expect(ev.due(g, () => 0), id).not.toBeNull();
+    }
+  });
+
+  it("the flood: driving them up moves the flock to the slope, onto fresh ground", () => {
+    const { game, g } = harness({ day: 60, at: 0, forecast: ["rain", "rain", "rain"], taps: 3 });
+    g.groundNights = 5;
+    pend(g, "flood");
+    game.answerEvent("move");
+    expect(g.at).toBe(1);
+    expect(g.groundNights).toBe(0);
+  });
+
+  it("foot rot: treating every one costs money and two taps, and loses nothing", () => {
+    const { game, g } = harness({ day: 60, money: 200, taps: 3 });
+    const flock = g.flock.length;
+    const fleece = g.flock.map((s) => s.fleece);
+    pend(g, "footrot");
+    game.answerEvent("all");
+    expect(g.money).toBeLessThan(200);
+    expect(g.taps).toBe(1);
+    expect(g.flock).toHaveLength(flock);
+    expect(g.flock.map((s) => s.fleece)).toEqual(fleece);
+  });
+});

@@ -13,8 +13,8 @@
  *
  * None of them mentions the sword, the wolf or the summon conditions (§15).
  */
-import { BALANCE, BREEDS, SEASON_DAYS, TOOLS } from "./config";
-import { breedOf, buffed, dogIsOld, grade, hasDog, isFullMoon, owns, season } from "./rules";
+import { BALANCE, BREEDS, DIFFICULTY, SEASON_DAYS, TOOLS } from "./config";
+import { breedOf, buffed, dogIsOld, grade, hasDog, isFullMoon, moveCost, owns, season } from "./rules";
 import type { Game } from "./game";
 import type { Lexicon } from "./lexicon";
 import type { BreedId, EventId, GameState, ToolId } from "./types";
@@ -71,6 +71,27 @@ export const EVENTS_BALANCE = {
   giftHay: 20,
   giftMoney: 15,
   strayChance: 0.05,
+  /*
+   * The hard ones (cragfast, foot rot, the flood): not on Gentle, which keeps
+   * its ordinary winter for the same reason; none before this day, so
+   * the first fortnight is learnt in peace, and each no more often than its
+   * `Every`. Tuned against scripts/simulate.ts.
+   */
+  hardFirstDay: 14,
+  cragfastChance: 0.05,
+  cragfastEvery: 45,
+  /** left on her ledge, the chance she comes down on her own */
+  cragfastComesDown: 0.5,
+  footrotChance: 0.1,
+  footrotEvery: 60,
+  /** £ a head to treat the whole flock */
+  footrotPerHead: 1.5,
+  /** fleece every beast loses to a bout of it, treated late or not at all */
+  footrotFleece: 1,
+  floodChance: 0.15,
+  floodEvery: 60,
+  /** foot rot or the flood left to itself: the chance it costs a beast */
+  hardLeaveLoss: 0.5,
   strayEvery: 40,
   /** the show is on this day of each summer */
   showDay: 18,
@@ -103,6 +124,9 @@ const since = (g: GameState, id: EventId) => g.day - (lastOn(g, id) ?? -Infinity
 const once = (g: GameState, id: EventId) => lastOn(g, id) === undefined;
 /** a letter comes on its day, or the first dawn after it if something else was on */
 const letterDue = (g: GameState, id: EventId, day: number) => (g.day >= day && once(g, id) ? {} : null);
+
+/** what it costs to treat the whole flock for foot rot */
+export const footrotBill = (g: GameState) => Math.ceil(g.flock.length * E.footrotPerHead);
 
 /** the beast that would go to the show: the best fleece for her breed */
 export function showScore(g: GameState): { score: number; breed: BreedId } | null {
@@ -509,6 +533,150 @@ export const EVENTS: GameEvent[] = [
       },
     ],
   },
+
+  /*
+   * Three with no free lunch in them, for the careful player as much as anyone.
+   * Every answer costs something: the day, the money, the safe ground, or a
+   * beast. The free choice is always there, and it is never the safe one.
+   */
+  {
+    id: "cragfast",
+    due: (g, roll) =>
+      DIFFICULTY[g.difficulty].harsh &&
+      season(g).id !== "winter" &&
+      g.day >= E.hardFirstDay &&
+      g.flock.filter((x) => !x.lamb).length >= 4 &&
+      since(g, "cragfast") >= E.cragfastEvery &&
+      roll() < E.cragfastChance
+        ? {}
+        : null,
+    title: () => "Cragfast",
+    body: (_g, _d, lex) =>
+      `A ${lex.unit} has got herself cragfast on a ledge up on the high ground, and is calling fit to wake the glen. ` +
+      "Getting her off is a long climb and a rope.",
+    choices: (_g, _d, lex) => [
+      {
+        id: "climb",
+        label: "Go up for her",
+        detail: "A long climb, and most of the day.",
+        taps: 2,
+        run: (game) => game.say(`You bring her down over your shoulders. She has not a mark on her, and no gratitude either.`, "cozy"),
+      },
+      {
+        id: "leave",
+        label: "Leave her. She may find her own way down",
+        detail: `A ${lex.unit} does, sometimes.`,
+        fallback: true,
+        run: (game) => {
+          const g2 = game.state;
+          const grown = g2.flock.filter((x) => !x.lamb);
+          if (game.rng() < E.cragfastComesDown || !grown.length) {
+            game.say(`She was back with the ${lex.flock} by dusk, as if nothing had happened.`, "hi");
+            return;
+          }
+          g2.flock.splice(g2.flock.indexOf(grown[Math.floor(game.rng() * grown.length)]), 1);
+          game.say(`She did not come down. You find her at the foot of the crag a week later.`, "bad");
+        },
+      },
+    ],
+  },
+  {
+    id: "footrot",
+    due: (g, roll) =>
+      DIFFICULTY[g.difficulty].harsh &&
+      season(g).id !== "winter" &&
+      g.day >= E.hardFirstDay &&
+      (g.forecast[0] === "rain" || g.forecast[0] === "mist") &&
+      g.flock.filter((x) => !x.lamb).length >= 6 &&
+      since(g, "footrot") >= E.footrotEvery &&
+      roll() < E.footrotChance
+        ? {}
+        : null,
+    title: () => "Foot rot",
+    body: (_g, _d, lex) =>
+      `After the wet, half a dozen of the ${lex.flock} are going lame: foot rot. Left, it runs through them all.`,
+    choices: (g, _d, lex) => [
+      {
+        id: "all",
+        label: "Trim and treat every one",
+        detail: "A zinc bath for the lot, and a long day with the knife.",
+        taps: 2,
+        money: footrotBill(g),
+        run: (game) => game.say(`Every foot pared and through the bath. They are sound again, and so is your back, nearly.`, "hi"),
+      },
+      {
+        id: "lame",
+        label: "See to the lame ones",
+        detail: `A day's work. They will be slow to put on ${lex.fleeceWord} for a while.`,
+        taps: 1,
+        run: (game) => {
+          for (const x of game.state.flock) x.fleece = Math.max(0, x.fleece - E.footrotFleece);
+          game.say(`The worst of them seen to. The rest hobble on, and they are poor doers for it.`, "hi");
+        },
+      },
+      {
+        id: "leave",
+        label: "Leave it for the dry weather",
+        fallback: true,
+        run: (game) => {
+          const g2 = game.state;
+          for (const x of g2.flock) x.fleece = Math.max(0, x.fleece - E.footrotFleece);
+          const grown = g2.flock.filter((x) => !x.lamb);
+          if (grown.length > 1 && game.rng() < E.hardLeaveLoss) {
+            g2.flock.splice(g2.flock.indexOf(grown[Math.floor(game.rng() * grown.length)]), 1);
+            game.say(`It ran through them. One went down and did not get up, and the rest have gone back in condition.`, "bad");
+          } else {
+            game.say(`The dry came in time. They are sound again, though they have gone back in condition.`, "hi");
+          }
+        },
+      },
+    ],
+  },
+  {
+    id: "flood",
+    due: (g, roll) =>
+      DIFFICULTY[g.difficulty].harsh &&
+      g.at === 0 &&
+      season(g).id !== "summer" &&
+      g.day >= E.hardFirstDay &&
+      g.forecast[0] === "rain" &&
+      g.flock.length >= 2 &&
+      since(g, "flood") >= E.floodEvery &&
+      roll() < E.floodChance
+        ? {}
+        : null,
+    title: () => "The burn is up",
+    body: (g, _d, lex) =>
+      `The burn is over its banks after the night's rain and still rising. By dark the ${g.pastures[0].name} will be under water, and the ${lex.flock} with it.`,
+    choices: (g, _d, lex) => [
+      {
+        id: "move",
+        label: `Drive them up to the ${g.pastures[1].name}`,
+        detail: "Higher ground, and less of a watch kept on it.",
+        taps: moveCost(g),
+        run: (game) => {
+          game.newGround(1);
+          game.say(`Up onto the ${game.state.pastures[1].name}, the ${lex.flock} complaining all the way. The low field is a loch by dusk.`, "hi");
+        },
+      },
+      {
+        id: "stay",
+        label: "Keep them where they are",
+        detail: "It has never come over that far before.",
+        fallback: true,
+        run: (game) => {
+          const g2 = game.state;
+          g2.pastures[0].grass = Math.round(g2.pastures[0].grass / 2);
+          if (g2.flock.length > 1 && game.rng() < E.hardLeaveLoss) {
+            g2.flock.splice(Math.floor(game.rng() * g2.flock.length), 1);
+            game.say(`It came over that far. You were up to your waist in the dark pulling them out, and you did not get them all.`, "bad");
+          } else {
+            game.say(`It came over that far. You were up to your waist in the dark pulling them out, and you got every one, just.`, "hi");
+          }
+        },
+      },
+    ],
+  },
 ];
 
 /* ---- after she says aye: the two of you ---- */
@@ -703,6 +871,9 @@ export const EVENT_ORDER: EventId[] = [
   "stray",
   "her-mother",
   "callum-supper",
+  "flood",
+  "footrot",
+  "cragfast",
 ];
 
 /** the day of the Highland show in a given year */

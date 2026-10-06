@@ -10,6 +10,7 @@ import {
   PASTURES,
   START_MONEY,
   TOOLS,
+  WEATHER,
 } from "./config";
 import { makeRng, pick, randInt, type Rng } from "./rng";
 import {
@@ -113,6 +114,7 @@ export function newGame(opts: GameOptions = {}): GameState {
     nextSheepId: BALANCE.startFlock + 1,
     difficulty: opts.difficulty ?? "steady",
     at: 0,
+    groundNights: 0,
     pastures: PASTURES.map((p) => ({ ...p })),
     owned: {},
     buffs: {},
@@ -142,6 +144,7 @@ export function newGame(opts: GameOptions = {}): GameState {
       spunTwice: false,
       sawTippy: false,
       snowLosses: 0,
+      wormLosses: 0,
       hayInSun: false,
       lambsBorn: 0,
       lambsLost: 0,
@@ -282,8 +285,7 @@ export class Game {
     const cost = moveCost(g);
     if (g.taps < cost) return; // with the boots on it is free, even at the end of the day
     if (g.recording) g.draft.push({ kind: "move", to: i });
-    g.at = i;
-    g.gatheredToday = false;
+    this.newGround(i);
     this.say(this.lex.driveUp(g.pastures[i].name), "hi");
     this.onAnim("move");
     this.spend(cost);
@@ -327,6 +329,17 @@ export class Game {
     this.grantTool(id);
     this.award();
     this.changed();
+  }
+
+  /**
+   * The flock is on new ground: it has to be gathered again there, and the
+   * ground is fresh under them, so the count towards sour ground starts over.
+   */
+  newGround(i: number) {
+    const g = this.state;
+    g.at = i;
+    g.gatheredToday = false;
+    g.groundNights = 0;
   }
 
   /** a tool is yours, however it came: the cart or the dealer. The money is the caller's business */
@@ -769,6 +782,20 @@ export class Game {
       this.say(this.lex.strike, "bad");
     }
 
+    // 4b. sour ground: another night on it, a warning when it turns, and worms once it has been too long
+    g.groundNights = (g.groundNights ?? 0) + 1;
+    if (g.groundNights === BALANCE.sour.after && g.flock.length) {
+      this.say(
+        `A week and more on the ${p.name} now. The ground is going sour under them; they will do better moved to fresh grass.`,
+        "bad",
+      );
+    }
+    if (g.groundNights >= BALANCE.sour.sickAfter && g.flock.length > 1 && this.rng() < BALANCE.sour.sickChance) {
+      g.flock.splice(Math.floor(this.rng() * g.flock.length), 1);
+      g.stats.wormLosses++;
+      this.say(`One of them dead in the morning, wasted with worms. The ${p.name} has been grazed too long.`, "bad");
+    }
+
     // 5. feed
     const feed = feedCost(g);
     g.money -= feed;
@@ -805,6 +832,21 @@ export class Game {
       // the new day on the end of the forecast is three on from today, and
       // takes its weather from whatever season that day falls in
       g.forecast.push(pick(this.rng, weatherBag(g, g.day + 3)));
+      /*
+       * The forecast is right most days, not all of them: now and then the
+       * day comes up other than it was forecast. It is the day after the
+       * night, so it is decided here, at dawn, and said.
+       */
+      // its own dice, from the seed and the day, so the rest of the night's rolls are as they were
+      const glass = makeRng((g.seed ^ Math.imul(g.day + 1, 2654435761)) >>> 0);
+      if (glass() < 1 / BALANCE.forecastMissOneIn) {
+        const was = g.forecast[0];
+        const others = weatherBag(g, g.day + 1).filter((w) => w !== was);
+        if (others.length) {
+          g.forecast[0] = pick(glass, others);
+          this.say(`The glass was wrong. ${WEATHER[g.forecast[0]].name}, not the ${WEATHER[was].name.toLowerCase()} that was forecast.`, "bad");
+        }
+      }
       for (const k of Object.keys(g.buffs) as BuffId[]) {
         const v = (g.buffs[k] ?? 0) - 1;
         if (v <= 0) delete g.buffs[k];
@@ -1080,8 +1122,7 @@ export class Game {
       const e = steps.shift() as RoutineEntry;
       if (e.kind === "move") {
         if (e.to === g2.at) return step();
-        g2.at = e.to;
-        g2.gatheredToday = false;
+        this.newGround(e.to);
         this.say(`The watch has you on the ${g2.pastures[e.to].name}.`, "hi");
         this.onAnim("move", step);
         this.spend(moveCost(g2));

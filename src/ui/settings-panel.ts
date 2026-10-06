@@ -310,10 +310,10 @@ export function buildSettings(api: SettingsApi) {
     );
     guide(
       "The weather",
-      "Tomorrow's sky and the day after's are in the forecast: tap the sky, or press F.",
+      "Tomorrow's sky and the day after's are in the forecast: tap the sky, or press F. It is right most days; about one in seven comes up otherwise.",
       weatherGlossary(),
     );
-    guide("The ground", "Three pastures, low to high. The flock grazes whichever one they are on.", groundGlossary());
+    guide("The ground", "Three pastures, low to high. The flock grazes whichever one they are on, and it does not do to leave them too long on one.", groundGlossary());
     guide(
       "Buffs & status",
       "What the short notes by the day count mean: how long each lasts and what it does.",

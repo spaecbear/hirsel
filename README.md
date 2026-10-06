@@ -848,3 +848,36 @@ money and hay by should feel it. Gentle keeps an ordinary winter.
 | learner, Hard: wins | 59% | 42% |
 
 A careful player who laid in hay and kept a reserve barely notices it; a loose one feels it.
+
+### Risk for the careful player: sour ground, the hard events, an honest glass
+
+The simulation showed a careful player never in danger, because playing safe cost nothing:
+gather every night, keep to the low field, hold a reserve. Three things now put a price on it.
+
+- **Sour ground** (`BALANCE.sour`). Worms build up in ground grazed night after night. After
+  8 nights in a row on the same pasture fleece grows at 80%, and from 14 nights a beast can
+  sicken and die. The game says when it turns, the pasture menu shows the nights, and moving
+  starts it over. Keeping them on the low field all year now costs something; the flock has
+  to go up onto riskier ground now and then.
+- **The hard events** (Steady and Hard only, like the hard winter): **cragfast**, a ewe
+  stuck on a ledge on the high ground (two taps to fetch her, or leave her and she may come
+  down); **foot rot** after the wet (treat them all for money and two taps, see to the lame
+  ones for a tap and some condition, or leave it, which costs condition and may cost a
+  beast); and **the flood**, the burn coming over the low field by dark (drive them up to the
+  slope, or stay, which halves the grass and may cost a beast). Every answer costs
+  something; the free one is never the safe one.
+- **The glass is wrong about one day in seven** (`forecastMissOneIn`). The day comes up
+  other than forecast, and the game says so. Planning still pays; it is just not certain.
+  It draws its own dice from the seed and the day, so nothing else in a seeded run moves.
+
+| | before | now |
+| --- | --- | --- |
+| careful, Steady: wins, close calls | 99%, 2% | 99%, 3% |
+| careful, Hard: wins, close calls | 92%, 15% | 88%, 18% |
+| newcomer, Gentle: wins | 52% | 53% |
+| learner, Steady: wins | 77% | 76% |
+| learner, Hard: wins | 42% | 29% |
+
+The bots heed the sour-ground warning as often as the full moon's (the newcomer seven times
+in ten, the learner always), as a player reading the hill would. `NO_SOUR=1`,
+`NO_HARD_EVENTS=1` and `NO_GLASS=1` switch each off in the simulator to see what it does.

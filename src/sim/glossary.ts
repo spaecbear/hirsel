@@ -175,12 +175,17 @@ export function groundGlossary(): GlossaryEntry[] {
     "Heather and a dyke along the contour. The middle way.",
     "Stepped rock up high. The best grazing on the hill and the slowest to recover, and the most exposed by night.",
   ];
-  return PASTURES.map((p, i) => ({
+  return PASTURES.map((p, i): GlossaryEntry => ({
     id: `ground-${i}`,
     name: p.name,
     meta: `${p.regen} grass back a night · base fox risk ${Math.round(p.risk * 100)}%`,
     effect: `Fleece grows at ${Math.round(p.quality * 100)}% here. ${notes[i] ?? ""} Moving the flock is a tap, and they have to be gathered again on new ground.`,
-  }));
+  })).concat({
+    id: "sour",
+    name: "Sour ground",
+    meta: `${BALANCE.sour.after} nights in a row on the same ground`,
+    effect: `Worms build up in ground grazed too long: fleece grows at ${Math.round(BALANCE.sour.growth * 100)}% of the rate, and after ${BALANCE.sour.sickAfter} nights a beast can sicken and die. Moving them to fresh ground starts it over.`,
+  });
 }
 
 /** the four breeds the cart and the dealer sell */
