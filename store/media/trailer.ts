@@ -90,10 +90,12 @@ function opening(from: number, to: number, cam: (t: number) => Cam = () => WIDE)
 }
 
 /** lettering, centred on wherever the camera is looking, so it sits still on the screen while the scene pans under it */
-function title(g: Painter, cam: Cam, lines: { text: string; k: number; ink?: typeof GORSE; dy: number }[], alpha: number) {
+function title(g: Painter, cam: Cam, lines: { text: string; k: number; ink?: typeof GORSE; dy: number; gap?: number; from?: number }[], t: number) {
   for (const l of lines) {
-    const { w, h } = textSize(l.text, l.k);
-    pixelText(g, l.text, Math.round(cam.x - w / 2), Math.round(cam.y + l.dy - h / 2), l.k, l.ink ?? GORSE, alpha);
+    const { w, h } = textSize(l.text, l.k, l.gap);
+    // each line can come in a beat after the one above it
+    const alpha = clamp01((t - (l.from ?? 0)) / 0.15);
+    if (alpha > 0) pixelText(g, l.text, Math.round(cam.x - w / 2), Math.round(cam.y + l.dy - h / 2), l.k, l.ink ?? GORSE, alpha, l.gap);
   }
 }
 
@@ -150,7 +152,7 @@ export const SHOTS: Shot[] = [
     dur: 5.5,
     draw: (g, t, ms) => {
       const cam = hill(NIGHT, (tt) => pan({ x: W / 2, y: 540 / 8, k: 8 }, { x: W / 2, y: H - 540 / 8, k: 8 }, tt), { anim: "sleep", from: 1, to: 1 })(g, t, ms);
-      title(g, cam, [{ text: "HIRSEL", k: 3, dy: -14 }], clamp01((t - 0.45) / 0.25) * (1 - clamp01((t - 0.9) / 0.1)));
+      if (t < 0.9) title(g, cam, [{ text: "HIRSEL", k: 3, dy: -14, from: 0.45 }], t);
       return cam;
     },
   },
@@ -192,7 +194,8 @@ export const SHOTS: Shot[] = [
   },
   { dur: 2.6, draw: hill(BUILDING, () => ({ x: L(BUILDING).croft.x + 30, y: L(BUILDING).croft.y + 20, k: 10 }), { anim: "build", payload: { croft: "roof" } }), cut: true },
   // the inn, and the fire at home with the dog at it
-  { dur: 3.2, draw: hill(SUMMER, () => ({ x: W / 2, y: H / 2 + 8, k: 8 }), { anim: "pub" }) },
+  // from once he is in the door: the walk-in opens on the hill, which flashed up between the roof and the bar
+  { dur: 3.2, draw: hill(SUMMER, () => ({ x: W / 2, y: H / 2 + 8, k: 8 }), { anim: "pub", from: 0.25, to: 1 }), cut: true },
   {
     dur: 3,
     draw: hill(NIGHT, () => {
@@ -215,15 +218,16 @@ export const SHOTS: Shot[] = [
   { dur: 4.2, draw: eyes },
   // the name
   {
-    dur: 4.5,
+    dur: 6,
     draw: (g, t, ms) => {
       const cam = hill(NIGHT, () => ({ x: W / 2, y: H / 2, k: 6 }), { anim: "sleep", from: 1, to: 1 })(g, t, ms);
-      g.a(0, 0, W, H, 6, 8, 14, 0.45);
-      const a = clamp01(t / 0.2);
+      g.a(0, 0, W, H, 6, 8, 14, 0.5);
+      // the name, the line from the title screen under it, and then where to find it
       title(g, cam, [
-        { text: "HIRSEL", k: 4, dy: -12, ink: GORSE },
-        { text: "WISHLIST ON STEAM", k: 1, ink: WOOL, dy: 22 },
-      ], a);
+        { text: "HIRSEL", k: 4, dy: -18, ink: GORSE },
+        { text: "A HILL, A FLOCK, AND A LIFE TO BUILD ON IT", k: 1, ink: WOOL, dy: 10, gap: 1, from: 0.2 },
+        { text: "WISHLIST ON STEAM", k: 1, ink: GORSE, dy: 32, from: 0.45 },
+      ], t);
       return cam;
     },
   },
